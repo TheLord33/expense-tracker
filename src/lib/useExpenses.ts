@@ -44,6 +44,15 @@ export function useExpenses() {
     setExpenses((prev) => prev.filter((e) => e.id !== id));
   }, []);
 
+  const updateExpense = useCallback(
+    (id: string, data: Omit<Expense, "id">) => {
+      setExpenses((prev) =>
+        prev.map((e) => (e.id === id ? { ...e, ...data } : e))
+      );
+    },
+    []
+  );
+
   const importExpenses = useCallback(
     (incoming: Omit<Expense, "id">[], replace: boolean) => {
       const stamped = incoming.map((e) => ({ ...e, id: crypto.randomUUID() }));
@@ -52,7 +61,13 @@ export function useExpenses() {
     []
   );
 
+  const renameCategory = useCallback((oldName: string, newName: string) => {
+    setExpenses((prev) =>
+      prev.map((e) => e.category === oldName ? { ...e, category: newName } : e)
+    );
+  }, []);
+
   const total = expenses.reduce((sum, e) => sum + e.amount, 0);
 
-  return { expenses, addExpense, deleteExpense, importExpenses, total, loaded };
+  return { expenses, addExpense, deleteExpense, updateExpense, importExpenses, renameCategory, total, loaded };
 }

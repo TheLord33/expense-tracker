@@ -56,6 +56,69 @@ export interface Expense {
   category: string;
   description: string;
   date: string; // YYYY-MM-DD
+  recurringId?: string; // set when auto-generated from a recurring rule
+}
+
+// ── Budgets ───────────────────────────────────────────────────────────────────
+
+export interface Budget {
+  id: string;
+  category: string;
+  monthlyLimit: number;
+}
+
+// ── Recurring expenses ────────────────────────────────────────────────────────
+
+export type RecurringFrequency =
+  | "daily"
+  | "weekly"
+  | "biweekly"
+  | "monthly"
+  | "yearly";
+
+export const RECURRING_FREQUENCIES: { value: RecurringFrequency; label: string }[] = [
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "biweekly", label: "Bi-weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "yearly", label: "Yearly" },
+];
+
+export interface RecurringExpense {
+  id: string;
+  description: string;
+  category: string;
+  amount: number;
+  frequency: RecurringFrequency;
+  startDate: string;
+  endDate?: string;
+  lastGenerated?: string; // date of last auto-generated entry
+}
+
+// ── Income sources ────────────────────────────────────────────────────────────
+
+export type IncomeFrequency =
+  | "weekly"
+  | "biweekly"
+  | "monthly"
+  | "yearly"
+  | "one-time";
+
+export const INCOME_FREQUENCIES: { value: IncomeFrequency; label: string }[] = [
+  { value: "weekly", label: "Weekly" },
+  { value: "biweekly", label: "Bi-weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "yearly", label: "Yearly" },
+  { value: "one-time", label: "One-time" },
+];
+
+export interface IncomeSource {
+  id: string;
+  name: string;
+  amount: number;
+  frequency: IncomeFrequency;
+  startDate: string;
+  endDate?: string;
 }
 
 export type SortField = "date" | "amount" | "category" | "description";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import {
   Modal,
   ModalContent,
@@ -12,24 +12,44 @@ import {
   Select,
   SelectItem,
 } from "@nextui-org/react";
-import { CategoryDef } from "@/lib/types";
+import { Expense, CategoryDef } from "@/lib/types";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (expense: { amount: number; category: string; description: string; date: string }) => void;
+  onAdd: (expense: Omit<Expense, "id">) => void;
+  onUpdate?: (id: string, expense: Omit<Expense, "id">) => void;
+  editingExpense?: Expense | null;
   categories: CategoryDef[];
 }
 
-export function AddExpenseModal({ isOpen, onClose, onAdd, categories }: Props) {
+export function AddExpenseModal({
+  isOpen,
+  onClose,
+  onAdd,
+  onUpdate,
+  editingExpense,
+  categories,
+}: Props) {
   const today = new Date().toISOString().split("T")[0];
-  const defaultCategory = categories[0]?.name ?? "Other";
+  const isEditing = !!editingExpense;
 
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState(defaultCategory);
+  const [category, setCategory] = useState(categories[0]?.name ?? "Other");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(today);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Populate fields when switching into edit mode
+  useEffect(() => {
+    if (editingExpense) {
+      setAmount(String(editingExpense.amount));
+      setCategory(editingExpense.category);
+      setDescription(editingExpense.description);
+      setDate(editingExpense.date);
+      setErrors({});
+    }
+  }, [editingExpense]);
 
   function validate() {
     const e: Record<string, string> = {};
@@ -43,16 +63,23 @@ export function AddExpenseModal({ isOpen, onClose, onAdd, categories }: Props) {
   function handleSubmit(ev: FormEvent) {
     ev.preventDefault();
     const e = validate();
-    if (Object.keys(e).length) {
-      setErrors(e);
-      return;
-    }
-    onAdd({
+    if (Object.keys(e).length) { setErrors(e); return; }
+
+    const data: Omit<Expense, "id"> = {
       amount: parseFloat(Number(amount).toFixed(2)),
       category,
       description: description.trim(),
       date,
-    });
+      ...(editingExpense?.recurringId
+        ? { recurringId: editingExpense.recurringId }
+        : {}),
+    };
+
+    if (isEditing && editingExpense && onUpdate) {
+      onUpdate(editingExpense.id, data);
+    } else {
+      onAdd(data);
+    }
     handleClose();
   }
 
@@ -69,7 +96,7 @@ export function AddExpenseModal({ isOpen, onClose, onAdd, categories }: Props) {
     <Modal isOpen={isOpen} onClose={handleClose} placement="center">
       <ModalContent>
         <form onSubmit={handleSubmit}>
-          <ModalHeader>Add Expense</ModalHeader>
+          <ModalHeader>{isEditing ? "Edit Expense" : "Add Expense"}</ModalHeader>
           <ModalBody className="gap-4">
             <Input
               label="Amount"
@@ -81,16 +108,12 @@ export function AddExpenseModal({ isOpen, onClose, onAdd, categories }: Props) {
               onValueChange={setAmount}
               isInvalid={!!errors.amount}
               errorMessage={errors.amount}
-              startContent={
-                <span className="text-default-400 text-sm">$</span>
-              }
+              startContent={<span className="text-default-400 text-sm">$</span>}
             />
             <Select
               label="Category"
               selectedKeys={[category]}
-              onSelectionChange={(keys) =>
-                setCategory([...keys][0] as string)
-              }
+              onSelectionChange={(keys) => setCategory([...keys][0] as string)}
             >
               {categories.map((c) => (
                 <SelectItem key={c.name}>{c.name}</SelectItem>
@@ -114,11 +137,9 @@ export function AddExpenseModal({ isOpen, onClose, onAdd, categories }: Props) {
             />
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={handleClose}>
-              Cancel
-            </Button>
+            <Button variant="flat" onPress={handleClose}>Cancel</Button>
             <Button color="primary" type="submit">
-              Add
+              {isEditing ? "Save Changes" : "Add"}
             </Button>
           </ModalFooter>
         </form>

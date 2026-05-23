@@ -1,12 +1,14 @@
 "use client";
 
 import { Chip, Button } from "@nextui-org/react";
+import { Pencil } from "lucide-react";
 import { Expense, CategoryDef } from "@/lib/types";
 
 interface Props {
   expenses: Expense[];
   categories: CategoryDef[];
   onDelete: (id: string) => void;
+  onEdit: (expense: Expense) => void;
 }
 
 function fmtDate(iso: string) {
@@ -17,7 +19,7 @@ function fmtDate(iso: string) {
   );
 }
 
-export function CategoryGroupView({ expenses, categories, onDelete }: Props) {
+export function CategoryGroupView({ expenses, categories, onDelete, onEdit }: Props) {
   if (expenses.length === 0)
     return (
       <p className="text-center text-default-400 py-8">
@@ -97,16 +99,14 @@ export function CategoryGroupView({ expenses, categories, onDelete }: Props) {
                     <span className="font-medium text-sm">
                       ${e.amount.toFixed(2)}
                     </span>
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="light"
-                      color="danger"
-                      className="ml-2 shrink-0"
-                      onPress={() => onDelete(e.id)}
-                    >
-                      ✕
-                    </Button>
+                    <div className="flex gap-1 ml-2 shrink-0">
+                      <Button isIconOnly size="sm" variant="light" onPress={() => onEdit(e)}>
+                        <Pencil size={12} />
+                      </Button>
+                      <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => onDelete(e.id)}>
+                        ✕
+                      </Button>
+                    </div>
                   </div>
                 ))}
             </div>

@@ -21,10 +21,17 @@ export function useCategories() {
     if (loaded) localStorage.setItem(STORAGE_KEY, JSON.stringify(custom));
   }, [custom, loaded]);
 
-  const categories: CategoryDef[] = [...BUILTIN_CATEGORIES, ...custom];
+  const categories: CategoryDef[] = [...BUILTIN_CATEGORIES, ...custom]
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   function addCategory(name: string, color: ChipColor) {
     setCustom((prev) => [...prev, { name, color, isBuiltin: false }]);
+  }
+
+  function updateCategory(oldName: string, newName: string, color: ChipColor) {
+    setCustom((prev) =>
+      prev.map((c) => c.name === oldName ? { ...c, name: newName, color } : c)
+    );
   }
 
   function deleteCategory(name: string) {
@@ -35,5 +42,5 @@ export function useCategories() {
     return categories.find((c) => c.name === name)?.color ?? "default";
   }
 
-  return { categories, addCategory, deleteCategory, getCategoryColor };
+  return { categories, addCategory, updateCategory, deleteCategory, getCategoryColor };
 }

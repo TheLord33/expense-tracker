@@ -11,12 +11,14 @@ import {
   Button,
   Spinner,
 } from "@nextui-org/react";
+import { Pencil } from "lucide-react";
 import { Expense, SortField, SortDir, CategoryDef } from "@/lib/types";
 
 interface Props {
   expenses: Expense[];
   categories: CategoryDef[];
   onDelete: (id: string) => void;
+  onEdit: (expense: Expense) => void;
   loaded: boolean;
   sortField: SortField;
   sortDir: SortDir;
@@ -64,6 +66,7 @@ export function ListView({
   expenses,
   categories,
   onDelete,
+  onEdit,
   loaded,
   sortField,
   sortDir,
@@ -113,16 +116,22 @@ export function ListView({
               ${e.amount.toFixed(2)}
             </TableCell>
             <TableCell>
-              <Button
-                isIconOnly
-                size="sm"
-                variant="light"
-                color="danger"
-                aria-label="Delete"
-                onPress={() => onDelete(e.id)}
-              >
-                ✕
-              </Button>
+              <div className="flex gap-1">
+                <Button
+                  isIconOnly size="sm" variant="light"
+                  aria-label="Edit"
+                  onPress={() => onEdit(e)}
+                >
+                  <Pencil size={13} />
+                </Button>
+                <Button
+                  isIconOnly size="sm" variant="light" color="danger"
+                  aria-label="Delete"
+                  onPress={() => onDelete(e.id)}
+                >
+                  ✕
+                </Button>
+              </div>
             </TableCell>
           </TableRow>
         ))}
