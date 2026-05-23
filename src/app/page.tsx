@@ -117,7 +117,7 @@ export default function HomePage() {
         onAddExpense={addExpenseModal.onOpen}
         onAddCategory={addCategoryModal.onOpen}
         importExportSlot={
-          <ImportExportMenu expenses={expenses} onImport={importExpenses} />
+          <ImportExportMenu expenses={expenses} categories={categories} onImport={importExpenses} />
         }
       />
 

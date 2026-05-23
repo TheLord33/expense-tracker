@@ -2,72 +2,36 @@
 
 import { useRef, useState } from "react";
 import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  DropdownSection,
-  Button,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
+  Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection,
+  Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
 } from "@nextui-org/react";
-import { Expense } from "@/lib/types";
-import {
-  toCSV,
-  toJSON,
-  toText,
-  download,
-  fromCSV,
-  fromJSON,
-  fromText,
-  ImportResult,
-} from "@/lib/importExport";
+import { Expense, CategoryDef } from "@/lib/types";
+import { fromCSV, fromJSON, fromText, ImportResult } from "@/lib/importExport";
+import { ExportModal } from "@/components/ExportModal";
 
 interface Props {
   expenses: Expense[];
+  categories: CategoryDef[];
   onImport: (incoming: Omit<Expense, "id">[], replace: boolean) => void;
 }
 
-type Format = "csv" | "json" | "txt";
+type ImportFormat = "csv" | "json" | "txt";
 
-const MIME: Record<Format, string> = {
-  csv: "text/csv",
-  json: "application/json",
-  txt: "text/plain",
-};
-
-const ACCEPT: Record<Format, string> = {
+const ACCEPT: Record<ImportFormat, string> = {
   csv: ".csv,text/csv",
   json: ".json,application/json",
   txt: ".txt,text/plain",
 };
 
-function stamp() {
-  return new Date().toISOString().split("T")[0];
-}
-
-export function ImportExportMenu({ expenses, onImport }: Props) {
+export function ImportExportMenu({ expenses, categories, onImport }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [pendingFormat, setPendingFormat] = useState<Format | null>(null);
-  const [result, setResult] = useState<ImportResult | null>(null);
-
-  // ── Export ────────────────────────────────────────────────────────────
-
-  function handleExport(fmt: Format) {
-    const name = `expenses-${stamp()}.${fmt}`;
-    const content =
-      fmt === "csv" ? toCSV(expenses) :
-      fmt === "json" ? toJSON(expenses) :
-      toText(expenses);
-    download(content, name, MIME[fmt]);
-  }
+  const [pendingFormat, setPendingFormat] = useState<ImportFormat | null>(null);
+  const [importResult, setImportResult]   = useState<ImportResult | null>(null);
+  const [showExport, setShowExport]       = useState(false);
 
   // ── Import ────────────────────────────────────────────────────────────
 
-  function openFilePicker(fmt: Format) {
+  function openFilePicker(fmt: ImportFormat) {
     setPendingFormat(fmt);
     if (fileInputRef.current) {
       fileInputRef.current.accept = ACCEPT[fmt];
@@ -79,31 +43,28 @@ export function ImportExportMenu({ expenses, onImport }: Props) {
   function handleFileChange(ev: React.ChangeEvent<HTMLInputElement>) {
     const file = ev.target.files?.[0];
     if (!file || !pendingFormat) return;
-
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string;
       const parsed =
-        pendingFormat === "csv" ? fromCSV(content) :
+        pendingFormat === "csv"  ? fromCSV(content) :
         pendingFormat === "json" ? fromJSON(content) :
         fromText(content);
-      setResult(parsed);
+      setImportResult(parsed);
     };
     reader.readAsText(file);
   }
 
   function handleConfirm(replace: boolean) {
-    if (result) onImport(result.expenses, replace);
-    setResult(null);
+    if (importResult) onImport(importResult.expenses, replace);
+    setImportResult(null);
     setPendingFormat(null);
   }
 
-  function handleCancel() {
-    setResult(null);
+  function handleImportCancel() {
+    setImportResult(null);
     setPendingFormat(null);
   }
-
-  const hasExpenses = expenses.length > 0;
 
   return (
     <>
@@ -117,92 +78,78 @@ export function ImportExportMenu({ expenses, onImport }: Props) {
             Import / Export
           </Button>
         </DropdownTrigger>
-        <DropdownMenu aria-label="Import and export options" disabledKeys={hasExpenses ? [] : ["export-csv", "export-json", "export-txt"]}>
+        <DropdownMenu
+          aria-label="Import and export options"
+          disabledKeys={expenses.length === 0 ? ["export"] : []}
+        >
           <DropdownSection title="Export" showDivider>
-            <DropdownItem key="export-csv" onPress={() => handleExport("csv")}>
-              CSV (.csv)
-            </DropdownItem>
-            <DropdownItem key="export-json" onPress={() => handleExport("json")}>
-              JSON (.json)
-            </DropdownItem>
-            <DropdownItem key="export-txt" onPress={() => handleExport("txt")}>
-              Text (.txt)
+            <DropdownItem key="export" onPress={() => setShowExport(true)}>
+              Export expenses…
             </DropdownItem>
           </DropdownSection>
           <DropdownSection title="Import">
-            <DropdownItem key="import-csv" onPress={() => openFilePicker("csv")}>
-              CSV (.csv)
-            </DropdownItem>
-            <DropdownItem key="import-json" onPress={() => openFilePicker("json")}>
-              JSON (.json)
-            </DropdownItem>
-            <DropdownItem key="import-txt" onPress={() => openFilePicker("txt")}>
-              Text (.txt)
-            </DropdownItem>
+            <DropdownItem key="import-csv"  onPress={() => openFilePicker("csv")}>CSV (.csv)</DropdownItem>
+            <DropdownItem key="import-json" onPress={() => openFilePicker("json")}>JSON (.json)</DropdownItem>
+            <DropdownItem key="import-txt"  onPress={() => openFilePicker("txt")}>Text (.txt)</DropdownItem>
           </DropdownSection>
         </DropdownMenu>
       </Dropdown>
 
       {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        className="hidden"
-        onChange={handleFileChange}
+      <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
+
+      {/* Export modal */}
+      <ExportModal
+        isOpen={showExport}
+        onClose={() => setShowExport(false)}
+        expenses={expenses}
+        categories={categories}
       />
 
       {/* Import confirmation modal */}
-      {result && (
-        <Modal isOpen onClose={handleCancel} placement="center">
+      {importResult && (
+        <Modal isOpen onClose={handleImportCancel} placement="center">
           <ModalContent>
-            <ModalHeader>
-              Import{" "}
-              {pendingFormat?.toUpperCase()} Preview
-            </ModalHeader>
+            <ModalHeader>Import {pendingFormat?.toUpperCase()} Preview</ModalHeader>
             <ModalBody className="gap-3">
-              {result.expenses.length > 0 && (
+              {importResult.expenses.length > 0 && (
                 <div className="bg-success-50 border border-success-200 rounded-lg px-4 py-3 text-sm text-success-700">
-                  <strong>{result.expenses.length}</strong> valid expense
-                  {result.expenses.length !== 1 ? "s" : ""} ready to import.
+                  <strong>{importResult.expenses.length}</strong> valid expense
+                  {importResult.expenses.length !== 1 ? "s" : ""} ready to import.
                 </div>
               )}
-
-              {result.errors.length > 0 && (
+              {importResult.errors.length > 0 && (
                 <div className="bg-warning-50 border border-warning-200 rounded-lg px-4 py-3 text-sm text-warning-700 space-y-1">
                   <p className="font-semibold">
-                    {result.expenses.length === 0 ? "Could not parse file:" : `${result.errors.length} row${result.errors.length !== 1 ? "s" : ""} skipped:`}
+                    {importResult.expenses.length === 0
+                      ? "Could not parse file:"
+                      : `${importResult.errors.length} row${importResult.errors.length !== 1 ? "s" : ""} skipped:`}
                   </p>
                   <ul className="list-disc list-inside space-y-0.5 max-h-32 overflow-y-auto">
-                    {result.errors.map((err, i) => (
+                    {importResult.errors.map((err, i) => (
                       <li key={i} className="font-mono text-xs whitespace-pre-wrap">{err}</li>
                     ))}
                   </ul>
                 </div>
               )}
-
-              {result.expenses.length > 0 && expenses.length > 0 && (
+              {importResult.expenses.length > 0 && expenses.length > 0 && (
                 <p className="text-sm text-default-500">
                   You currently have <strong>{expenses.length}</strong> expense
-                  {expenses.length !== 1 ? "s" : ""}. Choose how to handle the
-                  import:
+                  {expenses.length !== 1 ? "s" : ""}. Choose how to handle the import:
                 </p>
               )}
-
-              {/* Preview table — first 5 rows */}
-              {result.expenses.length > 0 && (
+              {importResult.expenses.length > 0 && (
                 <div className="border border-default-200 rounded-lg overflow-hidden">
                   <table className="w-full text-xs">
                     <thead className="bg-default-50">
                       <tr>
                         {["Date", "Description", "Category", "Amount"].map((h) => (
-                          <th key={h} className="px-3 py-2 text-left font-semibold text-default-500">
-                            {h}
-                          </th>
+                          <th key={h} className="px-3 py-2 text-left font-semibold text-default-500">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {result.expenses.slice(0, 5).map((e, i) => (
+                      {importResult.expenses.slice(0, 5).map((e, i) => (
                         <tr key={i} className="border-t border-default-100">
                           <td className="px-3 py-1.5 text-default-500">{e.date}</td>
                           <td className="px-3 py-1.5 max-w-32 truncate">{e.description}</td>
@@ -210,10 +157,10 @@ export function ImportExportMenu({ expenses, onImport }: Props) {
                           <td className="px-3 py-1.5 font-medium">${e.amount.toFixed(2)}</td>
                         </tr>
                       ))}
-                      {result.expenses.length > 5 && (
+                      {importResult.expenses.length > 5 && (
                         <tr className="border-t border-default-100">
                           <td colSpan={4} className="px-3 py-1.5 text-default-400 text-center">
-                            … and {result.expenses.length - 5} more
+                            … and {importResult.expenses.length - 5} more
                           </td>
                         </tr>
                       )}
@@ -223,33 +170,20 @@ export function ImportExportMenu({ expenses, onImport }: Props) {
               )}
             </ModalBody>
             <ModalFooter className="flex-col gap-2">
-              {result.expenses.length > 0 ? (
+              {importResult.expenses.length > 0 ? (
                 <>
-                  <Button
-                    color="primary"
-                    fullWidth
-                    onPress={() => handleConfirm(false)}
-                  >
+                  <Button color="primary" fullWidth onPress={() => handleConfirm(false)}>
                     Add to existing expenses
                   </Button>
                   {expenses.length > 0 && (
-                    <Button
-                      color="danger"
-                      variant="flat"
-                      fullWidth
-                      onPress={() => handleConfirm(true)}
-                    >
+                    <Button color="danger" variant="flat" fullWidth onPress={() => handleConfirm(true)}>
                       Replace all ({expenses.length} will be deleted)
                     </Button>
                   )}
-                  <Button variant="light" fullWidth onPress={handleCancel}>
-                    Cancel
-                  </Button>
+                  <Button variant="light" fullWidth onPress={handleImportCancel}>Cancel</Button>
                 </>
               ) : (
-                <Button fullWidth onPress={handleCancel}>
-                  Close
-                </Button>
+                <Button fullWidth onPress={handleImportCancel}>Close</Button>
               )}
             </ModalFooter>
           </ModalContent>
