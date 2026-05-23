@@ -32,11 +32,12 @@ import { RecurringTab } from "@/components/RecurringTab";
 import { IncomeTab } from "@/components/IncomeTab";
 
 import type { Expense, ChipColor } from "@/lib/types";
-import { useLanguage, useToast } from "@/app/providers";
+import { useLanguage, useToast, useCurrency } from "@/app/providers";
 
 export default function HomePage() {
   const { t } = useLanguage();
   const { showToast } = useToast();
+  const { fmt } = useCurrency();
 
   // ── Data hooks ──────────────────────────────────────────────────────────────
   const {
@@ -216,7 +217,7 @@ export default function HomePage() {
                     )}
                   </h2>
                   <span className="font-bold text-default-900">
-                    ${filtered.reduce((s, e) => s + e.amount, 0).toFixed(2)}
+                    {fmt(filtered.reduce((s, e) => s + e.amount, 0))}
                   </span>
                 </CardHeader>
                 <Divider className="mt-4" />

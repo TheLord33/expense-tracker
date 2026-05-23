@@ -3,7 +3,7 @@
 import { Card, CardBody } from "@nextui-org/react";
 import { DollarSign, CalendarDays, Receipt, Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Expense, CategoryDef } from "@/lib/types";
-import { useLanguage } from "@/app/providers";
+import { useLanguage, useCurrency } from "@/app/providers";
 
 interface Props {
   expenses: Expense[];
@@ -21,6 +21,7 @@ const CARD_STYLES = [
 
 export function SummaryCards({ expenses, allExpenses, categories, monthlyIncome }: Props) {
   const { t, locale } = useLanguage();
+  const { fmt } = useCurrency();
   const total = expenses.reduce((s, e) => s + e.amount, 0);
 
   const thisMonth = new Date().toISOString().slice(0, 7);
@@ -44,15 +45,15 @@ export function SummaryCards({ expenses, allExpenses, categories, monthlyIncome 
   const stats = [
     {
       label: isFiltered ? t("summary.filteredTotal") : t("summary.totalSpent"),
-      value: `$${total.toFixed(2)}`,
+      value: fmt(total),
       sub: isFiltered
         ? t("summary.filteredSub", { count: expenses.length, total: allExpenses.length })
         : t("summary.allTime"),
     },
     {
       label: t("summary.thisMonth"),
-      value: `$${monthlyTotal.toFixed(2)}`,
-      sub: `${new Date().toLocaleString(locale, { month: "long", year: "numeric" })} · ${t("summary.dailyAvg")} $${dailyAvg.toFixed(2)}`,
+      value: fmt(monthlyTotal),
+      sub: `${new Date().toLocaleString(locale, { month: "long", year: "numeric" })} · ${t("summary.dailyAvg")} ${fmt(dailyAvg)}`,
     },
     {
       label: t("summary.transactions"),
@@ -63,7 +64,7 @@ export function SummaryCards({ expenses, allExpenses, categories, monthlyIncome 
       label: t("summary.topCategory"),
       value: topCat.name || "—",
       sub: topCat.name
-        ? t("summary.topCategorySub", { amount: `$${topCat.amt.toFixed(2)}` })
+        ? t("summary.topCategorySub", { amount: fmt(topCat.amt) })
         : t("summary.noData"),
     },
   ];
@@ -73,9 +74,9 @@ export function SummaryCards({ expenses, allExpenses, categories, monthlyIncome 
   const NetIcon = net > 0 ? TrendingUp : net < 0 ? TrendingDown : Minus;
 
   const incomeStrip = monthlyIncome > 0 ? [
-    { label: t("summary.monthlyIncome"),   value: `$${monthlyIncome.toFixed(2)}`,                  Icon: TrendingUp,   color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/30" },
-    { label: t("summary.monthlyExpenses"), value: `$${monthlyTotal.toFixed(2)}`,                   Icon: TrendingDown, color: "text-red-500 dark:text-red-400",          bg: "bg-red-50 dark:bg-red-900/30"          },
-    { label: t("summary.netIncome"),       value: `${net >= 0 ? "+" : ""}$${net.toFixed(2)}`,      Icon: NetIcon,      color: net >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400", bg: net >= 0 ? "bg-emerald-50 dark:bg-emerald-900/30" : "bg-red-50 dark:bg-red-900/30",
+    { label: t("summary.monthlyIncome"),   value: fmt(monthlyIncome),                             Icon: TrendingUp,   color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/30" },
+    { label: t("summary.monthlyExpenses"), value: fmt(monthlyTotal),                              Icon: TrendingDown, color: "text-red-500 dark:text-red-400",          bg: "bg-red-50 dark:bg-red-900/30"          },
+    { label: t("summary.netIncome"),       value: `${net >= 0 ? "+" : ""}${fmt(net)}`,           Icon: NetIcon,      color: net >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400", bg: net >= 0 ? "bg-emerald-50 dark:bg-emerald-900/30" : "bg-red-50 dark:bg-red-900/30",
       sub: savingsRate !== null ? `${t("summary.savingsRate")}: ${savingsRate.toFixed(0)}%` : undefined },
   ] : null;
 

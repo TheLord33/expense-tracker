@@ -8,7 +8,7 @@ import {
 } from "@nextui-org/react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { Budget, CategoryDef, Expense } from "@/lib/types";
-import { useLanguage } from "@/app/providers";
+import { useLanguage, useCurrency } from "@/app/providers";
 
 interface Props {
   budgets: Budget[];
@@ -28,6 +28,7 @@ function monthSpend(expenses: Expense[], category: string): number {
 
 export function BudgetsTab({ budgets, categories, expenses, onAdd, onUpdate, onDelete }: Props) {
   const { t, locale } = useLanguage();
+  const { fmt } = useCurrency();
   const modal = useDisclosure();
   const [editing, setEditing] = useState<Budget | null>(null);
   const [selectedCat, setSelectedCat] = useState("");
@@ -123,15 +124,15 @@ export function BudgetsTab({ budgets, categories, expenses, onAdd, onUpdate, onD
 
                   <div className="flex justify-between text-sm">
                     <span className={over ? "text-danger font-semibold" : "text-default-700"}>
-                      {t("budgets.spent", { amount: `$${spent.toFixed(2)}` })}
+                      {t("budgets.spent", { amount: fmt(spent) })}
                     </span>
-                    <span className="text-default-400">{t("budgets.of", { limit: `$${budget.monthlyLimit.toFixed(2)}` })}</span>
+                    <span className="text-default-400">{t("budgets.of", { limit: fmt(budget.monthlyLimit) })}</span>
                   </div>
 
                   <p className={`text-xs font-medium ${over ? "text-danger" : warn ? "text-warning" : "text-success"}`}>
                     {over
-                      ? t("budgets.over", { amount: `$${Math.abs(remaining).toFixed(2)}` })
-                      : t("budgets.remaining", { amount: `$${remaining.toFixed(2)}` })}
+                      ? t("budgets.over", { amount: fmt(Math.abs(remaining)) })
+                      : t("budgets.remaining", { amount: fmt(remaining) })}
                   </p>
                 </CardBody>
               </Card>

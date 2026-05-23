@@ -4,9 +4,9 @@ import {
   Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
 } from "@nextui-org/react";
 import { Wallet, Plus, Tag, Sun, Moon, Globe } from "lucide-react";
-import { useTheme } from "@/app/providers";
-import { useLanguage } from "@/app/providers";
+import { useTheme, useLanguage, useCurrency } from "@/app/providers";
 import { LANGUAGES } from "@/lib/i18n";
+import { CURRENCIES } from "@/lib/currencies";
 
 interface Props {
   onAddExpense: () => void;
@@ -17,6 +17,7 @@ interface Props {
 export function AppHeader({ onAddExpense, onAddCategory, importExportSlot }: Props) {
   const { theme, toggleTheme } = useTheme();
   const { t, language, setLanguage } = useLanguage();
+  const { currency, setCurrency } = useCurrency();
 
   return (
     <div className="bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600 shadow-lg">
@@ -38,6 +39,40 @@ export function AppHeader({ onAddExpense, onAddCategory, importExportSlot }: Pro
 
         {/* Actions */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Currency selector */}
+          <Dropdown>
+            <DropdownTrigger>
+              <Button
+                size="sm"
+                variant="light"
+                className="text-white hover:bg-white/10 font-semibold min-w-0 px-2"
+                aria-label="Select currency"
+              >
+                {currency.symbol}
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu
+              aria-label="Currency selection"
+              selectedKeys={[currency.code]}
+              selectionMode="single"
+              onSelectionChange={(keys) => {
+                const found = CURRENCIES.find((c) => c.code === [...keys][0]);
+                if (found) setCurrency(found);
+              }}
+              className="max-h-72 overflow-y-auto"
+            >
+              {CURRENCIES.map((c) => (
+                <DropdownItem
+                  key={c.code}
+                  startContent={<span className="font-semibold w-8 text-right inline-block text-default-600">{c.symbol}</span>}
+                  description={c.code}
+                >
+                  {c.label}
+                </DropdownItem>
+              ))}
+            </DropdownMenu>
+          </Dropdown>
+
           {/* Language selector */}
           <Dropdown>
             <DropdownTrigger>

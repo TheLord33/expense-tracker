@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { NextUIProvider } from "@nextui-org/react";
 import { type Language, LANGUAGES, translate } from "@/lib/i18n";
+import { type Currency, CURRENCIES, DEFAULT_CURRENCY, formatAmount, formatAmountCompact } from "@/lib/currencies";
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
 
@@ -33,6 +34,22 @@ const LanguageContext = createContext<{
 
 export function useLanguage() { return useContext(LanguageContext); }
 
+// ── Currency ──────────────────────────────────────────────────────────────────
+
+const CurrencyContext = createContext<{
+  currency: Currency;
+  setCurrency: (c: Currency) => void;
+  fmt: (amount: number) => string;
+  fmtCompact: (amount: number) => string;
+}>({
+  currency: DEFAULT_CURRENCY,
+  setCurrency: () => {},
+  fmt: (n) => `$${n.toFixed(2)}`,
+  fmtCompact: (n) => `$${n.toFixed(2)}`,
+});
+
+export function useCurrency() { return useContext(CurrencyContext); }
+
 // ── Toast ─────────────────────────────────────────────────────────────────────
 
 interface Toast {
@@ -52,6 +69,7 @@ export function useToast() { return useContext(ToastContext); }
 export function Providers({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("light");
   const [language, setLanguageState] = useState<Language>("en");
+  const [currency, setCurrencyState] = useState<Currency>(DEFAULT_CURRENCY);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const timerRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
@@ -72,6 +90,23 @@ export function Providers({ children }: { children: React.ReactNode }) {
   function toggleTheme() {
     setTheme((t) => (t === "dark" ? "light" : "dark"));
   }
+
+  // Currency init
+  useEffect(() => {
+    const stored = localStorage.getItem("expense-tracker-currency");
+    if (stored) {
+      const found = CURRENCIES.find((c) => c.code === stored);
+      if (found) setCurrencyState(found);
+    }
+  }, []);
+
+  function setCurrency(c: Currency) {
+    setCurrencyState(c);
+    localStorage.setItem("expense-tracker-currency", c.code);
+  }
+
+  const fmt = useCallback((amount: number) => formatAmount(amount, currency), [currency]);
+  const fmtCompact = useCallback((amount: number) => formatAmountCompact(amount, currency), [currency]);
 
   // Language init
   useEffect(() => {
@@ -107,6 +142,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       <LanguageContext.Provider value={{ language, setLanguage, t, locale }}>
+        <CurrencyContext.Provider value={{ currency, setCurrency, fmt, fmtCompact }}>
         <ToastContext.Provider value={{ showToast }}>
           <NextUIProvider>{children}</NextUIProvider>
           {/* Toast stack */}
@@ -138,6 +174,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             ))}
           </div>
         </ToastContext.Provider>
+        </CurrencyContext.Provider>
       </LanguageContext.Provider>
     </ThemeContext.Provider>
   );

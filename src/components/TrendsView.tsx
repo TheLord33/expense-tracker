@@ -2,19 +2,16 @@
 
 import { Card, CardBody, Chip } from "@nextui-org/react";
 import { Expense, CategoryDef, CHIP_COLOR_HEX } from "@/lib/types";
-import { useLanguage } from "@/app/providers";
+import { useLanguage, useCurrency } from "@/app/providers";
 
 interface Props {
   expenses: Expense[];
   categories: CategoryDef[];
 }
 
-function fmtAmount(n: number) {
-  return n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : `$${n.toFixed(0)}`;
-}
-
 export function TrendsView({ expenses, categories }: Props) {
   const { t, locale } = useLanguage();
+  const { fmt, fmtCompact } = useCurrency();
 
   if (expenses.length === 0)
     return <p className="text-center text-default-400 py-8">{t("trends.noExpenses")}</p>;
@@ -49,8 +46,8 @@ export function TrendsView({ expenses, categories }: Props) {
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: t("trends.avgPerExpense"),  value: `$${avgPerExpense.toFixed(2)}` },
-          { label: t("trends.largestExpense"), value: `$${maxExpense.toFixed(2)}` },
+          { label: t("trends.avgPerExpense"),  value: fmt(avgPerExpense) },
+          { label: t("trends.largestExpense"), value: fmt(maxExpense) },
           { label: t("trends.topCategory"),    value: topCat?.cat.name ?? "—" },
         ].map((s) => (
           <Card key={s.label} shadow="none" className="border border-default-200">
@@ -81,7 +78,7 @@ export function TrendsView({ expenses, categories }: Props) {
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold">${amount.toFixed(2)}</span>
+                      <span className="font-semibold">{fmt(amount)}</span>
                       <span className="text-default-400 text-xs w-10 text-right">{pct.toFixed(1)}%</span>
                     </div>
                   </div>
@@ -105,7 +102,7 @@ export function TrendsView({ expenses, categories }: Props) {
               const barH = maxMonthly > 0 ? Math.max((amount / maxMonthly) * BAR_MAX_PX, amount > 0 ? 4 : 0) : 0;
               return (
                 <div key={label} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-xs text-default-500 h-5 flex items-end">{amount > 0 ? fmtAmount(amount) : ""}</span>
+                  <span className="text-xs text-default-500 h-5 flex items-end">{amount > 0 ? fmtCompact(amount) : ""}</span>
                   <div className="w-full bg-primary rounded-t transition-all duration-500" style={{ height: `${barH}px` }} />
                   <span className="text-xs text-default-500">{label}</span>
                 </div>

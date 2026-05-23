@@ -10,7 +10,7 @@ import {
   RecurringExpense, CategoryDef,
   RECURRING_FREQUENCIES, RecurringFrequency,
 } from "@/lib/types";
-import { useLanguage } from "@/app/providers";
+import { useLanguage, useCurrency } from "@/app/providers";
 
 interface Props {
   recurring: RecurringExpense[];
@@ -49,6 +49,7 @@ const BLANK = {
 
 export function RecurringTab({ recurring, categories, onAdd, onUpdate, onDelete }: Props) {
   const { t, locale } = useLanguage();
+  const { fmt } = useCurrency();
   const modal = useDisclosure();
   const [editing, setEditing] = useState<RecurringExpense | null>(null);
   const [form, setForm] = useState(BLANK);
@@ -150,7 +151,7 @@ export function RecurringTab({ recurring, categories, onAdd, onUpdate, onDelete 
                         {expired && <Chip color="default" variant="flat" size="sm">{t("recurring.expired")}</Chip>}
                       </div>
                       <div className="flex gap-4 mt-1 text-sm text-default-500 flex-wrap">
-                        <span className="font-semibold text-default-900">${rule.amount.toFixed(2)}</span>
+                        <span className="font-semibold text-default-900">{fmt(rule.amount)}</span>
                         <span>{freqLabel}</span>
                         <span>{t("recurring.started")} {fmtDate(rule.startDate, locale)}</span>
                         {rule.endDate && <span>{t("recurring.ends")} {fmtDate(rule.endDate, locale)}</span>}

@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { Chip, Button } from "@nextui-org/react";
 import { Pencil, ChevronRight } from "lucide-react";
 import { Expense, CategoryDef } from "@/lib/types";
-import { useLanguage } from "@/app/providers";
+import { useLanguage, useCurrency } from "@/app/providers";
 
 interface Props {
   expenses: Expense[];
@@ -15,6 +15,7 @@ interface Props {
 
 export function CategoryGroupView({ expenses, categories, onDelete, onEdit }: Props) {
   const { t, locale } = useLanguage();
+  const { fmt } = useCurrency();
 
   function fmtDate(iso: string) {
     const [y, m, d] = iso.split("-");
@@ -82,7 +83,7 @@ export function CategoryGroupView({ expenses, categories, onDelete, onEdit }: Pr
                 </div>
               </div>
               <span className="font-semibold text-sm">
-                ${groupTotal.toFixed(2)}
+                {fmt(groupTotal)}
               </span>
               <span className="text-default-400 text-xs w-12 text-right">
                 {pct.toFixed(1)}%
@@ -101,7 +102,7 @@ export function CategoryGroupView({ expenses, categories, onDelete, onEdit }: Pr
                     </span>
                     <span className="flex-1 text-sm">{e.description}</span>
                     <span className="font-medium text-sm">
-                      ${e.amount.toFixed(2)}
+                      {fmt(e.amount)}
                     </span>
                     <div className="flex gap-1 ml-2 shrink-0">
                       <Button isIconOnly size="sm" variant="light" onPress={() => onEdit(e)}>

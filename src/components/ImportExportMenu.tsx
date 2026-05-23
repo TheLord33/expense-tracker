@@ -9,7 +9,7 @@ import { Expense, CategoryDef } from "@/lib/types";
 import { fromCSV, fromJSON, fromText, ImportResult } from "@/lib/importExport";
 import { ExportModal } from "@/components/ExportModal";
 import { CloudExportModal } from "@/components/CloudExportModal";
-import { useLanguage } from "@/app/providers";
+import { useLanguage, useCurrency } from "@/app/providers";
 
 interface Props {
   expenses: Expense[];
@@ -27,6 +27,7 @@ const ACCEPT: Record<ImportFormat, string> = {
 
 export function ImportExportMenu({ expenses, categories, onImport }: Props) {
   const { t } = useLanguage();
+  const { fmt } = useCurrency();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingFormat, setPendingFormat] = useState<ImportFormat | null>(null);
   const [importResult, setImportResult]   = useState<ImportResult | null>(null);
@@ -174,7 +175,7 @@ export function ImportExportMenu({ expenses, categories, onImport }: Props) {
                           <td className="px-3 py-1.5 text-default-500">{e.date}</td>
                           <td className="px-3 py-1.5 max-w-32 truncate">{e.description}</td>
                           <td className="px-3 py-1.5">{e.category}</td>
-                          <td className="px-3 py-1.5 font-medium">${e.amount.toFixed(2)}</td>
+                          <td className="px-3 py-1.5 font-medium">{fmt(e.amount)}</td>
                         </tr>
                       ))}
                       {importResult.expenses.length > 5 && (

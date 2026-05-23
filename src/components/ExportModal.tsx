@@ -8,7 +8,7 @@ import {
 import { Download } from "lucide-react";
 import { Expense, CategoryDef } from "@/lib/types";
 import { toCSV, toJSON, toText, download } from "@/lib/importExport";
-import { useLanguage } from "@/app/providers";
+import { useLanguage, useCurrency } from "@/app/providers";
 
 type Format = "csv" | "json" | "txt" | "pdf";
 
@@ -32,6 +32,7 @@ function today() {
 
 export function ExportModal({ isOpen, onClose, expenses, categories }: Props) {
   const { t } = useLanguage();
+  const { fmt } = useCurrency();
   const [format, setFormat]           = useState<Format>("csv");
   const [filename, setFilename]       = useState(`expenses-${today()}`);
   const [dateFrom, setDateFrom]       = useState("");
@@ -70,8 +71,8 @@ export function ExportModal({ isOpen, onClose, expenses, categories }: Props) {
     if (filtered.length === 0) return;
     setIsExporting(true);
     try {
-      const fmt = FORMATS.find((f) => f.value === format)!;
-      const name = `${filename.trim() || `expenses-${today()}`}.${fmt.ext}`;
+      const formatDef = FORMATS.find((f) => f.value === format)!;
+      const name = `${filename.trim() || `expenses-${today()}`}.${formatDef.ext}`;
 
       if (format === "pdf") {
         const { generatePDF } = await import("@/lib/exportPDF");
@@ -87,7 +88,7 @@ export function ExportModal({ isOpen, onClose, expenses, categories }: Props) {
           format === "csv"  ? toCSV(filtered) :
           format === "json" ? toJSON(filtered) :
           toText(filtered);
-        download(content, name, fmt.mime);
+        download(content, name, formatDef.mime);
       }
       handleClose();
     } finally {
@@ -95,7 +96,7 @@ export function ExportModal({ isOpen, onClose, expenses, categories }: Props) {
     }
   }
 
-  const fmt = FORMATS.find((f) => f.value === format)!;
+  const formatDef = FORMATS.find((f) => f.value === format)!;
   const hasResults = filtered.length > 0;
 
   return (
@@ -130,7 +131,7 @@ export function ExportModal({ isOpen, onClose, expenses, categories }: Props) {
             value={filename}
             onValueChange={setFilename}
             endContent={
-              <span className="text-default-400 text-sm shrink-0">.{fmt.ext}</span>
+              <span className="text-default-400 text-sm shrink-0">.{formatDef.ext}</span>
             }
           />
 
@@ -195,7 +196,7 @@ export function ExportModal({ isOpen, onClose, expenses, categories }: Props) {
                   )}
                 </p>
                 <p className="text-sm font-bold text-primary-700 dark:text-indigo-300">
-                  ${total.toFixed(2)}
+                  {fmt(total)}
                 </p>
               </div>
             ) : (
@@ -228,7 +229,7 @@ export function ExportModal({ isOpen, onClose, expenses, categories }: Props) {
                         <td className="px-3 py-1.5 text-default-500">{e.date}</td>
                         <td className="px-3 py-1.5 max-w-[120px] truncate">{e.description}</td>
                         <td className="px-3 py-1.5">{e.category}</td>
-                        <td className="px-3 py-1.5 font-medium">${e.amount.toFixed(2)}</td>
+                        <td className="px-3 py-1.5 font-medium">{fmt(e.amount)}</td>
                       </tr>
                     ))}
                     {filtered.length > 5 && (

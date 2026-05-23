@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Expense, CategoryDef, ExportDestination } from "@/lib/types";
 import { toCSV, toJSON, toText, download } from "@/lib/importExport";
-import { useLanguage } from "@/app/providers";
+import { useLanguage, useCurrency } from "@/app/providers";
 import { useExportHistory } from "@/lib/useExportHistory";
 import { useBackupSchedule } from "@/lib/useBackupSchedule";
 
@@ -119,6 +119,7 @@ const PROVIDERS: { id: StorageId; label: string; bg: string; letter: string }[] 
 
 export function CloudExportModal({ isOpen, onClose, expenses, categories }: Props) {
   const { t, locale } = useLanguage();
+  const { fmt } = useCurrency();
   const { history, addRecord, clearHistory } = useExportHistory();
   const { schedule, updateSchedule } = useBackupSchedule();
 
@@ -452,7 +453,7 @@ export function CloudExportModal({ isOpen, onClose, expenses, categories }: Prop
                         ? t("cloudExport.exportSelected", { count: filteredExpenses.length })
                         : t("cloudExport.exportSelectedOne", { count: filteredExpenses.length })}
                     </span>
-                    <span className="font-bold text-default-900">${total.toFixed(2)}</span>
+                    <span className="font-bold text-default-900">{fmt(total)}</span>
                   </div>
                 )}
               </div>
@@ -816,7 +817,7 @@ export function CloudExportModal({ isOpen, onClose, expenses, categories }: Prop
                           </div>
                           <p className="text-xs text-default-400 mt-0.5">
                             {t("cloudExport.historyRecords", { count: record.recordCount })}
-                            {" · "}${record.totalAmount.toFixed(2)}
+                            {" · "}{fmt(record.totalAmount)}
                           </p>
                         </div>
                         <div className="text-right shrink-0">

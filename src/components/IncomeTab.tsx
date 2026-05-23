@@ -8,7 +8,7 @@ import {
 import { Plus, Pencil, Trash2, TrendingUp } from "lucide-react";
 import { IncomeSource, IncomeFrequency, INCOME_FREQUENCIES } from "@/lib/types";
 import { toMonthly } from "@/lib/useIncome";
-import { useLanguage } from "@/app/providers";
+import { useLanguage, useCurrency } from "@/app/providers";
 
 interface Props {
   sources: IncomeSource[];
@@ -34,6 +34,7 @@ const BLANK = {
 
 export function IncomeTab({ sources, monthlyIncome, onAdd, onUpdate, onDelete }: Props) {
   const { t, locale } = useLanguage();
+  const { fmt } = useCurrency();
   const modal = useDisclosure();
   const [editing, setEditing] = useState<IncomeSource | null>(null);
   const [form, setForm] = useState(BLANK);
@@ -91,7 +92,7 @@ export function IncomeTab({ sources, monthlyIncome, onAdd, onUpdate, onDelete }:
         <div>
           <h2 className="text-lg font-semibold text-default-800">{t("income.title")}</h2>
           <p className="text-sm text-default-400">
-            {t("income.monthSummary", { month, amount: `$${totalMonthly.toFixed(2)}` })}
+            {t("income.monthSummary", { month, amount: fmt(totalMonthly) })}
           </p>
         </div>
         <Button size="sm" color="primary" startContent={<Plus size={14} />} onPress={openAdd}>
@@ -126,10 +127,10 @@ export function IncomeTab({ sources, monthlyIncome, onAdd, onUpdate, onDelete }:
                         {!active && <span className="text-xs text-default-400">({t("income.inactive")})</span>}
                       </div>
                       <div className="flex gap-4 mt-0.5 text-sm text-default-500 flex-wrap">
-                        <span className="font-semibold text-emerald-600">${source.amount.toFixed(2)}</span>
+                        <span className="font-semibold text-emerald-600">{fmt(source.amount)}</span>
                         <span>{freqLabel}</span>
                         {source.frequency !== "monthly" && source.frequency !== "one-time" && (
-                          <span className="text-default-400">{t("income.approxMonthly", { amount: `$${monthly.toFixed(2)}` })}</span>
+                          <span className="text-default-400">{t("income.approxMonthly", { amount: fmt(monthly) })}</span>
                         )}
                         <span>{t("income.since")} {fmtDate(source.startDate, locale)}</span>
                         {source.endDate && <span>{t("income.until")} {fmtDate(source.endDate, locale)}</span>}
@@ -138,7 +139,7 @@ export function IncomeTab({ sources, monthlyIncome, onAdd, onUpdate, onDelete }:
                     <div className="text-right shrink-0 mr-2">
                       {source.frequency !== "one-time" && (
                         <>
-                          <p className="font-bold text-emerald-600">${monthly.toFixed(2)}</p>
+                          <p className="font-bold text-emerald-600">{fmt(monthly)}</p>
                           <p className="text-xs text-default-400">{t("income.perMonth")}</p>
                         </>
                       )}

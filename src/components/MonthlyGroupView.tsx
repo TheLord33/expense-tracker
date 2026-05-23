@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { Chip, Button } from "@nextui-org/react";
 import { Pencil, ChevronRight } from "lucide-react";
 import { Expense, CategoryDef } from "@/lib/types";
-import { useLanguage } from "@/app/providers";
+import { useLanguage, useCurrency } from "@/app/providers";
 
 interface Props {
   expenses: Expense[];
@@ -15,6 +15,7 @@ interface Props {
 
 export function MonthlyGroupView({ expenses, categories, onDelete, onEdit }: Props) {
   const { t, locale } = useLanguage();
+  const { fmt } = useCurrency();
 
   function fmtDate(iso: string) {
     const [y, m, d] = iso.split("-");
@@ -85,7 +86,7 @@ export function MonthlyGroupView({ expenses, categories, onDelete, onEdit }: Pro
                   : t("expenseList.count", { count: items.length })}
               </span>
               <span className="font-semibold text-sm">
-                ${monthTotal.toFixed(2)}
+                {fmt(monthTotal)}
               </span>
             </summary>
             <div className="border-t border-default-100">
@@ -107,7 +108,7 @@ export function MonthlyGroupView({ expenses, categories, onDelete, onEdit }: Pro
                   </Chip>
                   <span className="flex-1 text-sm">{e.description}</span>
                   <span className="font-medium text-sm">
-                    ${e.amount.toFixed(2)}
+                    {fmt(e.amount)}
                   </span>
                   <div className="flex gap-1 ml-2 shrink-0">
                     <Button isIconOnly size="sm" variant="light" onPress={() => onEdit(e)}>

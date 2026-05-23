@@ -3,7 +3,7 @@
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip, Button, Spinner } from "@nextui-org/react";
 import { Pencil } from "lucide-react";
 import { Expense, SortField, SortDir, CategoryDef } from "@/lib/types";
-import { useLanguage } from "@/app/providers";
+import { useLanguage, useCurrency } from "@/app/providers";
 
 interface Props {
   expenses: Expense[];
@@ -36,6 +36,7 @@ function ColHeader({ field, label, sortField, sortDir, toggleSort, className = "
 
 export function ListView({ expenses, categories, onDelete, onEdit, loaded, sortField, sortDir, toggleSort }: Props) {
   const { t, locale } = useLanguage();
+  const { fmt } = useCurrency();
 
   if (!loaded)
     return (
@@ -80,7 +81,7 @@ export function ListView({ expenses, categories, onDelete, onEdit, loaded, sortF
             <TableCell>
               <Chip color={chipColor(e.category)} variant="flat" size="sm">{e.category}</Chip>
             </TableCell>
-            <TableCell className="text-right font-semibold">${e.amount.toFixed(2)}</TableCell>
+            <TableCell className="text-right font-semibold">{fmt(e.amount)}</TableCell>
             <TableCell>
               <div className="flex gap-1">
                 <Button isIconOnly size="sm" variant="light" aria-label="Edit" onPress={() => onEdit(e)}>
