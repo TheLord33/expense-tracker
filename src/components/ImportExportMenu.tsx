@@ -109,7 +109,13 @@ export function ImportExportMenu({ expenses, onImport }: Props) {
     <>
       <Dropdown>
         <DropdownTrigger>
-          <Button variant="flat">Import / Export</Button>
+          <Button
+            variant="bordered"
+            size="sm"
+            className="border-white/30 text-white hover:bg-white/10"
+          >
+            Import / Export
+          </Button>
         </DropdownTrigger>
         <DropdownMenu aria-label="Import and export options" disabledKeys={hasExpenses ? [] : ["export-csv", "export-json", "export-txt"]}>
           <DropdownSection title="Export" showDivider>

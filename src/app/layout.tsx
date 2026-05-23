@@ -15,7 +15,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className="light">
-      <body className={`${geist.className} min-h-screen bg-gray-50`}>
+      <body className={`${geist.className} min-h-screen bg-slate-50`}>
         <Providers>{children}</Providers>
       </body>
     </html>

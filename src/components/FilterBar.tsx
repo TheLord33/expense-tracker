@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type React from "react";
 import {
   Input,
   Button,
@@ -10,6 +11,16 @@ import {
   DropdownMenu,
   DropdownItem,
 } from "@nextui-org/react";
+import {
+  Search,
+  List,
+  LayoutGrid,
+  CalendarDays,
+  TrendingUp,
+  ArrowUpDown,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 import {
   FilterState,
   DatePreset,
@@ -49,11 +60,11 @@ const SORT_OPTIONS: { value: SortField; label: string }[] = [
   { value: "description", label: "Description" },
 ];
 
-const VIEW_MODES: { value: ViewMode; label: string; icon: string }[] = [
-  { value: "list", label: "List", icon: "☰" },
-  { value: "category", label: "By Category", icon: "⊞" },
-  { value: "monthly", label: "By Month", icon: "▦" },
-  { value: "trends", label: "Trends", icon: "▮" },
+const VIEW_MODES: { value: ViewMode; label: string; Icon: React.ElementType }[] = [
+  { value: "list", label: "List", Icon: List },
+  { value: "category", label: "By Category", Icon: LayoutGrid },
+  { value: "monthly", label: "By Month", Icon: CalendarDays },
+  { value: "trends", label: "Trends", Icon: TrendingUp },
 ];
 
 export function FilterBar({
@@ -89,12 +100,17 @@ export function FilterBar({
           isClearable
           onClear={() => setFilter({ search: "" })}
           size="sm"
+          startContent={<Search size={14} className="text-default-400 shrink-0" />}
         />
 
         <Dropdown>
           <DropdownTrigger>
-            <Button size="sm" variant="flat">
-              Sort: {SORT_OPTIONS.find((s) => s.value === sortField)?.label}{" "}
+            <Button
+              size="sm"
+              variant="flat"
+              startContent={<ArrowUpDown size={14} />}
+            >
+              {SORT_OPTIONS.find((s) => s.value === sortField)?.label}{" "}
               {sortDir === "asc" ? "↑" : "↓"}
             </Button>
           </DropdownTrigger>
@@ -105,9 +121,7 @@ export function FilterBar({
                 onPress={() => toggleSort(opt.value)}
                 endContent={
                   sortField === opt.value
-                    ? sortDir === "asc"
-                      ? "↑"
-                      : "↓"
+                    ? sortDir === "asc" ? "↑" : "↓"
                     : undefined
                 }
               >
@@ -118,19 +132,20 @@ export function FilterBar({
         </Dropdown>
 
         {/* View mode toggle */}
-        <div className="flex rounded-lg border border-default-200 overflow-hidden shrink-0">
-          {VIEW_MODES.map((mode) => (
+        <div className="flex rounded-xl border border-default-200 overflow-hidden shrink-0 shadow-sm">
+          {VIEW_MODES.map(({ value, label, Icon }) => (
             <button
-              key={mode.value}
-              onClick={() => setViewMode(mode.value)}
-              title={mode.label}
-              className={`px-2.5 py-1.5 text-sm transition-colors ${
-                viewMode === mode.value
-                  ? "bg-primary text-white"
-                  : "bg-white text-default-500 hover:bg-default-100"
+              key={value}
+              onClick={() => setViewMode(value)}
+              title={label}
+              className={`px-3 py-2 transition-colors flex items-center gap-1.5 text-xs font-medium ${
+                viewMode === value
+                  ? "bg-indigo-600 text-white"
+                  : "bg-white text-default-500 hover:bg-default-50"
               }`}
             >
-              {mode.icon}
+              <Icon size={13} />
+              <span className="hidden sm:inline">{label}</span>
             </button>
           ))}
         </div>
@@ -139,14 +154,21 @@ export function FilterBar({
           size="sm"
           variant={showFilters ? "solid" : "flat"}
           color={activeFilterCount > 0 ? "primary" : "default"}
+          startContent={<SlidersHorizontal size={14} />}
           onPress={() => setShowFilters((s) => !s)}
         >
           Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
         </Button>
 
         {activeFilterCount > 0 && (
-          <Button size="sm" variant="light" color="danger" onPress={onReset}>
-            Clear all
+          <Button
+            size="sm"
+            variant="light"
+            color="danger"
+            startContent={<X size={14} />}
+            onPress={onReset}
+          >
+            Clear
           </Button>
         )}
       </div>

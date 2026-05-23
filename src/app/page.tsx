@@ -1,16 +1,10 @@
 "use client";
 
-import {
-  useDisclosure,
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Divider,
-} from "@nextui-org/react";
+import { useDisclosure, Card, CardBody, CardHeader, Divider } from "@nextui-org/react";
 import { useExpenses } from "@/lib/useExpenses";
 import { useCategories } from "@/lib/useCategories";
 import { useFilterSort } from "@/lib/useFilterSort";
+import { AppHeader } from "@/components/AppHeader";
 import { AddExpenseModal } from "@/components/AddExpenseModal";
 import { AddCategoryModal } from "@/components/AddCategoryModal";
 import { ImportExportMenu } from "@/components/ImportExportMenu";
@@ -41,28 +35,16 @@ export default function HomePage() {
   const addCategoryModal = useDisclosure();
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-3xl font-bold text-default-900">
-            Expense Tracker
-          </h1>
-          <p className="text-default-500 mt-1">
-            Keep track of where your money goes
-          </p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
+    <div className="min-h-screen">
+      <AppHeader
+        onAddExpense={addExpenseModal.onOpen}
+        onAddCategory={addCategoryModal.onOpen}
+        importExportSlot={
           <ImportExportMenu expenses={expenses} onImport={importExpenses} />
-          <Button variant="flat" onPress={addCategoryModal.onOpen}>
-            + Category
-          </Button>
-          <Button color="primary" size="lg" onPress={addExpenseModal.onOpen}>
-            + Add Expense
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
+      <main className="max-w-4xl mx-auto px-4 py-6 space-y-5">
       {/* Summary cards — show filtered total, but all-time context */}
       <SummaryCards
         expenses={filtered}
@@ -149,5 +131,6 @@ export default function HomePage() {
         existingNames={categories.map((c) => c.name)}
       />
     </main>
+    </div>
   );
 }
