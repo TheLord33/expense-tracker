@@ -31,8 +31,11 @@ import { RecurringTab } from "@/components/RecurringTab";
 import { IncomeTab } from "@/components/IncomeTab";
 
 import type { Expense, ChipColor } from "@/lib/types";
+import { useLanguage } from "@/app/providers";
 
 export default function HomePage() {
+  const { t } = useLanguage();
+
   // ── Data hooks ──────────────────────────────────────────────────────────────
   const {
     expenses, addExpense, deleteExpense, updateExpense,
@@ -143,7 +146,7 @@ export default function HomePage() {
           }}
         >
           {/* ── Expenses ── */}
-          <Tab key="expenses" title={tabTitle("Expenses", Receipt)}>
+          <Tab key="expenses" title={tabTitle(t("tabs.expenses"), Receipt)}>
             <div className="space-y-4 pt-4">
               <Card shadow="sm">
                 <CardBody className="p-4">
@@ -161,10 +164,12 @@ export default function HomePage() {
               <Card shadow="sm">
                 <CardHeader className="px-6 pt-5 pb-0 flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-default-800">
-                    {filtered.length} Expense{filtered.length !== 1 ? "s" : ""}
+                    {filtered.length !== 1
+                      ? t("expenseList.countPlural", { count: filtered.length })
+                      : t("expenseList.count", { count: filtered.length })}
                     {activeFilterCount > 0 && (
                       <span className="text-default-400 font-normal text-sm ml-2">
-                        (of {expenses.length})
+                        {t("expenseList.ofTotal", { total: expenses.length })}
                       </span>
                     )}
                   </h2>
@@ -203,7 +208,7 @@ export default function HomePage() {
           </Tab>
 
           {/* ── Budgets ── */}
-          <Tab key="budgets" title={tabTitle("Budgets", PiggyBank)}>
+          <Tab key="budgets" title={tabTitle(t("tabs.budgets"), PiggyBank)}>
             <div className="pt-4">
               <BudgetsTab
                 budgets={budgets} categories={categories} expenses={expenses}
@@ -213,7 +218,7 @@ export default function HomePage() {
           </Tab>
 
           {/* ── Recurring ── */}
-          <Tab key="recurring" title={tabTitle("Recurring", RefreshCw)}>
+          <Tab key="recurring" title={tabTitle(t("tabs.recurring"), RefreshCw)}>
             <div className="pt-4">
               <RecurringTab
                 recurring={recurring} categories={categories}
@@ -223,7 +228,7 @@ export default function HomePage() {
           </Tab>
 
           {/* ── Income ── */}
-          <Tab key="income" title={tabTitle("Income", TrendingUp)}>
+          <Tab key="income" title={tabTitle(t("tabs.income"), TrendingUp)}>
             <div className="pt-4">
               <IncomeTab
                 sources={sources} monthlyIncome={monthlyIncome}

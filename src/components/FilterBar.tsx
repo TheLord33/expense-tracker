@@ -2,33 +2,10 @@
 
 import { useState } from "react";
 import type React from "react";
-import {
-  Input,
-  Button,
-  Chip,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@nextui-org/react";
-import {
-  Search,
-  List,
-  LayoutGrid,
-  CalendarDays,
-  TrendingUp,
-  ArrowUpDown,
-  SlidersHorizontal,
-  X,
-} from "lucide-react";
-import {
-  FilterState,
-  DatePreset,
-  SortField,
-  SortDir,
-  ViewMode,
-  CategoryDef,
-} from "@/lib/types";
+import { Input, Button, Chip, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@nextui-org/react";
+import { Search, List, LayoutGrid, CalendarDays, TrendingUp, ArrowUpDown, SlidersHorizontal, X } from "lucide-react";
+import { FilterState, DatePreset, SortField, SortDir, ViewMode, CategoryDef } from "@/lib/types";
+import { useLanguage } from "@/app/providers";
 
 interface Props {
   filter: FilterState;
@@ -43,43 +20,36 @@ interface Props {
   onReset: () => void;
 }
 
-const DATE_PRESETS: { value: DatePreset; label: string }[] = [
-  { value: "all", label: "All time" },
-  { value: "week", label: "Last 7 days" },
-  { value: "month", label: "This month" },
-  { value: "last-month", label: "Last month" },
-  { value: "3months", label: "Last 3 months" },
-  { value: "year", label: "This year" },
-  { value: "custom", label: "Custom range" },
-];
-
-const SORT_OPTIONS: { value: SortField; label: string }[] = [
-  { value: "date", label: "Date" },
-  { value: "amount", label: "Amount" },
-  { value: "category", label: "Category" },
-  { value: "description", label: "Description" },
-];
-
-const VIEW_MODES: { value: ViewMode; label: string; Icon: React.ElementType }[] = [
-  { value: "list", label: "List", Icon: List },
-  { value: "category", label: "By Category", Icon: LayoutGrid },
-  { value: "monthly", label: "By Month", Icon: CalendarDays },
-  { value: "trends", label: "Trends", Icon: TrendingUp },
-];
-
 export function FilterBar({
-  filter,
-  setFilter,
-  sortField,
-  sortDir,
-  toggleSort,
-  viewMode,
-  setViewMode,
-  categories,
-  activeFilterCount,
-  onReset,
+  filter, setFilter, sortField, sortDir, toggleSort,
+  viewMode, setViewMode, categories, activeFilterCount, onReset,
 }: Props) {
+  const { t } = useLanguage();
   const [showFilters, setShowFilters] = useState(false);
+
+  const DATE_PRESETS: { value: DatePreset; label: string }[] = [
+    { value: "all",        label: t("filter.presets.all")         },
+    { value: "week",       label: t("filter.presets.week")        },
+    { value: "month",      label: t("filter.presets.month")       },
+    { value: "last-month", label: t("filter.presets.lastMonth")   },
+    { value: "3months",    label: t("filter.presets.threeMonths") },
+    { value: "year",       label: t("filter.presets.year")        },
+    { value: "custom",     label: t("filter.presets.custom")      },
+  ];
+
+  const SORT_OPTIONS: { value: SortField; label: string }[] = [
+    { value: "date",        label: t("filter.sort.date")        },
+    { value: "amount",      label: t("filter.sort.amount")      },
+    { value: "category",    label: t("filter.sort.category")    },
+    { value: "description", label: t("filter.sort.description") },
+  ];
+
+  const VIEW_MODES: { value: ViewMode; label: string; Icon: React.ElementType }[] = [
+    { value: "list",     label: t("filter.view.list"),     Icon: List        },
+    { value: "category", label: t("filter.view.category"), Icon: LayoutGrid  },
+    { value: "monthly",  label: t("filter.view.monthly"),  Icon: CalendarDays},
+    { value: "trends",   label: t("filter.view.trends"),   Icon: TrendingUp  },
+  ];
 
   function toggleCategory(name: string) {
     const cats = filter.categories.includes(name)
@@ -90,11 +60,10 @@ export function FilterBar({
 
   return (
     <div className="space-y-3">
-      {/* Top row */}
       <div className="flex gap-2 items-center flex-wrap">
         <Input
           className="flex-1 min-w-48"
-          placeholder="Search by description or category…"
+          placeholder={t("filter.searchPlaceholder")}
           value={filter.search}
           onValueChange={(v) => setFilter({ search: v })}
           isClearable
@@ -105,11 +74,7 @@ export function FilterBar({
 
         <Dropdown>
           <DropdownTrigger>
-            <Button
-              size="sm"
-              variant="flat"
-              startContent={<ArrowUpDown size={14} />}
-            >
+            <Button size="sm" variant="flat" startContent={<ArrowUpDown size={14} />}>
               {SORT_OPTIONS.find((s) => s.value === sortField)?.label}{" "}
               {sortDir === "asc" ? "↑" : "↓"}
             </Button>
@@ -119,11 +84,7 @@ export function FilterBar({
               <DropdownItem
                 key={opt.value}
                 onPress={() => toggleSort(opt.value)}
-                endContent={
-                  sortField === opt.value
-                    ? sortDir === "asc" ? "↑" : "↓"
-                    : undefined
-                }
+                endContent={sortField === opt.value ? (sortDir === "asc" ? "↑" : "↓") : undefined}
               >
                 {opt.label}
               </DropdownItem>
@@ -131,7 +92,6 @@ export function FilterBar({
           </DropdownMenu>
         </Dropdown>
 
-        {/* View mode toggle */}
         <div className="flex rounded-xl border border-default-200 overflow-hidden shrink-0 shadow-sm">
           {VIEW_MODES.map(({ value, label, Icon }) => (
             <button
@@ -157,29 +117,23 @@ export function FilterBar({
           startContent={<SlidersHorizontal size={14} />}
           onPress={() => setShowFilters((s) => !s)}
         >
-          Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+          {activeFilterCount > 0
+            ? t("filter.filtersActive", { count: activeFilterCount })
+            : t("filter.filters")}
         </Button>
 
         {activeFilterCount > 0 && (
-          <Button
-            size="sm"
-            variant="light"
-            color="danger"
-            startContent={<X size={14} />}
-            onPress={onReset}
-          >
-            Clear
+          <Button size="sm" variant="light" color="danger" startContent={<X size={14} />} onPress={onReset}>
+            {t("filter.clear")}
           </Button>
         )}
       </div>
 
-      {/* Expanded filter panel */}
       {showFilters && (
         <div className="bg-default-50 rounded-xl p-4 space-y-4 border border-default-200">
-          {/* Categories */}
           <div>
             <p className="text-xs font-semibold text-default-500 uppercase tracking-wider mb-2">
-              Category
+              {t("filter.categorySection")}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {categories.map((cat) => {
@@ -199,10 +153,9 @@ export function FilterBar({
             </div>
           </div>
 
-          {/* Date range */}
           <div>
             <p className="text-xs font-semibold text-default-500 uppercase tracking-wider mb-2">
-              Date Range
+              {t("filter.dateSection")}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {DATE_PRESETS.map((p) => (
@@ -219,54 +172,19 @@ export function FilterBar({
             </div>
             {filter.datePreset === "custom" && (
               <div className="flex gap-2 mt-3">
-                <Input
-                  size="sm"
-                  type="date"
-                  label="From"
-                  value={filter.dateFrom}
-                  onValueChange={(v) => setFilter({ dateFrom: v })}
-                />
-                <Input
-                  size="sm"
-                  type="date"
-                  label="To"
-                  value={filter.dateTo}
-                  onValueChange={(v) => setFilter({ dateTo: v })}
-                />
+                <Input size="sm" type="date" label={t("filter.from" as never) ?? t("from")} value={filter.dateFrom} onValueChange={(v) => setFilter({ dateFrom: v })} />
+                <Input size="sm" type="date" label={t("filter.to" as never) ?? t("to")} value={filter.dateTo} onValueChange={(v) => setFilter({ dateTo: v })} />
               </div>
             )}
           </div>
 
-          {/* Amount range */}
           <div>
             <p className="text-xs font-semibold text-default-500 uppercase tracking-wider mb-2">
-              Amount Range
+              {t("filter.amountSection")}
             </p>
             <div className="flex gap-2">
-              <Input
-                size="sm"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="Min"
-                value={filter.amountMin}
-                onValueChange={(v) => setFilter({ amountMin: v })}
-                startContent={
-                  <span className="text-default-400 text-xs">$</span>
-                }
-              />
-              <Input
-                size="sm"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="Max"
-                value={filter.amountMax}
-                onValueChange={(v) => setFilter({ amountMax: v })}
-                startContent={
-                  <span className="text-default-400 text-xs">$</span>
-                }
-              />
+              <Input size="sm" type="number" min="0" step="0.01" placeholder={t("filter.min")} value={filter.amountMin} onValueChange={(v) => setFilter({ amountMin: v })} startContent={<span className="text-default-400 text-xs">$</span>} />
+              <Input size="sm" type="number" min="0" step="0.01" placeholder={t("filter.max")} value={filter.amountMax} onValueChange={(v) => setFilter({ amountMax: v })} startContent={<span className="text-default-400 text-xs">$</span>} />
             </div>
           </div>
         </div>

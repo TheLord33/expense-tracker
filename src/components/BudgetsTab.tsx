@@ -8,6 +8,7 @@ import {
 } from "@nextui-org/react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { Budget, CategoryDef, Expense } from "@/lib/types";
+import { useLanguage } from "@/app/providers";
 
 interface Props {
   budgets: Budget[];
@@ -26,6 +27,7 @@ function monthSpend(expenses: Expense[], category: string): number {
 }
 
 export function BudgetsTab({ budgets, categories, expenses, onAdd, onUpdate, onDelete }: Props) {
+  const { t, locale } = useLanguage();
   const modal = useDisclosure();
   const [editing, setEditing] = useState<Budget | null>(null);
   const [selectedCat, setSelectedCat] = useState("");
@@ -54,19 +56,19 @@ export function BudgetsTab({ budgets, categories, expenses, onAdd, onUpdate, onD
   function handleSubmit(ev: FormEvent) {
     ev.preventDefault();
     const limit = parseFloat(limitStr);
-    if (!selectedCat) { setErr("Select a category"); return; }
-    if (isNaN(limit) || limit <= 0) { setErr("Enter a valid amount"); return; }
+    if (!selectedCat) { setErr(t("budgets.errorCategory")); return; }
+    if (isNaN(limit) || limit <= 0) { setErr(t("budgets.errorAmount")); return; }
     editing ? onUpdate(editing.id, limit) : onAdd(selectedCat, limit);
     modal.onClose();
   }
 
-  const month = new Date().toLocaleString("default", { month: "long", year: "numeric" });
+  const month = new Date().toLocaleString(locale, { month: "long", year: "numeric" });
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-default-800">Monthly Budgets</h2>
+          <h2 className="text-lg font-semibold text-default-800">{t("budgets.title")}</h2>
           <p className="text-sm text-default-400">{month}</p>
         </div>
         <Button
@@ -75,15 +77,15 @@ export function BudgetsTab({ budgets, categories, expenses, onAdd, onUpdate, onD
           onPress={openAdd}
           isDisabled={available.length === 0}
         >
-          Add Budget
+          {t("budgets.add")}
         </Button>
       </div>
 
       {budgets.length === 0 ? (
         <Card shadow="none" className="border-2 border-dashed border-default-200">
           <CardBody className="py-16 text-center text-default-400">
-            <p className="font-medium text-default-500">No budgets set yet</p>
-            <p className="text-sm mt-1">Set monthly spending limits per category to track your goals</p>
+            <p className="font-medium text-default-500">{t("budgets.empty")}</p>
+            <p className="text-sm mt-1">{t("budgets.emptySub")}</p>
           </CardBody>
         </Card>
       ) : (
@@ -121,15 +123,15 @@ export function BudgetsTab({ budgets, categories, expenses, onAdd, onUpdate, onD
 
                   <div className="flex justify-between text-sm">
                     <span className={over ? "text-danger font-semibold" : "text-default-700"}>
-                      ${spent.toFixed(2)} spent
+                      {t("budgets.spent", { amount: `$${spent.toFixed(2)}` })}
                     </span>
-                    <span className="text-default-400">of ${budget.monthlyLimit.toFixed(2)}</span>
+                    <span className="text-default-400">{t("budgets.of", { limit: `$${budget.monthlyLimit.toFixed(2)}` })}</span>
                   </div>
 
                   <p className={`text-xs font-medium ${over ? "text-danger" : warn ? "text-warning" : "text-success"}`}>
                     {over
-                      ? `$${Math.abs(remaining).toFixed(2)} over budget`
-                      : `$${remaining.toFixed(2)} remaining`}
+                      ? t("budgets.over", { amount: `$${Math.abs(remaining).toFixed(2)}` })
+                      : t("budgets.remaining", { amount: `$${remaining.toFixed(2)}` })}
                   </p>
                 </CardBody>
               </Card>
@@ -141,15 +143,15 @@ export function BudgetsTab({ budgets, categories, expenses, onAdd, onUpdate, onD
       <Modal isOpen={modal.isOpen} onClose={modal.onClose} placement="center" size="sm">
         <ModalContent>
           <form onSubmit={handleSubmit}>
-            <ModalHeader>{editing ? "Edit Budget" : "Add Budget"}</ModalHeader>
+            <ModalHeader>{editing ? t("budgets.titleEdit") : t("budgets.titleAdd")}</ModalHeader>
             <ModalBody className="gap-4">
               {editing ? (
                 <p className="text-default-600 text-sm">
-                  Category: <strong>{editing.category}</strong>
+                  {t("budgets.editingCategory", { name: editing.category })}
                 </p>
               ) : (
                 <Select
-                  label="Category"
+                  label={t("addExpense.category")}
                   selectedKeys={selectedCat ? [selectedCat] : []}
                   onSelectionChange={(keys) => setSelectedCat([...keys][0] as string)}
                 >
@@ -159,7 +161,7 @@ export function BudgetsTab({ budgets, categories, expenses, onAdd, onUpdate, onD
                 </Select>
               )}
               <Input
-                label="Monthly Limit"
+                label={t("budgets.monthlyLimit")}
                 type="number"
                 min="0.01"
                 step="0.01"
@@ -172,8 +174,8 @@ export function BudgetsTab({ budgets, categories, expenses, onAdd, onUpdate, onD
               />
             </ModalBody>
             <ModalFooter>
-              <Button variant="flat" onPress={modal.onClose}>Cancel</Button>
-              <Button color="primary" type="submit">{editing ? "Save" : "Add Budget"}</Button>
+              <Button variant="flat" onPress={modal.onClose}>{t("cancel")}</Button>
+              <Button color="primary" type="submit">{editing ? t("save") : t("budgets.addBudget")}</Button>
             </ModalFooter>
           </form>
         </ModalContent>

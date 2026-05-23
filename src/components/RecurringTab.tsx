@@ -10,6 +10,7 @@ import {
   RecurringExpense, CategoryDef,
   RECURRING_FREQUENCIES, RecurringFrequency,
 } from "@/lib/types";
+import { useLanguage } from "@/app/providers";
 
 interface Props {
   recurring: RecurringExpense[];
@@ -32,10 +33,10 @@ function nextDue(rule: RecurringExpense): string {
   return d.toISOString().split("T")[0];
 }
 
-function fmtDate(iso: string) {
+function fmtDate(iso: string, locale: string) {
   const [y, m, d] = iso.split("-");
   return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString(
-    "en-US", { month: "short", day: "numeric", year: "numeric" }
+    locale, { month: "short", day: "numeric", year: "numeric" }
   );
 }
 
@@ -47,6 +48,7 @@ const BLANK = {
 };
 
 export function RecurringTab({ recurring, categories, onAdd, onUpdate, onDelete }: Props) {
+  const { t, locale } = useLanguage();
   const modal = useDisclosure();
   const [editing, setEditing] = useState<RecurringExpense | null>(null);
   const [form, setForm] = useState(BLANK);
@@ -76,11 +78,11 @@ export function RecurringTab({ recurring, categories, onAdd, onUpdate, onDelete 
 
   function validate() {
     const e: Record<string, string> = {};
-    if (!form.description.trim()) e.description = "Required";
-    if (!form.category) e.category = "Required";
+    if (!form.description.trim()) e.description = t("recurring.errorRequired");
+    if (!form.category) e.category = t("recurring.errorRequired");
     if (!form.amount || isNaN(Number(form.amount)) || Number(form.amount) <= 0)
-      e.amount = "Enter a valid amount";
-    if (!form.startDate) e.startDate = "Required";
+      e.amount = t("recurring.errorAmount");
+    if (!form.startDate) e.startDate = t("recurring.errorRequired");
     return e;
   }
 
@@ -109,19 +111,19 @@ export function RecurringTab({ recurring, categories, onAdd, onUpdate, onDelete 
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-default-800">Recurring Expenses</h2>
-          <p className="text-sm text-default-400">Auto-generated on each app load when due</p>
+          <h2 className="text-lg font-semibold text-default-800">{t("recurring.title")}</h2>
+          <p className="text-sm text-default-400">{t("recurring.subtitle")}</p>
         </div>
         <Button size="sm" color="primary" startContent={<Plus size={14} />} onPress={openAdd}>
-          Add Recurring
+          {t("recurring.add")}
         </Button>
       </div>
 
       {recurring.length === 0 ? (
         <Card shadow="none" className="border-2 border-dashed border-default-200">
           <CardBody className="py-16 text-center text-default-400">
-            <p className="font-medium text-default-500">No recurring expenses</p>
-            <p className="text-sm mt-1">Add subscriptions, rent, or any expense that repeats on a schedule</p>
+            <p className="font-medium text-default-500">{t("recurring.empty")}</p>
+            <p className="text-sm mt-1">{t("recurring.emptySub")}</p>
           </CardBody>
         </Card>
       ) : (
@@ -130,7 +132,7 @@ export function RecurringTab({ recurring, categories, onAdd, onUpdate, onDelete 
             const cat = categories.find((c) => c.name === rule.category);
             const due = nextDue(rule);
             const expired = !!(rule.endDate && rule.endDate < today);
-            const freqLabel = RECURRING_FREQUENCIES.find((f) => f.value === rule.frequency)?.label;
+            const freqLabel = t(`frequencies.${rule.frequency}`);
 
             return (
               <Card key={rule.id} shadow="sm" className={`border border-default-100 ${expired ? "opacity-60" : ""}`}>
@@ -145,18 +147,20 @@ export function RecurringTab({ recurring, categories, onAdd, onUpdate, onDelete 
                         <Chip color={(cat?.color ?? "default") as never} variant="flat" size="sm">
                           {rule.category}
                         </Chip>
-                        {expired && <Chip color="default" variant="flat" size="sm">Expired</Chip>}
+                        {expired && <Chip color="default" variant="flat" size="sm">{t("recurring.expired")}</Chip>}
                       </div>
                       <div className="flex gap-4 mt-1 text-sm text-default-500 flex-wrap">
                         <span className="font-semibold text-default-900">${rule.amount.toFixed(2)}</span>
                         <span>{freqLabel}</span>
-                        <span>Started {fmtDate(rule.startDate)}</span>
-                        {rule.endDate && <span>Ends {fmtDate(rule.endDate)}</span>}
+                        <span>{t("recurring.started")} {fmtDate(rule.startDate, locale)}</span>
+                        {rule.endDate && <span>{t("recurring.ends")} {fmtDate(rule.endDate, locale)}</span>}
                       </div>
                       <p className="text-xs mt-1 text-default-400">
                         {expired
-                          ? `Expired ${fmtDate(rule.endDate!)}`
-                          : `Next: ${fmtDate(due)}${rule.lastGenerated ? ` · Last: ${fmtDate(rule.lastGenerated)}` : ""}`}
+                          ? t("recurring.expiredOn", { date: fmtDate(rule.endDate!, locale) })
+                          : rule.lastGenerated
+                            ? t("recurring.nextDueLast", { next: fmtDate(due, locale), last: fmtDate(rule.lastGenerated, locale) })
+                            : t("recurring.nextDue", { date: fmtDate(due, locale) })}
                       </p>
                     </div>
                     <div className="flex gap-1 shrink-0">
@@ -178,11 +182,11 @@ export function RecurringTab({ recurring, categories, onAdd, onUpdate, onDelete 
       <Modal isOpen={modal.isOpen} onClose={modal.onClose} placement="center">
         <ModalContent>
           <form onSubmit={handleSubmit}>
-            <ModalHeader>{editing ? "Edit Recurring Expense" : "Add Recurring Expense"}</ModalHeader>
+            <ModalHeader>{editing ? t("recurring.titleEdit") : t("recurring.titleAdd")}</ModalHeader>
             <ModalBody className="gap-3">
               <Input
-                label="Description"
-                placeholder="e.g. Netflix, Rent, Gym"
+                label={t("recurring.descLabel")}
+                placeholder={t("recurring.descPlaceholder")}
                 value={form.description}
                 onValueChange={(v) => set("description", v)}
                 isInvalid={!!errors.description}
@@ -190,7 +194,7 @@ export function RecurringTab({ recurring, categories, onAdd, onUpdate, onDelete 
               />
               <div className="grid grid-cols-2 gap-3">
                 <Select
-                  label="Category"
+                  label={t("recurring.category")}
                   selectedKeys={form.category ? [form.category] : []}
                   onSelectionChange={(keys) => set("category", [...keys][0] as string)}
                   isInvalid={!!errors.category}
@@ -199,7 +203,7 @@ export function RecurringTab({ recurring, categories, onAdd, onUpdate, onDelete 
                   {categories.map((c) => <SelectItem key={c.name}>{c.name}</SelectItem>)}
                 </Select>
                 <Input
-                  label="Amount"
+                  label={t("recurring.amount")}
                   type="number" min="0.01" step="0.01"
                   value={form.amount}
                   onValueChange={(v) => set("amount", v)}
@@ -209,32 +213,34 @@ export function RecurringTab({ recurring, categories, onAdd, onUpdate, onDelete 
                 />
               </div>
               <Select
-                label="Frequency"
+                label={t("recurring.frequency")}
                 selectedKeys={[form.frequency]}
                 onSelectionChange={(keys) => set("frequency", [...keys][0] as string)}
               >
                 {RECURRING_FREQUENCIES.map((f) => (
-                  <SelectItem key={f.value}>{f.label}</SelectItem>
+                  <SelectItem key={f.value}>
+                    {t(`frequencies.${f.value}`)}
+                  </SelectItem>
                 ))}
               </Select>
               <div className="grid grid-cols-2 gap-3">
                 <Input
-                  label="Start Date" type="date"
+                  label={t("recurring.startDate")} type="date"
                   value={form.startDate}
                   onValueChange={(v) => set("startDate", v)}
                   isInvalid={!!errors.startDate}
                   errorMessage={errors.startDate}
                 />
                 <Input
-                  label="End Date (optional)" type="date"
+                  label={t("recurring.endDate")} type="date"
                   value={form.endDate}
                   onValueChange={(v) => set("endDate", v)}
                 />
               </div>
             </ModalBody>
             <ModalFooter>
-              <Button variant="flat" onPress={modal.onClose}>Cancel</Button>
-              <Button color="primary" type="submit">{editing ? "Save" : "Add"}</Button>
+              <Button variant="flat" onPress={modal.onClose}>{t("cancel")}</Button>
+              <Button color="primary" type="submit">{editing ? t("save") : t("add")}</Button>
             </ModalFooter>
           </form>
         </ModalContent>

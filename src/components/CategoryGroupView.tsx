@@ -3,6 +3,7 @@
 import { Chip, Button } from "@nextui-org/react";
 import { Pencil } from "lucide-react";
 import { Expense, CategoryDef } from "@/lib/types";
+import { useLanguage } from "@/app/providers";
 
 interface Props {
   expenses: Expense[];
@@ -11,19 +12,20 @@ interface Props {
   onEdit: (expense: Expense) => void;
 }
 
-function fmtDate(iso: string) {
-  const [y, m, d] = iso.split("-");
-  return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString(
-    "en-US",
-    { month: "short", day: "numeric" }
-  );
-}
-
 export function CategoryGroupView({ expenses, categories, onDelete, onEdit }: Props) {
+  const { t, locale } = useLanguage();
+
+  function fmtDate(iso: string) {
+    const [y, m, d] = iso.split("-");
+    return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString(
+      locale, { month: "short", day: "numeric" }
+    );
+  }
+
   if (expenses.length === 0)
     return (
       <p className="text-center text-default-400 py-8">
-        No expenses match your filters.
+        {t("expenseList.empty")}
       </p>
     );
 
@@ -67,7 +69,7 @@ export function CategoryGroupView({ expenses, categories, onDelete, onEdit }: Pr
                 {cat.name}
               </Chip>
               <span className="text-default-400 text-xs">
-                {items.length} item{items.length !== 1 ? "s" : ""}
+                {items.length} {items.length !== 1 ? t("trends.items") : t("trends.item")}
               </span>
               <div className="flex-1 mx-1">
                 <div className="h-1.5 bg-default-100 rounded-full overflow-hidden">

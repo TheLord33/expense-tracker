@@ -1,8 +1,12 @@
 "use client";
 
-import { Button } from "@nextui-org/react";
-import { Wallet, Plus, Tag, Sun, Moon } from "lucide-react";
+import {
+  Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
+} from "@nextui-org/react";
+import { Wallet, Plus, Tag, Sun, Moon, Globe } from "lucide-react";
 import { useTheme } from "@/app/providers";
+import { useLanguage } from "@/app/providers";
+import { LANGUAGES } from "@/lib/i18n";
 
 interface Props {
   onAddExpense: () => void;
@@ -12,6 +16,7 @@ interface Props {
 
 export function AppHeader({ onAddExpense, onAddCategory, importExportSlot }: Props) {
   const { theme, toggleTheme } = useTheme();
+  const { t, language, setLanguage } = useLanguage();
 
   return (
     <div className="bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600 shadow-lg">
@@ -23,16 +28,44 @@ export function AppHeader({ onAddExpense, onAddCategory, importExportSlot }: Pro
           </div>
           <div>
             <h1 className="text-xl font-bold text-white leading-tight">
-              Family Finance Tracker
+              {t("header.title")}
             </h1>
             <p className="text-blue-100 text-xs">
-              Income, expenses & budgets — all in one place
+              {t("header.subtitle")}
             </p>
           </div>
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Language selector */}
+          <Dropdown>
+            <DropdownTrigger>
+              <Button
+                isIconOnly
+                size="sm"
+                variant="light"
+                className="text-white hover:bg-white/10"
+                aria-label="Select language"
+              >
+                <Globe size={16} />
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu
+              aria-label="Language selection"
+              selectedKeys={[language]}
+              selectionMode="single"
+              onSelectionChange={(keys) => setLanguage([...keys][0] as typeof language)}
+            >
+              {LANGUAGES.map((lang) => (
+                <DropdownItem key={lang.value} startContent={<span>{lang.flag}</span>}>
+                  {lang.label}
+                </DropdownItem>
+              ))}
+            </DropdownMenu>
+          </Dropdown>
+
+          {/* Dark mode toggle */}
           <Button
             isIconOnly
             size="sm"
@@ -55,7 +88,7 @@ export function AppHeader({ onAddExpense, onAddCategory, importExportSlot }: Pro
             startContent={<Tag size={14} />}
             onPress={onAddCategory}
           >
-            Category
+            {t("header.addCategory")}
           </Button>
 
           <Button
@@ -64,7 +97,7 @@ export function AppHeader({ onAddExpense, onAddCategory, importExportSlot }: Pro
             startContent={<Plus size={16} />}
             onPress={onAddExpense}
           >
-            Add Expense
+            {t("header.addExpense")}
           </Button>
         </div>
       </div>

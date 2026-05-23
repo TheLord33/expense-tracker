@@ -8,6 +8,7 @@ import {
 import { Expense, CategoryDef } from "@/lib/types";
 import { fromCSV, fromJSON, fromText, ImportResult } from "@/lib/importExport";
 import { ExportModal } from "@/components/ExportModal";
+import { useLanguage } from "@/app/providers";
 
 interface Props {
   expenses: Expense[];
@@ -24,6 +25,7 @@ const ACCEPT: Record<ImportFormat, string> = {
 };
 
 export function ImportExportMenu({ expenses, categories, onImport }: Props) {
+  const { t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingFormat, setPendingFormat] = useState<ImportFormat | null>(null);
   const [importResult, setImportResult]   = useState<ImportResult | null>(null);
@@ -75,22 +77,22 @@ export function ImportExportMenu({ expenses, categories, onImport }: Props) {
             size="sm"
             className="border-white/30 text-white hover:bg-white/10"
           >
-            Import / Export
+            {t("importExport.button")}
           </Button>
         </DropdownTrigger>
         <DropdownMenu
           aria-label="Import and export options"
           disabledKeys={expenses.length === 0 ? ["export"] : []}
         >
-          <DropdownSection title="Export" showDivider>
+          <DropdownSection title={t("importExport.exportSection")} showDivider>
             <DropdownItem key="export" onPress={() => setShowExport(true)}>
-              Export expenses…
+              {t("importExport.exportAction")}
             </DropdownItem>
           </DropdownSection>
-          <DropdownSection title="Import">
-            <DropdownItem key="import-csv"  onPress={() => openFilePicker("csv")}>CSV (.csv)</DropdownItem>
-            <DropdownItem key="import-json" onPress={() => openFilePicker("json")}>JSON (.json)</DropdownItem>
-            <DropdownItem key="import-txt"  onPress={() => openFilePicker("txt")}>Text (.txt)</DropdownItem>
+          <DropdownSection title={t("importExport.importSection")}>
+            <DropdownItem key="import-csv"  onPress={() => openFilePicker("csv")}>{t("importExport.importCsv")}</DropdownItem>
+            <DropdownItem key="import-json" onPress={() => openFilePicker("json")}>{t("importExport.importJson")}</DropdownItem>
+            <DropdownItem key="import-txt"  onPress={() => openFilePicker("txt")}>{t("importExport.importTxt")}</DropdownItem>
           </DropdownSection>
         </DropdownMenu>
       </Dropdown>
@@ -110,20 +112,24 @@ export function ImportExportMenu({ expenses, categories, onImport }: Props) {
       {importResult && (
         <Modal isOpen onClose={handleImportCancel} placement="center">
           <ModalContent>
-            <ModalHeader>Import {pendingFormat?.toUpperCase()} Preview</ModalHeader>
+            <ModalHeader>{t("importExport.importTitle", { format: pendingFormat?.toUpperCase() ?? "" })}</ModalHeader>
             <ModalBody className="gap-3">
               {importResult.expenses.length > 0 && (
                 <div className="bg-success-50 border border-success-200 rounded-lg px-4 py-3 text-sm text-success-700">
-                  <strong>{importResult.expenses.length}</strong> valid expense
-                  {importResult.expenses.length !== 1 ? "s" : ""} ready to import.
+                  <strong>{importResult.expenses.length}</strong>{" "}
+                  {importResult.expenses.length !== 1
+                    ? t("importExport.validCountPlural", { count: importResult.expenses.length })
+                    : t("importExport.validCount", { count: importResult.expenses.length })}
                 </div>
               )}
               {importResult.errors.length > 0 && (
                 <div className="bg-warning-50 border border-warning-200 rounded-lg px-4 py-3 text-sm text-warning-700 space-y-1">
                   <p className="font-semibold">
                     {importResult.expenses.length === 0
-                      ? "Could not parse file:"
-                      : `${importResult.errors.length} row${importResult.errors.length !== 1 ? "s" : ""} skipped:`}
+                      ? t("importExport.cannotParse")
+                      : importResult.errors.length !== 1
+                        ? t("importExport.rowsSkippedPlural", { count: importResult.errors.length })
+                        : t("importExport.rowsSkipped", { count: importResult.errors.length })}
                   </p>
                   <ul className="list-disc list-inside space-y-0.5 max-h-32 overflow-y-auto">
                     {importResult.errors.map((err, i) => (
@@ -134,8 +140,9 @@ export function ImportExportMenu({ expenses, categories, onImport }: Props) {
               )}
               {importResult.expenses.length > 0 && expenses.length > 0 && (
                 <p className="text-sm text-default-500">
-                  You currently have <strong>{expenses.length}</strong> expense
-                  {expenses.length !== 1 ? "s" : ""}. Choose how to handle the import:
+                  {expenses.length !== 1
+                    ? t("importExport.currentCountPlural", { count: expenses.length })
+                    : t("importExport.currentCount", { count: expenses.length })}
                 </p>
               )}
               {importResult.expenses.length > 0 && (
@@ -143,7 +150,7 @@ export function ImportExportMenu({ expenses, categories, onImport }: Props) {
                   <table className="w-full text-xs">
                     <thead className="bg-default-50">
                       <tr>
-                        {["Date", "Description", "Category", "Amount"].map((h) => (
+                        {[t("addExpense.date"), t("addExpense.description"), t("addExpense.category"), t("addExpense.amount")].map((h) => (
                           <th key={h} className="px-3 py-2 text-left font-semibold text-default-500">{h}</th>
                         ))}
                       </tr>
@@ -160,7 +167,7 @@ export function ImportExportMenu({ expenses, categories, onImport }: Props) {
                       {importResult.expenses.length > 5 && (
                         <tr className="border-t border-default-100">
                           <td colSpan={4} className="px-3 py-1.5 text-default-400 text-center">
-                            … and {importResult.expenses.length - 5} more
+                            {t("exportModal.andMore", { count: importResult.expenses.length - 5 })}
                           </td>
                         </tr>
                       )}
@@ -173,17 +180,17 @@ export function ImportExportMenu({ expenses, categories, onImport }: Props) {
               {importResult.expenses.length > 0 ? (
                 <>
                   <Button color="primary" fullWidth onPress={() => handleConfirm(false)}>
-                    Add to existing expenses
+                    {t("importExport.addToExisting")}
                   </Button>
                   {expenses.length > 0 && (
                     <Button color="danger" variant="flat" fullWidth onPress={() => handleConfirm(true)}>
-                      Replace all ({expenses.length} will be deleted)
+                      {t("importExport.replaceAll", { count: expenses.length })}
                     </Button>
                   )}
-                  <Button variant="light" fullWidth onPress={handleImportCancel}>Cancel</Button>
+                  <Button variant="light" fullWidth onPress={handleImportCancel}>{t("cancel")}</Button>
                 </>
               ) : (
-                <Button fullWidth onPress={handleImportCancel}>Close</Button>
+                <Button fullWidth onPress={handleImportCancel}>{t("close")}</Button>
               )}
             </ModalFooter>
           </ModalContent>

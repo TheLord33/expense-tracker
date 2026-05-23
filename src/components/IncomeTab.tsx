@@ -8,6 +8,7 @@ import {
 import { Plus, Pencil, Trash2, TrendingUp } from "lucide-react";
 import { IncomeSource, IncomeFrequency, INCOME_FREQUENCIES } from "@/lib/types";
 import { toMonthly } from "@/lib/useIncome";
+import { useLanguage } from "@/app/providers";
 
 interface Props {
   sources: IncomeSource[];
@@ -17,10 +18,10 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
-function fmtDate(iso: string) {
+function fmtDate(iso: string, locale: string) {
   const [y, m, d] = iso.split("-");
   return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString(
-    "en-US", { month: "short", day: "numeric", year: "numeric" }
+    locale, { month: "short", day: "numeric", year: "numeric" }
   );
 }
 
@@ -32,6 +33,7 @@ const BLANK = {
 };
 
 export function IncomeTab({ sources, monthlyIncome, onAdd, onUpdate, onDelete }: Props) {
+  const { t, locale } = useLanguage();
   const modal = useDisclosure();
   const [editing, setEditing] = useState<IncomeSource | null>(null);
   const [form, setForm] = useState(BLANK);
@@ -39,7 +41,7 @@ export function IncomeTab({ sources, monthlyIncome, onAdd, onUpdate, onDelete }:
   const today = new Date().toISOString().split("T")[0];
 
   const totalMonthly = monthlyIncome();
-  const month = new Date().toLocaleString("default", { month: "long", year: "numeric" });
+  const month = new Date().toLocaleString(locale, { month: "long", year: "numeric" });
 
   function openAdd() {
     setEditing(null);
@@ -57,9 +59,9 @@ export function IncomeTab({ sources, monthlyIncome, onAdd, onUpdate, onDelete }:
 
   function validate() {
     const e: Record<string, string> = {};
-    if (!form.name.trim()) e.name = "Required";
-    if (!form.amount || isNaN(Number(form.amount)) || Number(form.amount) <= 0) e.amount = "Enter a valid amount";
-    if (!form.startDate) e.startDate = "Required";
+    if (!form.name.trim()) e.name = t("income.errorRequired");
+    if (!form.amount || isNaN(Number(form.amount)) || Number(form.amount) <= 0) e.amount = t("income.errorAmount");
+    if (!form.startDate) e.startDate = t("income.errorRequired");
     return e;
   }
 
@@ -87,29 +89,28 @@ export function IncomeTab({ sources, monthlyIncome, onAdd, onUpdate, onDelete }:
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-default-800">Income Sources</h2>
+          <h2 className="text-lg font-semibold text-default-800">{t("income.title")}</h2>
           <p className="text-sm text-default-400">
-            {month} —{" "}
-            <span className="font-semibold text-emerald-600">${totalMonthly.toFixed(2)}/mo</span> total
+            {t("income.monthSummary", { month, amount: `$${totalMonthly.toFixed(2)}` })}
           </p>
         </div>
         <Button size="sm" color="primary" startContent={<Plus size={14} />} onPress={openAdd}>
-          Add Income
+          {t("income.add")}
         </Button>
       </div>
 
       {sources.length === 0 ? (
         <Card shadow="none" className="border-2 border-dashed border-default-200">
           <CardBody className="py-16 text-center text-default-400">
-            <p className="font-medium text-default-500">No income sources</p>
-            <p className="text-sm mt-1">Add salary, freelance, investments, or any source of income to calculate net income</p>
+            <p className="font-medium text-default-500">{t("income.empty")}</p>
+            <p className="text-sm mt-1">{t("income.emptySub")}</p>
           </CardBody>
         </Card>
       ) : (
         <div className="space-y-2">
           {sources.map((source) => {
             const monthly = toMonthly(source.amount, source.frequency);
-            const freqLabel = INCOME_FREQUENCIES.find((f) => f.value === source.frequency)?.label;
+            const freqLabel = t(`frequencies.${source.frequency === "one-time" ? "oneTime" : source.frequency}`);
             const active = source.startDate <= today && (!source.endDate || source.endDate >= today);
 
             return (
@@ -122,23 +123,23 @@ export function IncomeTab({ sources, monthlyIncome, onAdd, onUpdate, onDelete }:
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-default-900">{source.name}</span>
-                        {!active && <span className="text-xs text-default-400">(inactive)</span>}
+                        {!active && <span className="text-xs text-default-400">({t("income.inactive")})</span>}
                       </div>
                       <div className="flex gap-4 mt-0.5 text-sm text-default-500 flex-wrap">
                         <span className="font-semibold text-emerald-600">${source.amount.toFixed(2)}</span>
                         <span>{freqLabel}</span>
                         {source.frequency !== "monthly" && source.frequency !== "one-time" && (
-                          <span className="text-default-400">≈ ${monthly.toFixed(2)}/mo</span>
+                          <span className="text-default-400">{t("income.approxMonthly", { amount: `$${monthly.toFixed(2)}` })}</span>
                         )}
-                        <span>Since {fmtDate(source.startDate)}</span>
-                        {source.endDate && <span>Until {fmtDate(source.endDate)}</span>}
+                        <span>{t("income.since")} {fmtDate(source.startDate, locale)}</span>
+                        {source.endDate && <span>{t("income.until")} {fmtDate(source.endDate, locale)}</span>}
                       </div>
                     </div>
                     <div className="text-right shrink-0 mr-2">
                       {source.frequency !== "one-time" && (
                         <>
                           <p className="font-bold text-emerald-600">${monthly.toFixed(2)}</p>
-                          <p className="text-xs text-default-400">per month</p>
+                          <p className="text-xs text-default-400">{t("income.perMonth")}</p>
                         </>
                       )}
                     </div>
@@ -161,11 +162,11 @@ export function IncomeTab({ sources, monthlyIncome, onAdd, onUpdate, onDelete }:
       <Modal isOpen={modal.isOpen} onClose={modal.onClose} placement="center">
         <ModalContent>
           <form onSubmit={handleSubmit}>
-            <ModalHeader>{editing ? "Edit Income Source" : "Add Income Source"}</ModalHeader>
+            <ModalHeader>{editing ? t("income.titleEdit") : t("income.titleAdd")}</ModalHeader>
             <ModalBody className="gap-3">
               <Input
-                label="Name"
-                placeholder="e.g. Salary, Freelance, Dividends"
+                label={t("income.name")}
+                placeholder={t("income.namePlaceholder")}
                 value={form.name}
                 onValueChange={(v) => set("name", v)}
                 isInvalid={!!errors.name}
@@ -173,7 +174,7 @@ export function IncomeTab({ sources, monthlyIncome, onAdd, onUpdate, onDelete }:
               />
               <div className="grid grid-cols-2 gap-3">
                 <Input
-                  label="Amount"
+                  label={t("income.amount")}
                   type="number" min="0.01" step="0.01"
                   value={form.amount}
                   onValueChange={(v) => set("amount", v)}
@@ -182,33 +183,35 @@ export function IncomeTab({ sources, monthlyIncome, onAdd, onUpdate, onDelete }:
                   startContent={<span className="text-default-400 text-sm">$</span>}
                 />
                 <Select
-                  label="Frequency"
+                  label={t("income.frequency")}
                   selectedKeys={[form.frequency]}
                   onSelectionChange={(keys) => set("frequency", [...keys][0] as string)}
                 >
                   {INCOME_FREQUENCIES.map((f) => (
-                    <SelectItem key={f.value}>{f.label}</SelectItem>
+                    <SelectItem key={f.value}>
+                      {t(`frequencies.${f.value === "one-time" ? "oneTime" : f.value}`)}
+                    </SelectItem>
                   ))}
                 </Select>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Input
-                  label="Start Date" type="date"
+                  label={t("income.startDate")} type="date"
                   value={form.startDate}
                   onValueChange={(v) => set("startDate", v)}
                   isInvalid={!!errors.startDate}
                   errorMessage={errors.startDate}
                 />
                 <Input
-                  label="End Date (optional)" type="date"
+                  label={t("income.endDate")} type="date"
                   value={form.endDate}
                   onValueChange={(v) => set("endDate", v)}
                 />
               </div>
             </ModalBody>
             <ModalFooter>
-              <Button variant="flat" onPress={modal.onClose}>Cancel</Button>
-              <Button color="primary" type="submit">{editing ? "Save" : "Add"}</Button>
+              <Button variant="flat" onPress={modal.onClose}>{t("cancel")}</Button>
+              <Button color="primary" type="submit">{editing ? t("save") : t("add")}</Button>
             </ModalFooter>
           </form>
         </ModalContent>

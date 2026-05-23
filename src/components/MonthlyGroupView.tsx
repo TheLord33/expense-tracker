@@ -3,6 +3,7 @@
 import { Chip, Button } from "@nextui-org/react";
 import { Pencil } from "lucide-react";
 import { Expense, CategoryDef } from "@/lib/types";
+import { useLanguage } from "@/app/providers";
 
 interface Props {
   expenses: Expense[];
@@ -11,19 +12,20 @@ interface Props {
   onEdit: (expense: Expense) => void;
 }
 
-function fmtDate(iso: string) {
-  const [y, m, d] = iso.split("-");
-  return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString(
-    "en-US",
-    { month: "short", day: "numeric" }
-  );
-}
-
 export function MonthlyGroupView({ expenses, categories, onDelete, onEdit }: Props) {
+  const { t, locale } = useLanguage();
+
+  function fmtDate(iso: string) {
+    const [y, m, d] = iso.split("-");
+    return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString(
+      locale, { month: "short", day: "numeric" }
+    );
+  }
+
   if (expenses.length === 0)
     return (
       <p className="text-center text-default-400 py-8">
-        No expenses match your filters.
+        {t("expenseList.empty")}
       </p>
     );
 
@@ -56,7 +58,7 @@ export function MonthlyGroupView({ expenses, categories, onDelete, onEdit }: Pro
         const label = new Date(
           Number(year),
           Number(month) - 1
-        ).toLocaleString("default", { month: "long", year: "numeric" });
+        ).toLocaleString(locale, { month: "long", year: "numeric" });
         const monthTotal = items.reduce((s, e) => s + e.amount, 0);
         const pct = maxTotal > 0 ? (monthTotal / maxTotal) * 100 : 0;
         const sorted = [...items].sort((a, b) => b.date.localeCompare(a.date));
@@ -80,7 +82,9 @@ export function MonthlyGroupView({ expenses, categories, onDelete, onEdit }: Pro
                 </div>
               </div>
               <span className="text-default-400 text-xs">
-                {items.length} expense{items.length !== 1 ? "s" : ""}
+                {items.length !== 1
+                  ? t("expenseList.countPlural", { count: items.length })
+                  : t("expenseList.count", { count: items.length })}
               </span>
               <span className="font-semibold text-sm">
                 ${monthTotal.toFixed(2)}

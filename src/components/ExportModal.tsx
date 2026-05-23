@@ -8,6 +8,7 @@ import {
 import { Download } from "lucide-react";
 import { Expense, CategoryDef } from "@/lib/types";
 import { toCSV, toJSON, toText, download } from "@/lib/importExport";
+import { useLanguage } from "@/app/providers";
 
 type Format = "csv" | "json" | "txt" | "pdf";
 
@@ -30,6 +31,7 @@ function today() {
 }
 
 export function ExportModal({ isOpen, onClose, expenses, categories }: Props) {
+  const { t } = useLanguage();
   const [format, setFormat]           = useState<Format>("csv");
   const [filename, setFilename]       = useState(`expenses-${today()}`);
   const [dateFrom, setDateFrom]       = useState("");
@@ -99,12 +101,12 @@ export function ExportModal({ isOpen, onClose, expenses, categories }: Props) {
   return (
     <Modal isOpen={isOpen} onClose={handleClose} placement="center" size="lg" scrollBehavior="inside">
       <ModalContent>
-        <ModalHeader>Export Expenses</ModalHeader>
+        <ModalHeader>{t("exportModal.title")}</ModalHeader>
         <ModalBody className="gap-5">
 
           {/* Format */}
           <div>
-            <p className="text-sm font-medium text-default-700 mb-2">Format</p>
+            <p className="text-sm font-medium text-default-700 mb-2">{t("exportModal.format")}</p>
             <div className="flex gap-2 flex-wrap">
               {FORMATS.map((f) => (
                 <button
@@ -124,7 +126,7 @@ export function ExportModal({ isOpen, onClose, expenses, categories }: Props) {
 
           {/* Filename */}
           <Input
-            label="Filename"
+            label={t("exportModal.filename")}
             value={filename}
             onValueChange={setFilename}
             endContent={
@@ -136,19 +138,21 @@ export function ExportModal({ isOpen, onClose, expenses, categories }: Props) {
 
           {/* Date range */}
           <div>
-            <p className="text-sm font-medium text-default-700 mb-2">Date Range</p>
+            <p className="text-sm font-medium text-default-700 mb-2">{t("exportModal.dateRange")}</p>
             <div className="grid grid-cols-2 gap-3">
-              <Input label="From" type="date" size="sm" value={dateFrom} onValueChange={setDateFrom} />
-              <Input label="To"   type="date" size="sm" value={dateTo}   onValueChange={setDateTo}   />
+              <Input label={t("from")} type="date" size="sm" value={dateFrom} onValueChange={setDateFrom} />
+              <Input label={t("to")}   type="date" size="sm" value={dateTo}   onValueChange={setDateTo}   />
             </div>
           </div>
 
           {/* Category filter */}
           <div>
             <p className="text-sm font-medium text-default-700 mb-2">
-              Categories
+              {t("exportModal.categories")}
               <span className="text-default-400 font-normal ml-1">
-                {selectedCats.length === 0 ? "— all" : `— ${selectedCats.length} selected`}
+                {selectedCats.length === 0
+                  ? t("exportModal.catAll")
+                  : t("exportModal.catSelected", { count: selectedCats.length })}
               </span>
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -181,10 +185,12 @@ export function ExportModal({ isOpen, onClose, expenses, categories }: Props) {
               <div className="flex items-center justify-between">
                 <p className="text-sm text-primary-700 dark:text-indigo-300">
                   <span className="font-bold">{filtered.length}</span>{" "}
-                  record{filtered.length !== 1 ? "s" : ""} will be exported
+                  {filtered.length !== 1
+                    ? t("exportModal.summaryPlural", { count: filtered.length })
+                    : t("exportModal.summary", { count: filtered.length })}
                   {filtered.length < expenses.length && (
                     <span className="text-default-500 dark:text-default-400">
-                      {" "}(of {expenses.length} total)
+                      {" "}{t("exportModal.summaryOf", { total: expenses.length })}
                     </span>
                   )}
                 </p>
@@ -194,7 +200,7 @@ export function ExportModal({ isOpen, onClose, expenses, categories }: Props) {
               </div>
             ) : (
               <p className="text-sm text-warning-700 dark:text-warning-400 font-medium">
-                No expenses match the selected filters.
+                {t("exportModal.noMatch")}
               </p>
             )}
           </div>
@@ -203,13 +209,13 @@ export function ExportModal({ isOpen, onClose, expenses, categories }: Props) {
           {hasResults && (
             <div>
               <p className="text-xs font-semibold text-default-500 uppercase tracking-wider mb-2">
-                Preview
+                {t("exportModal.preview")}
               </p>
               <div className="border border-default-200 rounded-lg overflow-hidden">
                 <table className="w-full text-xs">
                   <thead className="bg-default-50 dark:bg-gray-800">
                     <tr>
-                      {["Date", "Description", "Category", "Amount"].map((h) => (
+                      {[t("addExpense.date"), t("addExpense.description"), t("addExpense.category"), t("addExpense.amount")].map((h) => (
                         <th key={h} className="px-3 py-2 text-left font-semibold text-default-500">
                           {h}
                         </th>
@@ -228,7 +234,7 @@ export function ExportModal({ isOpen, onClose, expenses, categories }: Props) {
                     {filtered.length > 5 && (
                       <tr className="border-t border-default-100 dark:border-gray-700">
                         <td colSpan={4} className="px-3 py-1.5 text-default-400 text-center italic">
-                          … and {filtered.length - 5} more
+                          {t("exportModal.andMore", { count: filtered.length - 5 })}
                         </td>
                       </tr>
                     )}
@@ -241,7 +247,7 @@ export function ExportModal({ isOpen, onClose, expenses, categories }: Props) {
 
         <ModalFooter>
           <Button variant="flat" onPress={handleClose} isDisabled={isExporting}>
-            Cancel
+            {t("cancel")}
           </Button>
           <Button
             color="primary"
@@ -251,8 +257,10 @@ export function ExportModal({ isOpen, onClose, expenses, categories }: Props) {
             isLoading={isExporting}
           >
             {isExporting
-              ? "Exporting…"
-              : `Export ${filtered.length} Record${filtered.length !== 1 ? "s" : ""}`}
+              ? t("exportModal.exporting")
+              : filtered.length !== 1
+                ? t("exportModal.exportBtnPlural", { count: filtered.length })
+                : t("exportModal.exportBtn", { count: filtered.length })}
           </Button>
         </ModalFooter>
       </ModalContent>

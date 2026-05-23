@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import {
-  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Button, Input, Chip, Divider,
-} from "@nextui-org/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input, Chip, Divider } from "@nextui-org/react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { CategoryDef, ChipColor, CHIP_COLORS, CHIP_COLOR_LABELS } from "@/lib/types";
+import { CategoryDef, ChipColor, CHIP_COLORS } from "@/lib/types";
+import { useLanguage } from "@/app/providers";
 
 interface Props {
   isOpen: boolean;
@@ -20,8 +18,9 @@ interface Props {
 const BLANK = { name: "", color: "primary" as ChipColor };
 
 export function ManageCategoriesModal({ isOpen, onClose, categories, onAdd, onUpdate, onDelete }: Props) {
-  const [editing, setEditing] = useState<CategoryDef | null>(null);
-  const [form, setForm] = useState(BLANK);
+  const { t } = useLanguage();
+  const [editing, setEditing]   = useState<CategoryDef | null>(null);
+  const [form, setForm]         = useState(BLANK);
   const [nameError, setNameError] = useState("");
 
   function openEdit(cat: CategoryDef) {
@@ -39,17 +38,14 @@ export function ManageCategoriesModal({ isOpen, onClose, categories, onAdd, onUp
   function handleSubmit(ev: FormEvent) {
     ev.preventDefault();
     const trimmed = form.name.trim();
-    if (!trimmed) { setNameError("Name is required"); return; }
+    if (!trimmed) { setNameError(t("manageCategories.errorRequired")); return; }
     const others = categories.filter((c) => editing ? c.name !== editing.name : true);
     if (others.map((c) => c.name.toLowerCase()).includes(trimmed.toLowerCase())) {
-      setNameError("Category already exists");
+      setNameError(t("manageCategories.errorExists"));
       return;
     }
-    if (editing) {
-      onUpdate(editing.name, trimmed, form.color);
-    } else {
-      onAdd(trimmed, form.color);
-    }
+    if (editing) onUpdate(editing.name, trimmed, form.color);
+    else onAdd(trimmed, form.color);
     cancelEdit();
   }
 
@@ -71,32 +67,22 @@ export function ManageCategoriesModal({ isOpen, onClose, categories, onAdd, onUp
   return (
     <Modal isOpen={isOpen} onClose={handleClose} placement="center" size="md">
       <ModalContent>
-        <ModalHeader>Manage Categories</ModalHeader>
+        <ModalHeader>{t("manageCategories.title")}</ModalHeader>
         <ModalBody className="gap-4">
           <div className="max-h-56 overflow-y-auto space-y-1 pr-1">
             {categories.map((cat) => (
               <div key={cat.name} className="flex items-center gap-2 py-0.5">
                 <div className="flex-1 min-w-0">
-                  <Chip color={cat.color} variant="flat" size="sm">
-                    {cat.name}
-                  </Chip>
+                  <Chip color={cat.color} variant="flat" size="sm">{cat.name}</Chip>
                 </div>
                 {cat.isBuiltin ? (
-                  <span className="text-xs text-default-400 shrink-0">built-in</span>
+                  <span className="text-xs text-default-400 shrink-0">{t("manageCategories.builtIn")}</span>
                 ) : (
                   <div className="flex gap-1 shrink-0">
-                    <Button
-                      isIconOnly size="sm" variant="light"
-                      onPress={() => openEdit(cat)}
-                      aria-label={`Edit ${cat.name}`}
-                    >
+                    <Button isIconOnly size="sm" variant="light" onPress={() => openEdit(cat)}>
                       <Pencil size={13} />
                     </Button>
-                    <Button
-                      isIconOnly size="sm" variant="light" color="danger"
-                      onPress={() => handleDelete(cat.name)}
-                      aria-label={`Delete ${cat.name}`}
-                    >
+                    <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => handleDelete(cat.name)}>
                       <Trash2 size={13} />
                     </Button>
                   </div>
@@ -109,38 +95,37 @@ export function ManageCategoriesModal({ isOpen, onClose, categories, onAdd, onUp
 
           <form id="cat-form" onSubmit={handleSubmit} className="space-y-3">
             <p className="text-sm font-medium text-default-700">
-              {editing ? `Editing "${editing.name}"` : "Add New Category"}
+              {editing
+                ? t("manageCategories.formTitleEdit", { name: editing.name })
+                : t("manageCategories.formTitleAdd")}
             </p>
             <Input
-              label="Name"
-              placeholder="e.g. Subscriptions"
+              label={t("manageCategories.name")}
+              placeholder={t("manageCategories.namePlaceholder")}
               value={form.name}
               onValueChange={(v) => setField("name", v)}
               isInvalid={!!nameError}
               errorMessage={nameError}
             />
             <div>
-              <p className="text-sm text-default-600 mb-2">Color</p>
+              <p className="text-sm text-default-600 mb-2">{t("manageCategories.color")}</p>
               <div className="flex flex-wrap gap-2">
                 {CHIP_COLORS.map((c) => (
                   <button
-                    type="button"
-                    key={c}
+                    type="button" key={c}
                     onClick={() => setField("color", c)}
                     className={`rounded-full transition-all ${
-                      form.color === c
-                        ? "ring-2 ring-offset-2 ring-foreground scale-110"
-                        : "opacity-70 hover:opacity-100"
+                      form.color === c ? "ring-2 ring-offset-2 ring-foreground scale-110" : "opacity-70 hover:opacity-100"
                     }`}
                   >
-                    <Chip color={c} variant="flat" size="sm">{CHIP_COLOR_LABELS[c]}</Chip>
+                    <Chip color={c} variant="flat" size="sm">{t(`colors.${c}`)}</Chip>
                   </button>
                 ))}
               </div>
             </div>
             {form.name.trim() && (
               <div>
-                <p className="text-xs text-default-400 mb-1">Preview</p>
+                <p className="text-xs text-default-400 mb-1">{t("manageCategories.preview")}</p>
                 <Chip color={form.color} variant="flat">{form.name.trim()}</Chip>
               </div>
             )}
@@ -149,19 +134,14 @@ export function ManageCategoriesModal({ isOpen, onClose, categories, onAdd, onUp
 
         <ModalFooter className="flex justify-between">
           {editing ? (
-            <Button variant="flat" onPress={cancelEdit}>Cancel Edit</Button>
+            <Button variant="flat" onPress={cancelEdit}>{t("manageCategories.cancelEdit")}</Button>
           ) : (
             <div />
           )}
           <div className="flex gap-2">
-            <Button variant="flat" onPress={handleClose}>Close</Button>
-            <Button
-              color="primary"
-              type="submit"
-              form="cat-form"
-              startContent={editing ? undefined : <Plus size={14} />}
-            >
-              {editing ? "Save" : "Add"}
+            <Button variant="flat" onPress={handleClose}>{t("close")}</Button>
+            <Button color="primary" type="submit" form="cat-form" startContent={editing ? undefined : <Plus size={14} />}>
+              {editing ? t("save") : t("add")}
             </Button>
           </div>
         </ModalFooter>
