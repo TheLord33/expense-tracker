@@ -15,6 +15,7 @@ export const CURRENCIES: Currency[] = [
   { code: "ARS", symbol: "AR$", label: "Peso Argentino",    symbolPosition: "prefix", decimals: 2 },
   { code: "COP", symbol: "CO$", label: "Peso Colombiano",   symbolPosition: "prefix", decimals: 0 },
   { code: "CLP", symbol: "CL$", label: "Peso Chileno",      symbolPosition: "prefix", decimals: 0 },
+  { code: "DOP", symbol: "RD$", label: "Peso Dominicano",   symbolPosition: "prefix", decimals: 2 },
   { code: "CAD", symbol: "CA$", label: "Canadian Dollar",   symbolPosition: "prefix", decimals: 2 },
   { code: "AUD", symbol: "A$",  label: "Australian Dollar", symbolPosition: "prefix", decimals: 2 },
   { code: "CHF", symbol: "Fr.", label: "Swiss Franc",       symbolPosition: "prefix", decimals: 2 },
