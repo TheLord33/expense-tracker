@@ -67,7 +67,7 @@ export function AppHeader({ onAddExpense, onAddCategory, importExportSlot }: Pro
                   startContent={<span className="font-semibold w-8 text-right inline-block text-default-600">{c.symbol}</span>}
                   description={c.code}
                 >
-                  {c.label}
+                  {c.localizedNames?.[language] ?? c.label}
                 </DropdownItem>
               ))}
             </DropdownMenu>
