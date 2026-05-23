@@ -7,12 +7,12 @@ import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 const geist = Geist({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Family Finance Tracker",
-  description: "Track your family's income, expenses, and budgets",
+  title: "Family Finances Organizer",
+  description: "Organize your family's income, expenses, and budgets",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Finance",
+    title: "Finances",
   },
 };
 

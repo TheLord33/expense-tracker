@@ -9,7 +9,7 @@ const ja: Translations = {
   to: "終了",
 
   header: {
-    title: "家計簿トラッカー",
+    title: "家族財務オーガナイザー",
     subtitle: "収入・支出・予算 — すべて一か所で",
     addCategory: "カテゴリー",
     addExpense: "支出を追加",

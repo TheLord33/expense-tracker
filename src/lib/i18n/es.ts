@@ -9,7 +9,7 @@ const es: Translations = {
   to: "Hasta",
 
   header: {
-    title: "Rastreador Financiero Familiar",
+    title: "Organizador Financiero Familiar",
     subtitle: "Ingresos, gastos y presupuestos — todo en un lugar",
     addCategory: "Categoría",
     addExpense: "Agregar Gasto",

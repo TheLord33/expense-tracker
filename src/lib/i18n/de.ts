@@ -9,7 +9,7 @@ const de: Translations = {
   to: "Bis",
 
   header: {
-    title: "Familien-Finanztracker",
+    title: "Familien-Finanzorganizer",
     subtitle: "Einnahmen, Ausgaben und Budgets — alles an einem Ort",
     addCategory: "Kategorie",
     addExpense: "Ausgabe hinzufügen",

@@ -9,7 +9,7 @@ const it: Translations = {
   to: "Al",
 
   header: {
-    title: "Gestore Finanziario Familiare",
+    title: "Organizzatore Finanziario Familiare",
     subtitle: "Entrate, spese e budget — tutto in un unico posto",
     addCategory: "Categoria",
     addExpense: "Aggiungi spesa",

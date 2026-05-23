@@ -7,7 +7,7 @@ const en = {
   to: "To",
 
   header: {
-    title: "Family Finance Tracker",
+    title: "Family Finances Organizer",
     subtitle: "Income, expenses & budgets — all in one place",
     addCategory: "Category",
     addExpense: "Add Expense",

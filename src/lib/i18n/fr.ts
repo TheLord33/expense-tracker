@@ -9,7 +9,7 @@ const fr: Translations = {
   to: "Au",
 
   header: {
-    title: "Gestionnaire Financier Familial",
+    title: "Organisateur Financier Familial",
     subtitle: "Revenus, dépenses et budgets — tout en un seul endroit",
     addCategory: "Catégorie",
     addExpense: "Ajouter une dépense",
