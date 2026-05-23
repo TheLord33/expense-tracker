@@ -2,17 +2,19 @@ import en from "./en";
 import es from "./es";
 import pt from "./pt";
 import fr from "./fr";
+import de from "./de";
 
-export type Language = "en" | "es" | "pt" | "fr";
+export type Language = "en" | "es" | "pt" | "fr" | "de";
 
 export const LANGUAGES: { value: Language; label: string; flag: string; locale: string }[] = [
   { value: "en", label: "English",    flag: "🇺🇸", locale: "en-US" },
   { value: "es", label: "Español",    flag: "🇪🇸", locale: "es-ES" },
   { value: "pt", label: "Português",  flag: "🇧🇷", locale: "pt-BR" },
   { value: "fr", label: "Français",   flag: "🇫🇷", locale: "fr-FR" },
+  { value: "de", label: "Deutsch",    flag: "🇩🇪", locale: "de-DE" },
 ];
 
-export const TRANSLATIONS = { en, es, pt, fr };
+export const TRANSLATIONS = { en, es, pt, fr, de };
 
 type Variables = Record<string, string | number>;
 
