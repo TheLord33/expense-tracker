@@ -121,6 +121,33 @@ export interface IncomeSource {
   endDate?: string;
 }
 
+// ── Cloud Export ──────────────────────────────────────────────────────────────
+
+export type ExportDestination = "download" | "email" | "googlesheets" | "dropbox" | "onedrive" | "link";
+
+export interface ExportRecord {
+  id: string;
+  timestamp: string; // ISO
+  format: string;
+  template: string;
+  recordCount: number;
+  totalAmount: number;
+  destination: ExportDestination;
+  filename: string;
+  recipientEmail?: string;
+}
+
+export interface BackupSchedule {
+  enabled: boolean;
+  frequency: "daily" | "weekly" | "monthly";
+  format: "csv" | "json" | "pdf";
+  destination: "email" | "dropbox" | "onedrive";
+  email: string;
+  lastBackup: string | null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export type SortField = "date" | "amount" | "category" | "description";
 export type SortDir = "asc" | "desc";
 export type ViewMode = "list" | "category" | "monthly" | "trends";

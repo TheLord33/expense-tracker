@@ -8,6 +8,7 @@ import {
 import { Expense, CategoryDef } from "@/lib/types";
 import { fromCSV, fromJSON, fromText, ImportResult } from "@/lib/importExport";
 import { ExportModal } from "@/components/ExportModal";
+import { CloudExportModal } from "@/components/CloudExportModal";
 import { useLanguage } from "@/app/providers";
 
 interface Props {
@@ -30,6 +31,7 @@ export function ImportExportMenu({ expenses, categories, onImport }: Props) {
   const [pendingFormat, setPendingFormat] = useState<ImportFormat | null>(null);
   const [importResult, setImportResult]   = useState<ImportResult | null>(null);
   const [showExport, setShowExport]       = useState(false);
+  const [showCloud, setShowCloud]         = useState(false);
 
   // ── Import ────────────────────────────────────────────────────────────
 
@@ -88,6 +90,9 @@ export function ImportExportMenu({ expenses, categories, onImport }: Props) {
             <DropdownItem key="export" onPress={() => setShowExport(true)}>
               {t("importExport.exportAction")}
             </DropdownItem>
+            <DropdownItem key="cloud" onPress={() => setShowCloud(true)}>
+              {t("cloudExport.title")} ✦
+            </DropdownItem>
           </DropdownSection>
           <DropdownSection title={t("importExport.importSection")}>
             <DropdownItem key="import-csv"  onPress={() => openFilePicker("csv")}>{t("importExport.importCsv")}</DropdownItem>
@@ -104,6 +109,14 @@ export function ImportExportMenu({ expenses, categories, onImport }: Props) {
       <ExportModal
         isOpen={showExport}
         onClose={() => setShowExport(false)}
+        expenses={expenses}
+        categories={categories}
+      />
+
+      {/* Cloud export modal */}
+      <CloudExportModal
+        isOpen={showCloud}
+        onClose={() => setShowCloud(false)}
         expenses={expenses}
         categories={categories}
       />
