@@ -111,7 +111,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   // Language init
   useEffect(() => {
     const stored = localStorage.getItem("expense-tracker-language") as Language | null;
-    if (stored && ["en", "es", "pt", "fr", "de", "it"].includes(stored)) setLanguageState(stored);
+    if (stored && ["en", "es", "pt", "fr", "de", "it", "ja"].includes(stored)) setLanguageState(stored);
   }, []);
 
   function setLanguage(lang: Language) {

@@ -4,8 +4,9 @@ import pt from "./pt";
 import fr from "./fr";
 import de from "./de";
 import it from "./it";
+import ja from "./ja";
 
-export type Language = "en" | "es" | "pt" | "fr" | "de" | "it";
+export type Language = "en" | "es" | "pt" | "fr" | "de" | "it" | "ja";
 
 export const LANGUAGES: { value: Language; label: string; flag: string; locale: string }[] = [
   { value: "en", label: "English",    flag: "🇺🇸", locale: "en-US" },
@@ -14,9 +15,10 @@ export const LANGUAGES: { value: Language; label: string; flag: string; locale: 
   { value: "fr", label: "Français",   flag: "🇫🇷", locale: "fr-FR" },
   { value: "de", label: "Deutsch",    flag: "🇩🇪", locale: "de-DE" },
   { value: "it", label: "Italiano",   flag: "🇮🇹", locale: "it-IT" },
+  { value: "ja", label: "日本語",      flag: "🇯🇵", locale: "ja-JP" },
 ];
 
-export const TRANSLATIONS = { en, es, pt, fr, de, it };
+export const TRANSLATIONS = { en, es, pt, fr, de, it, ja };
 
 type Variables = Record<string, string | number>;
 
