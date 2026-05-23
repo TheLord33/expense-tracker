@@ -1,13 +1,26 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 
 const geist = Geist({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Family Finance Tracker",
   description: "Track your family's income, expenses, and budgets",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Finance",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#4f46e5",
+  width: "device-width",
+  initialScale: 1,
+  minimumScale: 1,
 };
 
 export default function RootLayout({
@@ -28,6 +41,7 @@ export default function RootLayout({
       </head>
       <body className={`${geist.className} min-h-screen bg-slate-50 dark:bg-gray-950 transition-colors`}>
         <Providers>{children}</Providers>
+        <ServiceWorkerRegistrar />
       </body>
     </html>
   );
