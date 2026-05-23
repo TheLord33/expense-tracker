@@ -23,10 +23,10 @@ export function AppHeader({ onAddExpense, onAddCategory, importExportSlot }: Pro
           </div>
           <div>
             <h1 className="text-xl font-bold text-white leading-tight">
-              Expense Tracker
+              Family Finance Tracker
             </h1>
             <p className="text-blue-100 text-xs">
-              Keep track of where your money goes
+              Income, expenses & budgets — all in one place
             </p>
           </div>
         </div>

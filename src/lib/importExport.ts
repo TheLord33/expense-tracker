@@ -30,7 +30,7 @@ export function toText(expenses: Expense[]): string {
   const SEP = "-".repeat(76);
 
   const lines = [
-    `Expense Tracker Export — ${now}`,
+    `Family Finance Tracker Export — ${now}`,
     "=".repeat(76),
     "",
     "DATE          DESCRIPTION                            CATEGORY         AMOUNT",

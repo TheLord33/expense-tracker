@@ -6,8 +6,8 @@ import { Providers } from "./providers";
 const geist = Geist({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Expense Tracker",
-  description: "Track your personal expenses",
+  title: "Family Finance Tracker",
+  description: "Track your family's income, expenses, and budgets",
 };
 
 export default function RootLayout({
