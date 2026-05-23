@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { NextUIProvider } from "@nextui-org/react";
 import { type Language, LANGUAGES, translate } from "@/lib/i18n";
 
@@ -33,11 +33,27 @@ const LanguageContext = createContext<{
 
 export function useLanguage() { return useContext(LanguageContext); }
 
+// ── Toast ─────────────────────────────────────────────────────────────────────
+
+interface Toast {
+  id: string;
+  message: string;
+  undoFn?: () => void;
+}
+
+const ToastContext = createContext<{ showToast: (message: string, undoFn?: () => void) => void }>({
+  showToast: () => {},
+});
+
+export function useToast() { return useContext(ToastContext); }
+
 // ── Providers ─────────────────────────────────────────────────────────────────
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("light");
   const [language, setLanguageState] = useState<Language>("en");
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const timerRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   // Theme init
   useEffect(() => {
@@ -75,10 +91,53 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   const locale = LANGUAGES.find((l) => l.value === language)?.locale ?? "en-US";
 
+  const dismissToast = useCallback((id: string) => {
+    clearTimeout(timerRefs.current.get(id));
+    timerRefs.current.delete(id);
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const showToast = useCallback((message: string, undoFn?: () => void) => {
+    const id = crypto.randomUUID();
+    setToasts((prev) => [...prev, { id, message, undoFn }]);
+    const timer = setTimeout(() => dismissToast(id), 5000);
+    timerRefs.current.set(id, timer);
+  }, [dismissToast]);
+
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       <LanguageContext.Provider value={{ language, setLanguage, t, locale }}>
-        <NextUIProvider>{children}</NextUIProvider>
+        <ToastContext.Provider value={{ showToast }}>
+          <NextUIProvider>{children}</NextUIProvider>
+          {/* Toast stack */}
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2 items-center pointer-events-none">
+            {toasts.map((toast) => (
+              <div
+                key={toast.id}
+                className="pointer-events-auto flex items-center gap-3 bg-gray-900 dark:bg-gray-800 text-white text-sm px-4 py-3 rounded-xl shadow-2xl animate-fade-in"
+              >
+                <span>{toast.message}</span>
+                {toast.undoFn && (
+                  <button
+                    className="font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+                    onClick={() => {
+                      toast.undoFn?.();
+                      dismissToast(toast.id);
+                    }}
+                  >
+                    {t("toast.undo")}
+                  </button>
+                )}
+                <button
+                  className="ml-1 text-gray-400 hover:text-white transition-colors text-base leading-none"
+                  onClick={() => dismissToast(toast.id)}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </ToastContext.Provider>
       </LanguageContext.Provider>
     </ThemeContext.Provider>
   );

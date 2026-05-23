@@ -38,11 +38,15 @@ export function useBudgets() {
     setBudgets((prev) => prev.filter((b) => b.id !== id));
   }, []);
 
+  const restoreBudget = useCallback((budget: Budget) => {
+    setBudgets((prev) => [...prev.filter((b) => b.id !== budget.id), budget]);
+  }, []);
+
   const renameCategory = useCallback((oldName: string, newName: string) => {
     setBudgets((prev) =>
       prev.map((b) => b.category === oldName ? { ...b, category: newName } : b)
     );
   }, []);
 
-  return { budgets, addBudget, updateBudget, deleteBudget, renameCategory };
+  return { budgets, addBudget, updateBudget, deleteBudget, restoreBudget, renameCategory };
 }

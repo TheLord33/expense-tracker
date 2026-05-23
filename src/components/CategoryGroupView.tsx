@@ -1,7 +1,8 @@
 "use client";
 
+import { useMemo } from "react";
 import { Chip, Button } from "@nextui-org/react";
-import { Pencil } from "lucide-react";
+import { Pencil, ChevronRight } from "lucide-react";
 import { Expense, CategoryDef } from "@/lib/types";
 import { useLanguage } from "@/app/providers";
 
@@ -31,26 +32,26 @@ export function CategoryGroupView({ expenses, categories, onDelete, onEdit }: Pr
 
   const total = expenses.reduce((s, e) => s + e.amount, 0);
 
-  const groups = categories
-    .map((cat) => ({
-      cat,
-      items: expenses.filter((e) => e.category === cat.name),
-    }))
-    .filter((g) => g.items.length > 0)
-    .sort(
-      (a, b) =>
-        b.items.reduce((s, e) => s + e.amount, 0) -
-        a.items.reduce((s, e) => s + e.amount, 0)
-    );
+  const groups = useMemo(() => {
+    const result = categories
+      .map((cat) => ({
+        cat,
+        items: expenses.filter((e) => e.category === cat.name),
+      }))
+      .filter((g) => g.items.length > 0)
+      .sort(
+        (a, b) =>
+          b.items.reduce((s, e) => s + e.amount, 0) -
+          a.items.reduce((s, e) => s + e.amount, 0)
+      );
 
-  // Any expense whose category isn't in the known list
-  const knownNames = new Set(categories.map((c) => c.name));
-  const uncategorized = expenses.filter((e) => !knownNames.has(e.category));
-  if (uncategorized.length)
-    groups.push({
-      cat: { name: "Uncategorized", color: "default" },
-      items: uncategorized,
-    });
+    const knownNames = new Set(categories.map((c) => c.name));
+    const uncategorized = expenses.filter((e) => !knownNames.has(e.category));
+    if (uncategorized.length)
+      result.push({ cat: { name: "Uncategorized", color: "default" }, items: uncategorized });
+
+    return result;
+  }, [expenses, categories]);
 
   return (
     <div className="space-y-2">
@@ -61,10 +62,11 @@ export function CategoryGroupView({ expenses, categories, onDelete, onEdit }: Pr
         return (
           <details
             key={cat.name}
-            className="bg-white rounded-xl border border-default-200 overflow-hidden"
+            className="group bg-white dark:bg-default-100 rounded-xl border border-default-200 overflow-hidden"
             open
           >
             <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-default-50 list-none">
+              <ChevronRight size={14} className="text-default-400 transition-transform duration-200 group-open:rotate-90 shrink-0" />
               <Chip color={cat.color as never} variant="flat" size="sm">
                 {cat.name}
               </Chip>

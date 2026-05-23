@@ -172,9 +172,14 @@ export function FilterBar({
             </div>
             {filter.datePreset === "custom" && (
               <div className="flex gap-2 mt-3">
-                <Input size="sm" type="date" label={t("filter.from" as never) ?? t("from")} value={filter.dateFrom} onValueChange={(v) => setFilter({ dateFrom: v })} />
-                <Input size="sm" type="date" label={t("filter.to" as never) ?? t("to")} value={filter.dateTo} onValueChange={(v) => setFilter({ dateTo: v })} />
+                <Input size="sm" type="date" label={t("from")} value={filter.dateFrom} onValueChange={(v) => setFilter({ dateFrom: v })} />
+                <Input size="sm" type="date" label={t("to")} value={filter.dateTo} onValueChange={(v) => setFilter({ dateTo: v })} />
               </div>
+            )}
+            {filter.datePreset === "custom" && filter.dateFrom && filter.dateTo && filter.dateFrom > filter.dateTo && (
+              <p className="mt-2 text-xs text-warning-600 dark:text-warning-400">
+                {t("filter.dateOrderWarning")}
+              </p>
             )}
           </div>
 

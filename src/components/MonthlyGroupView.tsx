@@ -1,7 +1,8 @@
 "use client";
 
+import { useMemo } from "react";
 import { Chip, Button } from "@nextui-org/react";
-import { Pencil } from "lucide-react";
+import { Pencil, ChevronRight } from "lucide-react";
 import { Expense, CategoryDef } from "@/lib/types";
 import { useLanguage } from "@/app/providers";
 
@@ -35,21 +36,17 @@ export function MonthlyGroupView({ expenses, categories, onDelete, onEdit }: Pro
     ) as never;
   }
 
-  // Group by YYYY-MM
-  const monthMap = new Map<string, Expense[]>();
-  for (const e of expenses) {
-    const key = e.date.slice(0, 7);
-    if (!monthMap.has(key)) monthMap.set(key, []);
-    monthMap.get(key)!.push(e);
-  }
-
-  const months = [...monthMap.entries()].sort((a, b) =>
-    b[0].localeCompare(a[0])
-  );
-
-  const maxTotal = Math.max(
-    ...months.map(([, items]) => items.reduce((s, e) => s + e.amount, 0))
-  );
+  const { months, maxTotal } = useMemo(() => {
+    const monthMap = new Map<string, Expense[]>();
+    for (const e of expenses) {
+      const key = e.date.slice(0, 7);
+      if (!monthMap.has(key)) monthMap.set(key, []);
+      monthMap.get(key)!.push(e);
+    }
+    const sorted = [...monthMap.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+    const max = Math.max(...sorted.map(([, items]) => items.reduce((s, e) => s + e.amount, 0)));
+    return { months: sorted, maxTotal: max };
+  }, [expenses]);
 
   return (
     <div className="space-y-2">
@@ -66,10 +63,11 @@ export function MonthlyGroupView({ expenses, categories, onDelete, onEdit }: Pro
         return (
           <details
             key={key}
-            className="bg-white rounded-xl border border-default-200 overflow-hidden"
+            className="group bg-white dark:bg-default-100 rounded-xl border border-default-200 overflow-hidden"
             open
           >
             <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none hover:bg-default-50 list-none">
+              <ChevronRight size={14} className="text-default-400 transition-transform duration-200 group-open:rotate-90 shrink-0" />
               <span className="font-semibold text-default-800 min-w-36 text-sm">
                 {label}
               </span>

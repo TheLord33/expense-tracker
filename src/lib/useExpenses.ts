@@ -44,6 +44,10 @@ export function useExpenses() {
     setExpenses((prev) => prev.filter((e) => e.id !== id));
   }, []);
 
+  const restoreExpense = useCallback((expense: Expense) => {
+    setExpenses((prev) => [expense, ...prev.filter((e) => e.id !== expense.id)]);
+  }, []);
+
   const updateExpense = useCallback(
     (id: string, data: Omit<Expense, "id">) => {
       setExpenses((prev) =>
@@ -69,5 +73,5 @@ export function useExpenses() {
 
   const total = expenses.reduce((sum, e) => sum + e.amount, 0);
 
-  return { expenses, addExpense, deleteExpense, updateExpense, importExpenses, renameCategory, total, loaded };
+  return { expenses, addExpense, deleteExpense, restoreExpense, updateExpense, importExpenses, renameCategory, total, loaded };
 }

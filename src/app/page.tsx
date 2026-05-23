@@ -15,6 +15,7 @@ import { useFilterSort } from "@/lib/useFilterSort";
 import { useBudgets } from "@/lib/useBudgets";
 import { useRecurring, generateDueExpenses } from "@/lib/useRecurring";
 import { useIncome } from "@/lib/useIncome";
+import type { Budget, RecurringExpense, IncomeSource } from "@/lib/types";
 
 import { AppHeader } from "@/components/AppHeader";
 import { AddExpenseModal } from "@/components/AddExpenseModal";
@@ -31,14 +32,15 @@ import { RecurringTab } from "@/components/RecurringTab";
 import { IncomeTab } from "@/components/IncomeTab";
 
 import type { Expense, ChipColor } from "@/lib/types";
-import { useLanguage } from "@/app/providers";
+import { useLanguage, useToast } from "@/app/providers";
 
 export default function HomePage() {
   const { t } = useLanguage();
+  const { showToast } = useToast();
 
   // ── Data hooks ──────────────────────────────────────────────────────────────
   const {
-    expenses, addExpense, deleteExpense, updateExpense,
+    expenses, addExpense, deleteExpense, restoreExpense, updateExpense,
     importExpenses, renameCategory: renameExpenseCategory, loaded: expensesLoaded,
   } = useExpenses();
 
@@ -49,15 +51,15 @@ export default function HomePage() {
     viewMode, setViewMode, filtered, resetFilters, activeFilterCount,
   } = useFilterSort(expenses);
 
-  const { budgets, addBudget, updateBudget, deleteBudget, renameCategory: renameBudgetCategory } = useBudgets();
+  const { budgets, addBudget, updateBudget, deleteBudget, restoreBudget, renameCategory: renameBudgetCategory } = useBudgets();
 
   const {
     recurring, loaded: recurringLoaded,
-    addRecurring, updateRecurring, deleteRecurring, markGenerated,
+    addRecurring, updateRecurring, deleteRecurring, restoreRecurring, markGenerated,
     renameCategory: renameRecurringCategory,
   } = useRecurring();
 
-  const { sources, monthlyIncome, addSource, updateSource, deleteSource } = useIncome();
+  const { sources, monthlyIncome, addSource, updateSource, deleteSource, restoreSource } = useIncome();
 
   // ── Edit expense state ───────────────────────────────────────────────────────
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -65,6 +67,22 @@ export default function HomePage() {
   // ── Modals ───────────────────────────────────────────────────────────────────
   const addExpenseModal = useDisclosure();
   const addCategoryModal = useDisclosure();
+
+  // ── Keyboard shortcut: N → open add expense modal ──────────────────────────
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if ((e.target as HTMLElement).isContentEditable) return;
+      if (e.key === "n" || e.key === "N") {
+        e.preventDefault();
+        setEditingExpense(null);
+        addExpenseModal.onOpen();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [addExpenseModal]);
 
   // ── Auto-generate recurring expenses (once per session after data loads) ─────
   const processedRuleIds = useRef(new Set<string>());
@@ -100,6 +118,30 @@ export default function HomePage() {
   function handleExpenseModalClose() {
     setEditingExpense(null);
     addExpenseModal.onClose();
+  }
+
+  function handleDeleteExpense(id: string) {
+    const expense = expenses.find((e) => e.id === id);
+    deleteExpense(id);
+    if (expense) showToast(t("toast.expenseDeleted"), () => restoreExpense(expense));
+  }
+
+  function handleDeleteBudget(id: string) {
+    const budget = budgets.find((b) => b.id === id);
+    deleteBudget(id);
+    if (budget) showToast(t("toast.budgetDeleted"), () => restoreBudget(budget as Budget));
+  }
+
+  function handleDeleteRecurring(id: string) {
+    const rule = recurring.find((r) => r.id === id);
+    deleteRecurring(id);
+    if (rule) showToast(t("toast.recurringDeleted"), () => restoreRecurring(rule as RecurringExpense));
+  }
+
+  function handleDeleteIncome(id: string) {
+    const source = sources.find((s) => s.id === id);
+    deleteSource(id);
+    if (source) showToast(t("toast.incomeDeleted"), () => restoreSource(source as IncomeSource));
   }
 
   const thisMonthIncome = monthlyIncome();
@@ -182,7 +224,7 @@ export default function HomePage() {
                   {viewMode === "list" && (
                     <ListView
                       expenses={filtered} categories={categories}
-                      onDelete={deleteExpense} onEdit={handleEdit}
+                      onDelete={handleDeleteExpense} onEdit={handleEdit}
                       loaded={expensesLoaded}
                       sortField={sortField} sortDir={sortDir} toggleSort={toggleSort}
                     />
@@ -190,13 +232,13 @@ export default function HomePage() {
                   {viewMode === "category" && (
                     <CategoryGroupView
                       expenses={filtered} categories={categories}
-                      onDelete={deleteExpense} onEdit={handleEdit}
+                      onDelete={handleDeleteExpense} onEdit={handleEdit}
                     />
                   )}
                   {viewMode === "monthly" && (
                     <MonthlyGroupView
                       expenses={filtered} categories={categories}
-                      onDelete={deleteExpense} onEdit={handleEdit}
+                      onDelete={handleDeleteExpense} onEdit={handleEdit}
                     />
                   )}
                   {viewMode === "trends" && (
@@ -212,7 +254,7 @@ export default function HomePage() {
             <div className="pt-4">
               <BudgetsTab
                 budgets={budgets} categories={categories} expenses={expenses}
-                onAdd={addBudget} onUpdate={updateBudget} onDelete={deleteBudget}
+                onAdd={addBudget} onUpdate={updateBudget} onDelete={handleDeleteBudget}
               />
             </div>
           </Tab>
@@ -222,7 +264,7 @@ export default function HomePage() {
             <div className="pt-4">
               <RecurringTab
                 recurring={recurring} categories={categories}
-                onAdd={addRecurring} onUpdate={updateRecurring} onDelete={deleteRecurring}
+                onAdd={addRecurring} onUpdate={updateRecurring} onDelete={handleDeleteRecurring}
               />
             </div>
           </Tab>
@@ -232,7 +274,7 @@ export default function HomePage() {
             <div className="pt-4">
               <IncomeTab
                 sources={sources} monthlyIncome={monthlyIncome}
-                onAdd={addSource} onUpdate={updateSource} onDelete={deleteSource}
+                onAdd={addSource} onUpdate={updateSource} onDelete={handleDeleteIncome}
               />
             </div>
           </Tab>

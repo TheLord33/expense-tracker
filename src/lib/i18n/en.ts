@@ -34,10 +34,13 @@ const en = {
     monthlyIncome: "Monthly Income",
     monthlyExpenses: "Monthly Expenses",
     netIncome: "Net Income",
+    dailyAvg: "Daily avg",
+    savingsRate: "Savings rate",
   },
 
   filter: {
     searchPlaceholder: "Search by description or category…",
+    dateOrderWarning: "End date is before start date — no results will match.",
     filters: "Filters",
     filtersActive: "Filters ({count})",
     clear: "Clear",
@@ -240,6 +243,14 @@ const en = {
     default: "Gray",
   },
 
+  toast: {
+    undo: "Undo",
+    expenseDeleted: "Expense deleted",
+    budgetDeleted: "Budget deleted",
+    recurringDeleted: "Recurring rule deleted",
+    incomeDeleted: "Income source deleted",
+  },
+
   cloudExport: {
     title: "Cloud Export & Integrations",
     tabTemplates: "Templates",
@@ -322,6 +333,9 @@ const en = {
     historyOneDrive: "OneDrive",
     historyLink: "Shared Link",
     historyRecords: "{count} records",
+    showQR: "Show QR Code",
+    hideQR: "Hide QR Code",
+    generateFirst: "Generate a link first to see the QR code",
   },
 };
 

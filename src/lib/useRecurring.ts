@@ -85,6 +85,10 @@ export function useRecurring() {
     setRecurring((prev) => prev.filter((r) => r.id !== id));
   }, []);
 
+  const restoreRecurring = useCallback((rule: RecurringExpense) => {
+    setRecurring((prev) => [...prev.filter((r) => r.id !== rule.id), rule]);
+  }, []);
+
   const markGenerated = useCallback((id: string, date: string) => {
     setRecurring((prev) =>
       prev.map((r) => (r.id === id ? { ...r, lastGenerated: date } : r))
@@ -103,6 +107,7 @@ export function useRecurring() {
     addRecurring,
     updateRecurring,
     deleteRecurring,
+    restoreRecurring,
     markGenerated,
     renameCategory,
   };

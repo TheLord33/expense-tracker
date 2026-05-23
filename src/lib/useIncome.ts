@@ -49,6 +49,10 @@ export function useIncome() {
     setSources((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
+  const restoreSource = useCallback((source: IncomeSource) => {
+    setSources((prev) => [...prev.filter((s) => s.id !== source.id), source]);
+  }, []);
+
   /** Total monthly-equivalent income for a given YYYY-MM month string (defaults to current). */
   function monthlyIncome(month?: string): number {
     const m = month ?? new Date().toISOString().slice(0, 7);
@@ -62,5 +66,5 @@ export function useIncome() {
     }, 0);
   }
 
-  return { sources, loaded, addSource, updateSource, deleteSource, monthlyIncome };
+  return { sources, loaded, addSource, updateSource, deleteSource, restoreSource, monthlyIncome };
 }

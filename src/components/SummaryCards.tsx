@@ -38,6 +38,9 @@ export function SummaryCards({ expenses, allExpenses, categories, monthlyIncome 
 
   const isFiltered = expenses.length !== allExpenses.length;
 
+  const dayOfMonth = new Date().getDate();
+  const dailyAvg = monthlyTotal / Math.max(1, dayOfMonth);
+
   const stats = [
     {
       label: isFiltered ? t("summary.filteredTotal") : t("summary.totalSpent"),
@@ -49,7 +52,7 @@ export function SummaryCards({ expenses, allExpenses, categories, monthlyIncome 
     {
       label: t("summary.thisMonth"),
       value: `$${monthlyTotal.toFixed(2)}`,
-      sub: new Date().toLocaleString(locale, { month: "long", year: "numeric" }),
+      sub: `${new Date().toLocaleString(locale, { month: "long", year: "numeric" })} · ${t("summary.dailyAvg")} $${dailyAvg.toFixed(2)}`,
     },
     {
       label: t("summary.transactions"),
@@ -65,27 +68,31 @@ export function SummaryCards({ expenses, allExpenses, categories, monthlyIncome 
     },
   ];
 
-  const thisMonthExpenses = monthlyTotal;
-  const net = monthlyIncome - thisMonthExpenses;
+  const net = monthlyIncome - monthlyTotal;
+  const savingsRate = monthlyIncome > 0 ? Math.max(0, (net / monthlyIncome) * 100) : null;
   const NetIcon = net > 0 ? TrendingUp : net < 0 ? TrendingDown : Minus;
+
+  const incomeStrip = monthlyIncome > 0 ? [
+    { label: t("summary.monthlyIncome"),   value: `$${monthlyIncome.toFixed(2)}`,                  Icon: TrendingUp,   color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/30" },
+    { label: t("summary.monthlyExpenses"), value: `$${monthlyTotal.toFixed(2)}`,                   Icon: TrendingDown, color: "text-red-500 dark:text-red-400",          bg: "bg-red-50 dark:bg-red-900/30"          },
+    { label: t("summary.netIncome"),       value: `${net >= 0 ? "+" : ""}$${net.toFixed(2)}`,      Icon: NetIcon,      color: net >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400", bg: net >= 0 ? "bg-emerald-50 dark:bg-emerald-900/30" : "bg-red-50 dark:bg-red-900/30",
+      sub: savingsRate !== null ? `${t("summary.savingsRate")}: ${savingsRate.toFixed(0)}%` : undefined },
+  ] : null;
 
   return (
     <div className="space-y-4">
-      {monthlyIncome > 0 && (
+      {incomeStrip && (
         <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: t("summary.monthlyIncome"),   value: `$${monthlyIncome.toFixed(2)}`,                         color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/30" },
-            { label: t("summary.monthlyExpenses"), value: `$${thisMonthExpenses.toFixed(2)}`,                     color: "text-red-500 dark:text-red-400",          bg: "bg-red-50 dark:bg-red-900/30"          },
-            { label: t("summary.netIncome"),       value: `${net >= 0 ? "+" : ""}$${net.toFixed(2)}`,            color: net >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400", bg: net >= 0 ? "bg-emerald-50 dark:bg-emerald-900/30" : "bg-red-50 dark:bg-red-900/30" },
-          ].map((s) => (
+          {incomeStrip.map((s) => (
             <Card key={s.label} shadow="sm" className="border border-default-100">
               <CardBody className="gap-2 p-4 flex-row items-center">
                 <div className={`${s.bg} ${s.color} rounded-lg p-2 shrink-0`}>
-                  <NetIcon size={18} strokeWidth={2} />
+                  <s.Icon size={18} strokeWidth={2} />
                 </div>
                 <div>
                   <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
                   <p className="text-xs text-default-500">{s.label}</p>
+                  {s.sub && <p className="text-xs text-default-400">{s.sub}</p>}
                 </div>
               </CardBody>
             </Card>

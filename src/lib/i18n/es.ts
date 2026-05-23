@@ -36,10 +36,13 @@ const es: Translations = {
     monthlyIncome: "Ingresos Mensuales",
     monthlyExpenses: "Gastos Mensuales",
     netIncome: "Ingreso Neto",
+    dailyAvg: "Promedio diario",
+    savingsRate: "Tasa de ahorro",
   },
 
   filter: {
     searchPlaceholder: "Buscar por descripción o categoría…",
+    dateOrderWarning: "La fecha de fin es anterior a la de inicio — no habrá resultados.",
     filters: "Filtros",
     filtersActive: "Filtros ({count})",
     clear: "Limpiar",
@@ -242,6 +245,14 @@ const es: Translations = {
     default: "Gris",
   },
 
+  toast: {
+    undo: "Deshacer",
+    expenseDeleted: "Gasto eliminado",
+    budgetDeleted: "Presupuesto eliminado",
+    recurringDeleted: "Regla recurrente eliminada",
+    incomeDeleted: "Fuente de ingreso eliminada",
+  },
+
   cloudExport: {
     title: "Exportación en la Nube e Integraciones",
     tabTemplates: "Plantillas",
@@ -324,6 +335,9 @@ const es: Translations = {
     historyOneDrive: "OneDrive",
     historyLink: "Enlace Compartido",
     historyRecords: "{count} registros",
+    showQR: "Mostrar Código QR",
+    hideQR: "Ocultar Código QR",
+    generateFirst: "Genera un enlace primero para ver el código QR",
   },
 };
 

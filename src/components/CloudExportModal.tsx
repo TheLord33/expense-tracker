@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo } from "react";
 import {
   Modal, ModalContent, ModalHeader, ModalBody,
   Button, Input, Switch, Select, SelectItem, Divider, Chip,
@@ -121,7 +121,6 @@ export function CloudExportModal({ isOpen, onClose, expenses, categories }: Prop
   const { t, locale } = useLanguage();
   const { history, addRecord, clearHistory } = useExportHistory();
   const { schedule, updateSchedule } = useBackupSchedule();
-  const svgRef = useRef<SVGSVGElement | null>(null);
 
   // ─ Template tab state ───────────────────────────────────────────────────────
   const [template, setTemplate] = useState<Template>("custom");
@@ -654,13 +653,13 @@ export function CloudExportModal({ isOpen, onClose, expenses, categories }: Prop
                     </h3>
                     {shareLink && (
                       <Button size="sm" variant="light" onPress={() => setShowQR(v => !v)}>
-                        {showQR ? "Hide" : "Show"}
+                        {showQR ? t("cloudExport.hideQR") : t("cloudExport.showQR")}
                       </Button>
                     )}
                   </div>
 
                   {!shareLink ? (
-                    <p className="text-sm text-default-400">{t("cloudExport.shareGenerate")} first to see the QR code.</p>
+                    <p className="text-sm text-default-400">{t("cloudExport.generateFirst")}</p>
                   ) : !showQR ? (
                     <Button variant="flat" size="sm" onPress={() => setShowQR(true)} startContent={<QrCode size={14} />}>
                       {t("cloudExport.shareQRTitle")}
