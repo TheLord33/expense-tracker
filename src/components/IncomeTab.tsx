@@ -116,8 +116,8 @@ export function IncomeTab({ sources, monthlyIncome, onAdd, onUpdate, onDelete }:
               <Card key={source.id} shadow="sm" className={`border border-default-100 ${!active ? "opacity-60" : ""}`}>
                 <CardBody className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="bg-emerald-50 rounded-lg p-2 shrink-0">
-                      <TrendingUp size={16} className="text-emerald-600" />
+                    <div className="bg-emerald-50 dark:bg-emerald-900/40 rounded-lg p-2 shrink-0">
+                      <TrendingUp size={16} className="text-emerald-600 dark:text-emerald-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">

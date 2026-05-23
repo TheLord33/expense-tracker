@@ -136,8 +136,8 @@ export function RecurringTab({ recurring, categories, onAdd, onUpdate, onDelete 
               <Card key={rule.id} shadow="sm" className={`border border-default-100 ${expired ? "opacity-60" : ""}`}>
                 <CardBody className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="bg-indigo-50 rounded-lg p-2 shrink-0">
-                      <RefreshCw size={16} className="text-indigo-500" />
+                    <div className="bg-indigo-50 dark:bg-indigo-900/40 rounded-lg p-2 shrink-0">
+                      <RefreshCw size={16} className="text-indigo-500 dark:text-indigo-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">

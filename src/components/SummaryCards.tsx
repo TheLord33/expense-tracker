@@ -13,23 +13,23 @@ interface Props {
 
 const CARD_STYLES = [
   {
-    iconBg: "bg-blue-100",
-    iconColor: "text-blue-600",
+    iconBg: "bg-blue-100 dark:bg-blue-900/40",
+    iconColor: "text-blue-600 dark:text-blue-400",
     Icon: DollarSign,
   },
   {
-    iconBg: "bg-violet-100",
-    iconColor: "text-violet-600",
+    iconBg: "bg-violet-100 dark:bg-violet-900/40",
+    iconColor: "text-violet-600 dark:text-violet-400",
     Icon: CalendarDays,
   },
   {
-    iconBg: "bg-emerald-100",
-    iconColor: "text-emerald-600",
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/40",
+    iconColor: "text-emerald-600 dark:text-emerald-400",
     Icon: Receipt,
   },
   {
-    iconBg: "bg-amber-100",
-    iconColor: "text-amber-600",
+    iconBg: "bg-amber-100 dark:bg-amber-900/40",
+    iconColor: "text-amber-600 dark:text-amber-400",
     Icon: Trophy,
   },
 ];
@@ -93,13 +93,13 @@ export function SummaryCards({ expenses, allExpenses, categories, monthlyIncome 
     {monthlyIncome > 0 && (
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Monthly Income", value: `$${monthlyIncome.toFixed(2)}`, color: "text-emerald-600", bg: "bg-emerald-50" },
-          { label: "Monthly Expenses", value: `$${thisMonthExpenses.toFixed(2)}`, color: "text-red-500", bg: "bg-red-50" },
+          { label: "Monthly Income", value: `$${monthlyIncome.toFixed(2)}`, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/30" },
+          { label: "Monthly Expenses", value: `$${thisMonthExpenses.toFixed(2)}`, color: "text-red-500 dark:text-red-400", bg: "bg-red-50 dark:bg-red-900/30" },
           {
             label: "Net Income",
             value: `${net >= 0 ? "+" : ""}$${net.toFixed(2)}`,
-            color: net >= 0 ? "text-emerald-600" : "text-red-500",
-            bg: net >= 0 ? "bg-emerald-50" : "bg-red-50",
+            color: net >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400",
+            bg: net >= 0 ? "bg-emerald-50 dark:bg-emerald-900/30" : "bg-red-50 dark:bg-red-900/30",
           },
         ].map((s) => (
           <Card key={s.label} shadow="sm" className="border border-default-100">

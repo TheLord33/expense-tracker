@@ -141,7 +141,7 @@ export function FilterBar({
               className={`px-3 py-2 transition-colors flex items-center gap-1.5 text-xs font-medium ${
                 viewMode === value
                   ? "bg-indigo-600 text-white"
-                  : "bg-white text-default-500 hover:bg-default-50"
+                  : "bg-white dark:bg-gray-800 text-default-500 hover:bg-default-50 dark:hover:bg-gray-700"
               }`}
             >
               <Icon size={13} />
