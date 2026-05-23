@@ -156,7 +156,7 @@ export function BudgetsTab({ budgets, categories, expenses, onAdd, onUpdate, onD
                   onSelectionChange={(keys) => setSelectedCat([...keys][0] as string)}
                 >
                   {available.map((c) => (
-                    <SelectItem key={c.name}>{c.name}</SelectItem>
+                    <SelectItem key={c.name} textValue={c.name}>{c.name}</SelectItem>
                   ))}
                 </Select>
               )}

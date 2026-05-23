@@ -722,9 +722,9 @@ export function CloudExportModal({ isOpen, onClose, expenses, categories }: Prop
                         selectedKeys={[schedEdit.frequency]}
                         onSelectionChange={keys => setSchedEdit(s => ({ ...s, frequency: [...keys][0] as "daily" | "weekly" | "monthly" }))}
                       >
-                        <SelectItem key="daily">{t("cloudExport.freqDaily")}</SelectItem>
-                        <SelectItem key="weekly">{t("cloudExport.freqWeekly")}</SelectItem>
-                        <SelectItem key="monthly">{t("cloudExport.freqMonthly")}</SelectItem>
+                        <SelectItem key="daily" textValue={t("cloudExport.freqDaily")}>{t("cloudExport.freqDaily")}</SelectItem>
+                        <SelectItem key="weekly" textValue={t("cloudExport.freqWeekly")}>{t("cloudExport.freqWeekly")}</SelectItem>
+                        <SelectItem key="monthly" textValue={t("cloudExport.freqMonthly")}>{t("cloudExport.freqMonthly")}</SelectItem>
                       </Select>
                       <Select
                         label={t("cloudExport.scheduleFormat")}
@@ -732,9 +732,9 @@ export function CloudExportModal({ isOpen, onClose, expenses, categories }: Prop
                         selectedKeys={[schedEdit.format]}
                         onSelectionChange={keys => setSchedEdit(s => ({ ...s, format: [...keys][0] as "csv" | "json" | "pdf" }))}
                       >
-                        <SelectItem key="csv">CSV</SelectItem>
-                        <SelectItem key="json">JSON</SelectItem>
-                        <SelectItem key="pdf">PDF</SelectItem>
+                        <SelectItem key="csv" textValue="CSV">CSV</SelectItem>
+                        <SelectItem key="json" textValue="JSON">JSON</SelectItem>
+                        <SelectItem key="pdf" textValue="PDF">PDF</SelectItem>
                       </Select>
                     </div>
                     <Select
@@ -743,9 +743,9 @@ export function CloudExportModal({ isOpen, onClose, expenses, categories }: Prop
                       selectedKeys={[schedEdit.destination]}
                       onSelectionChange={keys => setSchedEdit(s => ({ ...s, destination: [...keys][0] as "email" | "dropbox" | "onedrive" }))}
                     >
-                      <SelectItem key="email">{t("cloudExport.destEmail")}</SelectItem>
-                      <SelectItem key="dropbox">{t("cloudExport.destDropbox")}</SelectItem>
-                      <SelectItem key="onedrive">{t("cloudExport.destOneDrive")}</SelectItem>
+                      <SelectItem key="email" textValue={t("cloudExport.destEmail")}>{t("cloudExport.destEmail")}</SelectItem>
+                      <SelectItem key="dropbox" textValue={t("cloudExport.destDropbox")}>{t("cloudExport.destDropbox")}</SelectItem>
+                      <SelectItem key="onedrive" textValue={t("cloudExport.destOneDrive")}>{t("cloudExport.destOneDrive")}</SelectItem>
                     </Select>
                     {schedEdit.destination === "email" && (
                       <Input

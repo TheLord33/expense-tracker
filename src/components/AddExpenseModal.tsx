@@ -86,7 +86,7 @@ export function AddExpenseModal({ isOpen, onClose, onAdd, onUpdate, editingExpen
               selectedKeys={[category]}
               onSelectionChange={(keys) => setCategory([...keys][0] as string)}
             >
-              {categories.map((c) => <SelectItem key={c.name}>{c.name}</SelectItem>)}
+              {categories.map((c) => <SelectItem key={c.name} textValue={c.name}>{c.name}</SelectItem>)}
             </Select>
             <Input
               label={t("addExpense.description")}

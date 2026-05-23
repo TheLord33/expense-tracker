@@ -188,7 +188,7 @@ export function IncomeTab({ sources, monthlyIncome, onAdd, onUpdate, onDelete }:
                   onSelectionChange={(keys) => set("frequency", [...keys][0] as string)}
                 >
                   {INCOME_FREQUENCIES.map((f) => (
-                    <SelectItem key={f.value}>
+                    <SelectItem key={f.value} textValue={t(`frequencies.${f.value === "one-time" ? "oneTime" : f.value}`)}>
                       {t(`frequencies.${f.value === "one-time" ? "oneTime" : f.value}`)}
                     </SelectItem>
                   ))}

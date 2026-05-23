@@ -200,7 +200,7 @@ export function RecurringTab({ recurring, categories, onAdd, onUpdate, onDelete 
                   isInvalid={!!errors.category}
                   errorMessage={errors.category}
                 >
-                  {categories.map((c) => <SelectItem key={c.name}>{c.name}</SelectItem>)}
+                  {categories.map((c) => <SelectItem key={c.name} textValue={c.name}>{c.name}</SelectItem>)}
                 </Select>
                 <Input
                   label={t("recurring.amount")}
@@ -218,7 +218,7 @@ export function RecurringTab({ recurring, categories, onAdd, onUpdate, onDelete 
                 onSelectionChange={(keys) => set("frequency", [...keys][0] as string)}
               >
                 {RECURRING_FREQUENCIES.map((f) => (
-                  <SelectItem key={f.value}>
+                  <SelectItem key={f.value} textValue={t(`frequencies.${f.value}`)}>
                     {t(`frequencies.${f.value}`)}
                   </SelectItem>
                 ))}
