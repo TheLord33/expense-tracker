@@ -121,6 +121,52 @@ export interface IncomeSource {
   endDate?: string;
 }
 
+// ── General Ledger ────────────────────────────────────────────────────────────
+
+export type AccountType = "asset" | "liability" | "equity" | "revenue" | "expense";
+
+export interface Account {
+  id: string;
+  code: string;
+  name: string;
+  type: AccountType;
+  isBuiltin?: boolean;
+  categoryName?: string; // links expense/revenue accounts to category names
+}
+
+export interface JournalLine {
+  accountId: string;
+  debit: number;
+  credit: number;
+}
+
+export type JournalEntrySource = "expense" | "income" | "manual";
+
+export interface JournalEntry {
+  id: string;
+  date: string; // YYYY-MM-DD
+  description: string;
+  lines: JournalLine[];
+  sourceId?: string;
+  sourceType?: JournalEntrySource;
+}
+
+export const BUILTIN_ACCOUNTS: Account[] = [
+  { id: "acc-1000", code: "1000", name: "Cash & Bank",         type: "asset",     isBuiltin: true },
+  { id: "acc-1100", code: "1100", name: "Accounts Receivable", type: "asset",     isBuiltin: true },
+  { id: "acc-2000", code: "2000", name: "Accounts Payable",    type: "liability", isBuiltin: true },
+  { id: "acc-2100", code: "2100", name: "Credit Cards",        type: "liability", isBuiltin: true },
+  { id: "acc-3000", code: "3000", name: "Owner's Equity",      type: "equity",    isBuiltin: true },
+  { id: "acc-4000", code: "4000", name: "General Income",      type: "revenue",   isBuiltin: true },
+  { id: "acc-5100", code: "5100", name: "Food",                type: "expense",   isBuiltin: true, categoryName: "Food"          },
+  { id: "acc-5200", code: "5200", name: "Transport",           type: "expense",   isBuiltin: true, categoryName: "Transport"     },
+  { id: "acc-5300", code: "5300", name: "Housing",             type: "expense",   isBuiltin: true, categoryName: "Housing"       },
+  { id: "acc-5400", code: "5400", name: "Entertainment",       type: "expense",   isBuiltin: true, categoryName: "Entertainment" },
+  { id: "acc-5500", code: "5500", name: "Healthcare",          type: "expense",   isBuiltin: true, categoryName: "Healthcare"    },
+  { id: "acc-5600", code: "5600", name: "Shopping",            type: "expense",   isBuiltin: true, categoryName: "Shopping"      },
+  { id: "acc-5900", code: "5900", name: "Other",               type: "expense",   isBuiltin: true, categoryName: "Other"         },
+];
+
 // ── Cloud Export ──────────────────────────────────────────────────────────────
 
 export type ExportDestination = "download" | "email" | "googlesheets" | "dropbox" | "onedrive" | "link";

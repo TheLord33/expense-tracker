@@ -7,7 +7,7 @@ import {
   Card, CardBody, CardHeader, Divider,
   Tabs, Tab,
 } from "@nextui-org/react";
-import { Receipt, PiggyBank, RefreshCw, TrendingUp } from "lucide-react";
+import { Receipt, PiggyBank, RefreshCw, TrendingUp, BookOpen } from "lucide-react";
 
 import { useExpenses } from "@/lib/useExpenses";
 import { useCategories } from "@/lib/useCategories";
@@ -15,6 +15,7 @@ import { useFilterSort } from "@/lib/useFilterSort";
 import { useBudgets } from "@/lib/useBudgets";
 import { useRecurring, generateDueExpenses } from "@/lib/useRecurring";
 import { useIncome } from "@/lib/useIncome";
+import { useAccounts } from "@/lib/useAccounts";
 import type { Budget, RecurringExpense, IncomeSource } from "@/lib/types";
 
 import { AppHeader } from "@/components/AppHeader";
@@ -30,6 +31,7 @@ import { SummaryCards } from "@/components/SummaryCards";
 import { BudgetsTab } from "@/components/BudgetsTab";
 import { RecurringTab } from "@/components/RecurringTab";
 import { IncomeTab } from "@/components/IncomeTab";
+import { LedgerTab } from "@/components/LedgerTab";
 
 import type { Expense, ChipColor } from "@/lib/types";
 import { useLanguage, useToast, useCurrency } from "@/app/providers";
@@ -61,6 +63,8 @@ export default function HomePage() {
   } = useRecurring();
 
   const { sources, monthlyIncome, addSource, updateSource, deleteSource, restoreSource } = useIncome();
+
+  const { accounts, addAccount, updateAccount, deleteAccount } = useAccounts();
 
   // ── Edit expense state ───────────────────────────────────────────────────────
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -276,6 +280,20 @@ export default function HomePage() {
               <IncomeTab
                 sources={sources} monthlyIncome={monthlyIncome}
                 onAdd={addSource} onUpdate={updateSource} onDelete={handleDeleteIncome}
+              />
+            </div>
+          </Tab>
+
+          {/* ── Ledger ── */}
+          <Tab key="ledger" title={tabTitle(t("tabs.ledger"), BookOpen)}>
+            <div className="pt-4">
+              <LedgerTab
+                expenses={expenses}
+                sources={sources}
+                accounts={accounts}
+                onAddAccount={addAccount}
+                onUpdateAccount={updateAccount}
+                onDeleteAccount={deleteAccount}
               />
             </div>
           </Tab>
