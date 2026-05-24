@@ -22,6 +22,7 @@ const ja: Translations = {
     income: "収入",
     ledger: "元帳",
     pnl: "損益",
+    balanceSheet: "貸借",
   },
 
   summary: {
@@ -394,6 +395,25 @@ const ja: Translations = {
       allTime: "全期間",
       custom: "カスタム",
     },
+  },
+
+  balanceSheet: {
+    title: "貸借対照表",
+    asOf: "{date} 現在",
+    assets: "資産",
+    liabilities: "負債",
+    equity: "純資産",
+    retainedEarnings: "繰越利益剰余金",
+    totalAssets: "資産合計",
+    totalLiabilities: "負債合計",
+    totalEquity: "純資産合計",
+    totalLiabEquity: "負債・純資産合計",
+    balanced: "バランス",
+    outOfBalance: "{amount} の差異",
+    tabReport: "報告書",
+    tabSetup: "期首残高",
+    openingBalanceHint: "記録開始前の各勘定科目の期首残高を入力してください",
+    saveBalances: "残高を保存",
   },
 };
 

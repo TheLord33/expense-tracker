@@ -22,6 +22,7 @@ const pt: Translations = {
     income: "Receitas",
     ledger: "Razão",
     pnl: "DRE",
+    balanceSheet: "B/P",
   },
 
   summary: {
@@ -394,6 +395,25 @@ const pt: Translations = {
       allTime: "Todo o período",
       custom: "Personalizado",
     },
+  },
+
+  balanceSheet: {
+    title: "Balanço Patrimonial",
+    asOf: "Em {date}",
+    assets: "Ativo",
+    liabilities: "Passivo",
+    equity: "Patrimônio Líquido",
+    retainedEarnings: "Lucros Acumulados",
+    totalAssets: "Total do Ativo",
+    totalLiabilities: "Total do Passivo",
+    totalEquity: "Total do Patrimônio",
+    totalLiabEquity: "Total Passivo + Patrimônio",
+    balanced: "Balanceado",
+    outOfBalance: "Diferença de {amount}",
+    tabReport: "Relatório",
+    tabSetup: "Saldos Iniciais",
+    openingBalanceHint: "Defina os saldos iniciais antes de começar o acompanhamento",
+    saveBalances: "Salvar Saldos",
   },
 };
 

@@ -22,6 +22,7 @@ const fr: Translations = {
     income: "Revenus",
     ledger: "Grand Livre",
     pnl: "P&L",
+    balanceSheet: "Bilan",
   },
 
   summary: {
@@ -394,6 +395,25 @@ const fr: Translations = {
       allTime: "Toute la période",
       custom: "Personnalisé",
     },
+  },
+
+  balanceSheet: {
+    title: "Bilan",
+    asOf: "Au {date}",
+    assets: "Actif",
+    liabilities: "Passif",
+    equity: "Capitaux propres",
+    retainedEarnings: "Résultats accumulés",
+    totalAssets: "Total de l'actif",
+    totalLiabilities: "Total du passif",
+    totalEquity: "Total des capitaux propres",
+    totalLiabEquity: "Total passif + capitaux propres",
+    balanced: "Équilibré",
+    outOfBalance: "Écart de {amount}",
+    tabReport: "Rapport",
+    tabSetup: "Soldes initiaux",
+    openingBalanceHint: "Définissez les soldes initiaux avant le début du suivi",
+    saveBalances: "Enregistrer les soldes",
   },
 };
 

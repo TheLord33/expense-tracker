@@ -22,6 +22,7 @@ const de: Translations = {
     income: "Einnahmen",
     ledger: "Hauptbuch",
     pnl: "G&V",
+    balanceSheet: "Bilanz",
   },
 
   summary: {
@@ -394,6 +395,25 @@ const de: Translations = {
       allTime: "Gesamter Zeitraum",
       custom: "Benutzerdefiniert",
     },
+  },
+
+  balanceSheet: {
+    title: "Bilanz",
+    asOf: "Stand {date}",
+    assets: "Aktiva",
+    liabilities: "Passiva",
+    equity: "Eigenkapital",
+    retainedEarnings: "Gewinnvortrag",
+    totalAssets: "Bilanzsumme Aktiva",
+    totalLiabilities: "Summe Passiva",
+    totalEquity: "Summe Eigenkapital",
+    totalLiabEquity: "Passiva + Eigenkapital",
+    balanced: "Ausgeglichen",
+    outOfBalance: "Differenz von {amount}",
+    tabReport: "Bericht",
+    tabSetup: "Eröffnungsbilanzen",
+    openingBalanceHint: "Eröffnungssalden für jedes Konto vor Beginn der Erfassung eingeben",
+    saveBalances: "Salden speichern",
   },
 };
 

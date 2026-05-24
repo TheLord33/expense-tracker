@@ -22,6 +22,7 @@ const es: Translations = {
     income: "Ingresos",
     ledger: "Mayor",
     pnl: "P&G",
+    balanceSheet: "B/G",
   },
 
   summary: {
@@ -394,6 +395,25 @@ const es: Translations = {
       allTime: "Todo el tiempo",
       custom: "Personalizado",
     },
+  },
+
+  balanceSheet: {
+    title: "Balance General",
+    asOf: "Al {date}",
+    assets: "Activos",
+    liabilities: "Pasivos",
+    equity: "Capital",
+    retainedEarnings: "Utilidades Retenidas",
+    totalAssets: "Total Activos",
+    totalLiabilities: "Total Pasivos",
+    totalEquity: "Total Capital",
+    totalLiabEquity: "Total Pasivos + Capital",
+    balanced: "Balanceado",
+    outOfBalance: "Diferencia de {amount}",
+    tabReport: "Reporte",
+    tabSetup: "Saldos Iniciales",
+    openingBalanceHint: "Establece los saldos iniciales antes de comenzar el seguimiento",
+    saveBalances: "Guardar Saldos",
   },
 };
 

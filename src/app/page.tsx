@@ -7,7 +7,7 @@ import {
   Card, CardBody, CardHeader, Divider,
   Tabs, Tab,
 } from "@nextui-org/react";
-import { Receipt, PiggyBank, RefreshCw, TrendingUp, BookOpen, BarChart2 } from "lucide-react";
+import { Receipt, PiggyBank, RefreshCw, TrendingUp, BookOpen, BarChart2, Scale } from "lucide-react";
 
 import { useExpenses } from "@/lib/useExpenses";
 import { useCategories } from "@/lib/useCategories";
@@ -16,6 +16,7 @@ import { useBudgets } from "@/lib/useBudgets";
 import { useRecurring, generateDueExpenses } from "@/lib/useRecurring";
 import { useIncome } from "@/lib/useIncome";
 import { useAccounts } from "@/lib/useAccounts";
+import { useOpeningBalances } from "@/lib/useOpeningBalances";
 import type { Budget, RecurringExpense, IncomeSource } from "@/lib/types";
 
 import { AppHeader } from "@/components/AppHeader";
@@ -33,6 +34,7 @@ import { RecurringTab } from "@/components/RecurringTab";
 import { IncomeTab } from "@/components/IncomeTab";
 import { LedgerTab } from "@/components/LedgerTab";
 import { PnLTab } from "@/components/PnLTab";
+import { BalanceSheetTab } from "@/components/BalanceSheetTab";
 
 import type { Expense, ChipColor } from "@/lib/types";
 import { useLanguage, useToast, useCurrency } from "@/app/providers";
@@ -66,6 +68,7 @@ export default function HomePage() {
   const { sources, monthlyIncome, addSource, updateSource, deleteSource, restoreSource } = useIncome();
 
   const { accounts, addAccount, updateAccount, deleteAccount } = useAccounts();
+  const { balances: openingBalances, setBalance: setOpeningBalance } = useOpeningBalances();
 
   // ── Edit expense state ───────────────────────────────────────────────────────
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -303,6 +306,19 @@ export default function HomePage() {
           <Tab key="pnl" title={tabTitle(t("tabs.pnl"), BarChart2)}>
             <div className="pt-4">
               <PnLTab expenses={expenses} sources={sources} accounts={accounts} />
+            </div>
+          </Tab>
+
+          {/* ── Balance Sheet ── */}
+          <Tab key="balanceSheet" title={tabTitle(t("tabs.balanceSheet"), Scale)}>
+            <div className="pt-4">
+              <BalanceSheetTab
+                expenses={expenses}
+                sources={sources}
+                accounts={accounts}
+                openingBalances={openingBalances}
+                onSetBalance={setOpeningBalance}
+              />
             </div>
           </Tab>
         </Tabs>

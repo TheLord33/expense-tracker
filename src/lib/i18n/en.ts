@@ -20,6 +20,7 @@ const en = {
     income: "Income",
     ledger: "Ledger",
     pnl: "P&L",
+    balanceSheet: "B/S",
   },
 
   summary: {
@@ -392,6 +393,25 @@ const en = {
       allTime: "All Time",
       custom: "Custom",
     },
+  },
+
+  balanceSheet: {
+    title: "Balance Sheet",
+    asOf: "As of {date}",
+    assets: "Assets",
+    liabilities: "Liabilities",
+    equity: "Equity",
+    retainedEarnings: "Retained Earnings",
+    totalAssets: "Total Assets",
+    totalLiabilities: "Total Liabilities",
+    totalEquity: "Total Equity",
+    totalLiabEquity: "Total Liabilities & Equity",
+    balanced: "Balanced",
+    outOfBalance: "Out of balance by {amount}",
+    tabReport: "Report",
+    tabSetup: "Opening Balances",
+    openingBalanceHint: "Set starting balances for each account before you began tracking",
+    saveBalances: "Save Balances",
   },
 };
 

@@ -22,6 +22,7 @@ const it: Translations = {
     income: "Entrate",
     ledger: "Mastro",
     pnl: "C/E",
+    balanceSheet: "S/P",
   },
 
   summary: {
@@ -394,6 +395,25 @@ const it: Translations = {
       allTime: "Tutto il periodo",
       custom: "Personalizzato",
     },
+  },
+
+  balanceSheet: {
+    title: "Stato Patrimoniale",
+    asOf: "Al {date}",
+    assets: "Attività",
+    liabilities: "Passività",
+    equity: "Patrimonio Netto",
+    retainedEarnings: "Utili portati a nuovo",
+    totalAssets: "Totale attività",
+    totalLiabilities: "Totale passività",
+    totalEquity: "Totale patrimonio netto",
+    totalLiabEquity: "Totale passività + patrimonio",
+    balanced: "In pareggio",
+    outOfBalance: "Differenza di {amount}",
+    tabReport: "Report",
+    tabSetup: "Saldi iniziali",
+    openingBalanceHint: "Imposta i saldi iniziali prima di iniziare il monitoraggio",
+    saveBalances: "Salva saldi",
   },
 };
 

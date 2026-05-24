@@ -184,6 +184,62 @@ export function computePnL(
   return { revenue, expenses, totalRevenue, totalExpenses, netIncome: totalRevenue - totalExpenses };
 }
 
+// ── Balance Sheet ─────────────────────────────────────────────────────────────
+
+export interface BalanceSheetRow {
+  account: Account;
+  openingBalance: number;
+  ledgerBalance: number; // derived from journal entries
+  totalBalance: number;  // opening + ledger
+}
+
+export interface BalanceSheetReport {
+  assets: BalanceSheetRow[];
+  liabilities: BalanceSheetRow[];
+  equity: BalanceSheetRow[];
+  retainedEarnings: number; // all-time net income
+  totalAssets: number;
+  totalLiabilities: number;
+  totalEquity: number; // equity accounts + retained earnings
+  difference: number;  // assets − (liabilities + equity); 0 = balanced
+}
+
+export function computeBalanceSheet(
+  accounts: Account[],
+  entries: JournalEntry[],
+  openingBalances: Record<string, number>
+): BalanceSheetReport {
+  function ledgerBal(account: Account): number {
+    let debit = 0, credit = 0;
+    for (const entry of entries)
+      for (const line of entry.lines)
+        if (line.accountId === account.id) { debit += line.debit; credit += line.credit; }
+    return account.type === "asset" ? debit - credit : credit - debit;
+  }
+
+  function makeRow(account: Account): BalanceSheetRow {
+    const openingBalance = openingBalances[account.id] ?? 0;
+    const ledgerBalance  = ledgerBal(account);
+    return { account, openingBalance, ledgerBalance, totalBalance: openingBalance + ledgerBalance };
+  }
+
+  const assets      = accounts.filter((a) => a.type === "asset").map(makeRow);
+  const liabilities = accounts.filter((a) => a.type === "liability").map(makeRow);
+  const equity      = accounts.filter((a) => a.type === "equity").map(makeRow);
+
+  const { netIncome: retainedEarnings } = computePnL(accounts, entries, "", "");
+
+  const totalAssets      = assets.reduce((s, r) => s + r.totalBalance, 0);
+  const totalLiabilities = liabilities.reduce((s, r) => s + r.totalBalance, 0);
+  const totalEquity      = equity.reduce((s, r) => s + r.totalBalance, 0) + retainedEarnings;
+
+  return {
+    assets, liabilities, equity, retainedEarnings,
+    totalAssets, totalLiabilities, totalEquity,
+    difference: totalAssets - (totalLiabilities + totalEquity),
+  };
+}
+
 export interface TrialBalanceRow {
   account: Account;
   totalDebit: number;
