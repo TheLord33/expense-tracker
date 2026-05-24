@@ -357,7 +357,9 @@ export function CloudExportModal({ isOpen, onClose, expenses, categories }: Prop
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} placement="center" size="2xl" scrollBehavior="inside">
+    <Modal isOpen={isOpen} onClose={onClose} placement="center" size="2xl" scrollBehavior="inside"
+      classNames={{ base: "max-h-[90vh]", body: "overflow-y-auto" }}
+    >
       <ModalContent>
         <ModalHeader className="flex items-center gap-2">
           <CloudUpload size={18} className="text-primary" />
@@ -372,46 +374,7 @@ export function CloudExportModal({ isOpen, onClose, expenses, categories }: Prop
               <span className="flex items-center gap-1.5"><LayoutTemplate size={13} />{t("cloudExport.tabTemplates")}</span>
             }>
               <div className="space-y-4 pt-3">
-                <div className="grid grid-cols-2 gap-3">
-                  {TEMPLATES.map(({ id, icon: Icon, color }) => {
-                    const isSelected = template === id;
-                    const filterCount = id === "tax-report"
-                      ? expenses.filter(e => e.date >= thisYearStart()).length
-                      : id === "monthly-summary"
-                      ? expenses.filter(e => e.date >= thisMonthStart()).length
-                      : expenses.length;
-                    return (
-                      <button
-                        key={id}
-                        onClick={() => selectTemplate(id)}
-                        className={`text-left p-4 rounded-xl border-2 transition-all ${
-                          isSelected
-                            ? "border-primary bg-primary-50 dark:bg-primary-900/20"
-                            : `${color} bg-white dark:bg-default-50/5`
-                        }`}
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <div className={`p-2 rounded-lg ${isSelected ? "bg-primary text-white" : "bg-default-100 text-default-600"}`}>
-                            <Icon size={15} />
-                          </div>
-                          {isSelected && <Check size={16} className="text-primary mt-1" />}
-                        </div>
-                        <p className="font-semibold text-sm text-default-900">
-                          {t(`cloudExport.template${id === "custom" ? "Custom" : id === "tax-report" ? "TaxReport" : id === "monthly-summary" ? "Monthly" : "Category"}`)}
-                        </p>
-                        <p className="text-xs text-default-500 mt-0.5 leading-snug">
-                          {t(`cloudExport.template${id === "custom" ? "Custom" : id === "tax-report" ? "TaxReport" : id === "monthly-summary" ? "Monthly" : "Category"}Desc`)}
-                        </p>
-                        <p className="text-xs font-semibold text-primary mt-2">
-                          {filterCount} {filterCount !== 1 ? t("trends.items") : t("trends.item")}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <Divider />
-
+                {/* Format + Export — always visible at top */}
                 <div className="flex items-end gap-3">
                   <div className="flex-1">
                     <p className="text-sm font-medium text-default-700 mb-2">{t("cloudExport.selectFormat")}</p>
@@ -456,6 +419,47 @@ export function CloudExportModal({ isOpen, onClose, expenses, categories }: Prop
                     <span className="font-bold text-default-900">{fmt(total)}</span>
                   </div>
                 )}
+
+                <Divider />
+
+                {/* Template cards */}
+                <div className="grid grid-cols-2 gap-3">
+                  {TEMPLATES.map(({ id, icon: Icon, color }) => {
+                    const isSelected = template === id;
+                    const filterCount = id === "tax-report"
+                      ? expenses.filter(e => e.date >= thisYearStart()).length
+                      : id === "monthly-summary"
+                      ? expenses.filter(e => e.date >= thisMonthStart()).length
+                      : expenses.length;
+                    return (
+                      <button
+                        key={id}
+                        onClick={() => selectTemplate(id)}
+                        className={`text-left p-4 rounded-xl border-2 transition-all ${
+                          isSelected
+                            ? "border-primary bg-primary-50 dark:bg-primary-900/20"
+                            : `${color} bg-white dark:bg-default-50/5`
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className={`p-2 rounded-lg ${isSelected ? "bg-primary text-white" : "bg-default-100 text-default-600"}`}>
+                            <Icon size={15} />
+                          </div>
+                          {isSelected && <Check size={16} className="text-primary mt-1" />}
+                        </div>
+                        <p className="font-semibold text-sm text-default-900">
+                          {t(`cloudExport.template${id === "custom" ? "Custom" : id === "tax-report" ? "TaxReport" : id === "monthly-summary" ? "Monthly" : "Category"}`)}
+                        </p>
+                        <p className="text-xs text-default-500 mt-0.5 leading-snug">
+                          {t(`cloudExport.template${id === "custom" ? "Custom" : id === "tax-report" ? "TaxReport" : id === "monthly-summary" ? "Monthly" : "Category"}Desc`)}
+                        </p>
+                        <p className="text-xs font-semibold text-primary mt-2">
+                          {filterCount} {filterCount !== 1 ? t("trends.items") : t("trends.item")}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </Tab>
 
