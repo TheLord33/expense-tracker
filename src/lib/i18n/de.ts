@@ -21,6 +21,7 @@ const de: Translations = {
     recurring: "Wiederkehrend",
     income: "Einnahmen",
     ledger: "Hauptbuch",
+    pnl: "G&V",
   },
 
   summary: {
@@ -371,6 +372,28 @@ const de: Translations = {
     errorCodeRequired: "Kontonummer ist erforderlich",
     errorCodeExists: "Kontonummer bereits vergeben",
     errorNameRequired: "Name ist erforderlich",
+  },
+
+  pnl: {
+    title: "Gewinn- und Verlustrechnung",
+    revenue: "Erlöse",
+    expenses: "Aufwendungen",
+    netIncome: "Nettogewinn",
+    netLoss: "Nettoverlust",
+    totalRevenue: "Erlöse gesamt",
+    totalExpenses: "Aufwendungen gesamt",
+    noData: "Keine Transaktionen im gewählten Zeitraum",
+    period: "Zeitraum",
+    presets: {
+      thisMonth: "Dieser Monat",
+      lastMonth: "Letzter Monat",
+      thisQuarter: "Dieses Quartal",
+      lastQuarter: "Letztes Quartal",
+      thisYear: "Dieses Jahr",
+      lastYear: "Letztes Jahr",
+      allTime: "Gesamter Zeitraum",
+      custom: "Benutzerdefiniert",
+    },
   },
 };
 

@@ -21,6 +21,7 @@ const it: Translations = {
     recurring: "Ricorrenti",
     income: "Entrate",
     ledger: "Mastro",
+    pnl: "C/E",
   },
 
   summary: {
@@ -371,6 +372,28 @@ const it: Translations = {
     errorCodeRequired: "Il codice è obbligatorio",
     errorCodeExists: "Codice già in uso",
     errorNameRequired: "Il nome è obbligatorio",
+  },
+
+  pnl: {
+    title: "Conto Economico",
+    revenue: "Ricavi",
+    expenses: "Spese",
+    netIncome: "Utile Netto",
+    netLoss: "Perdita Netta",
+    totalRevenue: "Totale ricavi",
+    totalExpenses: "Totale spese",
+    noData: "Nessuna transazione nel periodo selezionato",
+    period: "Periodo",
+    presets: {
+      thisMonth: "Questo mese",
+      lastMonth: "Mese scorso",
+      thisQuarter: "Questo trimestre",
+      lastQuarter: "Trimestre scorso",
+      thisYear: "Quest'anno",
+      lastYear: "Anno scorso",
+      allTime: "Tutto il periodo",
+      custom: "Personalizzato",
+    },
   },
 };
 

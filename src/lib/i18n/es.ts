@@ -21,6 +21,7 @@ const es: Translations = {
     recurring: "Recurrentes",
     income: "Ingresos",
     ledger: "Mayor",
+    pnl: "P&G",
   },
 
   summary: {
@@ -371,6 +372,28 @@ const es: Translations = {
     errorCodeRequired: "El código es obligatorio",
     errorCodeExists: "El código ya está en uso",
     errorNameRequired: "El nombre es obligatorio",
+  },
+
+  pnl: {
+    title: "Estado de Resultados",
+    revenue: "Ingresos",
+    expenses: "Gastos",
+    netIncome: "Utilidad Neta",
+    netLoss: "Pérdida Neta",
+    totalRevenue: "Total de Ingresos",
+    totalExpenses: "Total de Gastos",
+    noData: "No hay transacciones en el período seleccionado",
+    period: "Período",
+    presets: {
+      thisMonth: "Este mes",
+      lastMonth: "Mes anterior",
+      thisQuarter: "Este trimestre",
+      lastQuarter: "Trimestre anterior",
+      thisYear: "Este año",
+      lastYear: "Año anterior",
+      allTime: "Todo el tiempo",
+      custom: "Personalizado",
+    },
   },
 };
 

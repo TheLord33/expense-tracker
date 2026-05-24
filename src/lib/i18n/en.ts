@@ -19,6 +19,7 @@ const en = {
     recurring: "Recurring",
     income: "Income",
     ledger: "Ledger",
+    pnl: "P&L",
   },
 
   summary: {
@@ -369,6 +370,28 @@ const en = {
     errorCodeRequired: "Code is required",
     errorCodeExists: "Code already in use",
     errorNameRequired: "Name is required",
+  },
+
+  pnl: {
+    title: "Profit & Loss Statement",
+    revenue: "Revenue",
+    expenses: "Expenses",
+    netIncome: "Net Income",
+    netLoss: "Net Loss",
+    totalRevenue: "Total Revenue",
+    totalExpenses: "Total Expenses",
+    noData: "No transactions in the selected period",
+    period: "Period",
+    presets: {
+      thisMonth: "This Month",
+      lastMonth: "Last Month",
+      thisQuarter: "This Quarter",
+      lastQuarter: "Last Quarter",
+      thisYear: "This Year",
+      lastYear: "Last Year",
+      allTime: "All Time",
+      custom: "Custom",
+    },
   },
 };
 

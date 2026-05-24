@@ -7,7 +7,7 @@ import {
   Card, CardBody, CardHeader, Divider,
   Tabs, Tab,
 } from "@nextui-org/react";
-import { Receipt, PiggyBank, RefreshCw, TrendingUp, BookOpen } from "lucide-react";
+import { Receipt, PiggyBank, RefreshCw, TrendingUp, BookOpen, BarChart2 } from "lucide-react";
 
 import { useExpenses } from "@/lib/useExpenses";
 import { useCategories } from "@/lib/useCategories";
@@ -32,6 +32,7 @@ import { BudgetsTab } from "@/components/BudgetsTab";
 import { RecurringTab } from "@/components/RecurringTab";
 import { IncomeTab } from "@/components/IncomeTab";
 import { LedgerTab } from "@/components/LedgerTab";
+import { PnLTab } from "@/components/PnLTab";
 
 import type { Expense, ChipColor } from "@/lib/types";
 import { useLanguage, useToast, useCurrency } from "@/app/providers";
@@ -295,6 +296,13 @@ export default function HomePage() {
                 onUpdateAccount={updateAccount}
                 onDeleteAccount={deleteAccount}
               />
+            </div>
+          </Tab>
+
+          {/* ── P&L ── */}
+          <Tab key="pnl" title={tabTitle(t("tabs.pnl"), BarChart2)}>
+            <div className="pt-4">
+              <PnLTab expenses={expenses} sources={sources} accounts={accounts} />
             </div>
           </Tab>
         </Tabs>

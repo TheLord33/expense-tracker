@@ -21,6 +21,7 @@ const pt: Translations = {
     recurring: "Recorrentes",
     income: "Receitas",
     ledger: "Razão",
+    pnl: "DRE",
   },
 
   summary: {
@@ -371,6 +372,28 @@ const pt: Translations = {
     errorCodeRequired: "O código é obrigatório",
     errorCodeExists: "Código já está em uso",
     errorNameRequired: "O nome é obrigatório",
+  },
+
+  pnl: {
+    title: "Demonstração de Resultados",
+    revenue: "Receitas",
+    expenses: "Despesas",
+    netIncome: "Lucro Líquido",
+    netLoss: "Prejuízo Líquido",
+    totalRevenue: "Total de Receitas",
+    totalExpenses: "Total de Despesas",
+    noData: "Sem transações no período selecionado",
+    period: "Período",
+    presets: {
+      thisMonth: "Este mês",
+      lastMonth: "Mês anterior",
+      thisQuarter: "Este trimestre",
+      lastQuarter: "Trimestre anterior",
+      thisYear: "Este ano",
+      lastYear: "Ano anterior",
+      allTime: "Todo o período",
+      custom: "Personalizado",
+    },
   },
 };
 

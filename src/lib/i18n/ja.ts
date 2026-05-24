@@ -21,6 +21,7 @@ const ja: Translations = {
     recurring: "定期支出",
     income: "収入",
     ledger: "元帳",
+    pnl: "損益",
   },
 
   summary: {
@@ -371,6 +372,28 @@ const ja: Translations = {
     errorCodeRequired: "コードは必須です",
     errorCodeExists: "このコードはすでに使用されています",
     errorNameRequired: "名前は必須です",
+  },
+
+  pnl: {
+    title: "損益計算書",
+    revenue: "収益",
+    expenses: "費用",
+    netIncome: "純利益",
+    netLoss: "純損失",
+    totalRevenue: "収益合計",
+    totalExpenses: "費用合計",
+    noData: "選択した期間に取引がありません",
+    period: "期間",
+    presets: {
+      thisMonth: "今月",
+      lastMonth: "先月",
+      thisQuarter: "今四半期",
+      lastQuarter: "前四半期",
+      thisYear: "今年",
+      lastYear: "昨年",
+      allTime: "全期間",
+      custom: "カスタム",
+    },
   },
 };
 

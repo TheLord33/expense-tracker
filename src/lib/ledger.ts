@@ -128,6 +128,62 @@ export function accountLedger(
   return rows;
 }
 
+// ── Profit & Loss ─────────────────────────────────────────────────────────────
+
+export interface PnLRow {
+  account: Account;
+  amount: number;
+}
+
+export interface PnLReport {
+  revenue: PnLRow[];
+  expenses: PnLRow[];
+  totalRevenue: number;
+  totalExpenses: number;
+  netIncome: number;
+}
+
+export function computePnL(
+  accounts: Account[],
+  entries: JournalEntry[],
+  dateFrom: string,
+  dateTo: string
+): PnLReport {
+  const filtered = entries.filter((e) => {
+    if (dateFrom && e.date < dateFrom) return false;
+    if (dateTo && e.date > dateTo) return false;
+    return true;
+  });
+
+  const revenue: PnLRow[] = accounts
+    .filter((a) => a.type === "revenue")
+    .map((account) => {
+      let amount = 0;
+      for (const entry of filtered)
+        for (const line of entry.lines)
+          if (line.accountId === account.id) amount += line.credit - line.debit;
+      return { account, amount };
+    })
+    .filter((r) => r.amount > 0);
+
+  const expenses: PnLRow[] = accounts
+    .filter((a) => a.type === "expense")
+    .map((account) => {
+      let amount = 0;
+      for (const entry of filtered)
+        for (const line of entry.lines)
+          if (line.accountId === account.id) amount += line.debit - line.credit;
+      return { account, amount };
+    })
+    .filter((r) => r.amount > 0)
+    .sort((a, b) => b.amount - a.amount);
+
+  const totalRevenue  = revenue.reduce((s, r) => s + r.amount, 0);
+  const totalExpenses = expenses.reduce((s, r) => s + r.amount, 0);
+
+  return { revenue, expenses, totalRevenue, totalExpenses, netIncome: totalRevenue - totalExpenses };
+}
+
 export interface TrialBalanceRow {
   account: Account;
   totalDebit: number;

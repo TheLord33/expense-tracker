@@ -21,6 +21,7 @@ const fr: Translations = {
     recurring: "Récurrents",
     income: "Revenus",
     ledger: "Grand Livre",
+    pnl: "P&L",
   },
 
   summary: {
@@ -371,6 +372,28 @@ const fr: Translations = {
     errorCodeRequired: "Le code est requis",
     errorCodeExists: "Ce code est déjà utilisé",
     errorNameRequired: "Le nom est requis",
+  },
+
+  pnl: {
+    title: "Compte de Résultat",
+    revenue: "Revenus",
+    expenses: "Dépenses",
+    netIncome: "Résultat Net",
+    netLoss: "Perte Nette",
+    totalRevenue: "Total des revenus",
+    totalExpenses: "Total des dépenses",
+    noData: "Aucune transaction sur la période sélectionnée",
+    period: "Période",
+    presets: {
+      thisMonth: "Ce mois-ci",
+      lastMonth: "Mois précédent",
+      thisQuarter: "Ce trimestre",
+      lastQuarter: "Trimestre précédent",
+      thisYear: "Cette année",
+      lastYear: "Année précédente",
+      allTime: "Toute la période",
+      custom: "Personnalisé",
+    },
   },
 };
 
