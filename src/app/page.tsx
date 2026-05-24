@@ -67,8 +67,8 @@ export default function HomePage() {
 
   const { sources, monthlyIncome, addSource, updateSource, deleteSource, restoreSource } = useIncome();
 
-  const { accounts, addAccount, updateAccount, deleteAccount } = useAccounts();
-  const { balances: openingBalances, setBalance: setOpeningBalance } = useOpeningBalances();
+  const { accounts, addAccount, updateAccount, deleteAccount, replaceCustomAccounts } = useAccounts();
+  const { balances: openingBalances, setBalance: setOpeningBalance, setAllBalances } = useOpeningBalances();
 
   // ── Edit expense state ───────────────────────────────────────────────────────
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -171,7 +171,15 @@ export default function HomePage() {
         onAddExpense={addExpenseModal.onOpen}
         onAddCategory={addCategoryModal.onOpen}
         importExportSlot={
-          <ImportExportMenu expenses={expenses} categories={categories} onImport={importExpenses} />
+          <ImportExportMenu
+            expenses={expenses}
+            categories={categories}
+            accounts={accounts}
+            openingBalances={openingBalances}
+            onImport={importExpenses}
+            onImportAccounts={replaceCustomAccounts}
+            onImportOpeningBalances={setAllBalances}
+          />
         }
       />
 

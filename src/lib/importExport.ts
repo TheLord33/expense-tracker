@@ -1,4 +1,5 @@
-import { Expense } from "./types";
+import type { Account, Expense } from "./types";
+import type { PnLReport, BalanceSheetReport } from "./ledger";
 
 // ── Export ────────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,26 @@ export function toJSON(expenses: Expense[]): string {
   return JSON.stringify(expenses.map(({ id, ...rest }) => rest), null, 2);
 }
 
+export function toFullBackupJSON(
+  expenses: Expense[],
+  accounts: Account[],
+  openingBalances: Record<string, number>
+): string {
+  return JSON.stringify(
+    {
+      version: 1,
+      type: "full-backup",
+      exportedAt: new Date().toISOString(),
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      expenses: expenses.map(({ id, ...rest }) => rest),
+      customAccounts: accounts.filter((a) => !a.isBuiltin),
+      openingBalances,
+    },
+    null,
+    2
+  );
+}
+
 export function toText(expenses: Expense[]): string {
   const now = new Date().toLocaleDateString("en-US", {
     month: "long",
@@ -30,7 +51,7 @@ export function toText(expenses: Expense[]): string {
   const SEP = "-".repeat(76);
 
   const lines = [
-    `Family Finance Tracker Export — ${now}`,
+    `Family Finances Organizer Export — ${now}`,
     "=".repeat(76),
     "",
     "DATE          DESCRIPTION                            CATEGORY         AMOUNT",
@@ -55,6 +76,10 @@ export function toText(expenses: Expense[]): string {
 
 export function download(content: string, filename: string, mime: string) {
   const blob = new Blob([content], { type: mime });
+  downloadBlob(blob, filename);
+}
+
+export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -68,6 +93,12 @@ export function download(content: string, filename: string, mime: string) {
 export interface ImportResult {
   expenses: Omit<Expense, "id">[];
   errors: string[];
+}
+
+export interface FullBackupResult extends ImportResult {
+  isFullBackup: boolean;
+  customAccounts: Account[];
+  openingBalances: Record<string, number>;
 }
 
 function isValidDate(s: string): boolean {
@@ -157,30 +188,8 @@ export function fromCSV(content: string): ImportResult {
   return { expenses, errors };
 }
 
-export function fromJSON(content: string): ImportResult {
+function parseExpenseArray(arr: unknown[]): { expenses: Omit<Expense, "id">[]; errors: string[] } {
   const errors: string[] = [];
-  let parsed: unknown;
-
-  try {
-    parsed = JSON.parse(content);
-  } catch {
-    return { expenses: [], errors: ["Invalid JSON — could not parse file."] };
-  }
-
-  const arr = Array.isArray(parsed)
-    ? parsed
-    : Array.isArray((parsed as Record<string, unknown>).expenses)
-    ? (parsed as Record<string, unknown>).expenses
-    : null;
-
-  if (!Array.isArray(arr))
-    return {
-      expenses: [],
-      errors: [
-        "Expected a JSON array of expenses, or an object with an 'expenses' array.",
-      ],
-    };
-
   const expenses: Omit<Expense, "id">[] = [];
   for (let i = 0; i < arr.length; i++) {
     const item = arr[i] as Record<string, unknown>;
@@ -194,25 +203,58 @@ export function fromJSON(content: string): ImportResult {
     const amount = parseFloat(
       String(item.amount ?? item.amt ?? item.cost ?? "0").replace(/[$, ]/g, "")
     );
+    if (!isValidDate(date)) { errors.push(`Item ${i + 1}: invalid date "${date}"`); continue; }
+    if (isNaN(amount) || amount <= 0) { errors.push(`Item ${i + 1}: invalid amount`); continue; }
+    expenses.push({ date, description, category, amount: parseFloat(amount.toFixed(2)) });
+  }
+  return { expenses, errors };
+}
 
-    if (!isValidDate(date)) {
-      errors.push(`Item ${i + 1}: invalid date "${date}"`);
-      continue;
-    }
-    if (isNaN(amount) || amount <= 0) {
-      errors.push(`Item ${i + 1}: invalid amount`);
-      continue;
-    }
-
-    expenses.push({
-      date,
-      description,
-      category,
-      amount: parseFloat(amount.toFixed(2)),
-    });
+export function fromJSON(content: string): FullBackupResult {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    return { expenses: [], errors: ["Invalid JSON — could not parse file."], isFullBackup: false, customAccounts: [], openingBalances: {} };
   }
 
-  return { expenses, errors };
+  // Detect full backup format
+  if (
+    parsed &&
+    typeof parsed === "object" &&
+    !Array.isArray(parsed) &&
+    (parsed as Record<string, unknown>).type === "full-backup"
+  ) {
+    const backup = parsed as Record<string, unknown>;
+    const arr = Array.isArray(backup.expenses) ? backup.expenses : [];
+    const { expenses, errors } = parseExpenseArray(arr);
+    const customAccounts = Array.isArray(backup.customAccounts)
+      ? (backup.customAccounts as Account[])
+      : [];
+    const openingBalances =
+      backup.openingBalances && typeof backup.openingBalances === "object" && !Array.isArray(backup.openingBalances)
+        ? (backup.openingBalances as Record<string, number>)
+        : {};
+    return { expenses, errors, isFullBackup: true, customAccounts, openingBalances };
+  }
+
+  const arr = Array.isArray(parsed)
+    ? parsed
+    : Array.isArray((parsed as Record<string, unknown>).expenses)
+    ? ((parsed as Record<string, unknown>).expenses as unknown[])
+    : null;
+
+  if (!Array.isArray(arr))
+    return {
+      expenses: [],
+      errors: ["Expected a JSON array of expenses, or an object with an 'expenses' array."],
+      isFullBackup: false,
+      customAccounts: [],
+      openingBalances: {},
+    };
+
+  const { expenses, errors } = parseExpenseArray(arr);
+  return { expenses, errors, isFullBackup: false, customAccounts: [], openingBalances: {} };
 }
 
 export function fromText(content: string): ImportResult {
@@ -259,4 +301,54 @@ export function fromText(content: string): ImportResult {
     );
 
   return { expenses, errors };
+}
+
+// ── Report CSV exports ────────────────────────────────────────────────────────
+
+export function pnlToCSV(report: PnLReport, periodLabel: string): string {
+  const q = (s: string) => `"${String(s).replace(/"/g, '""')}"`;
+  const lines = [
+    q("Profit & Loss Report"),
+    q(`Period: ${periodLabel}`),
+    "",
+    [q("Section"), q("Code"), q("Name"), q("Amount")].join(","),
+  ];
+  for (const row of report.revenue)
+    lines.push([q("Revenue"), q(row.account.code), q(row.account.name), row.amount.toFixed(2)].join(","));
+  lines.push([q("Total Revenue"), "", "", report.totalRevenue.toFixed(2)].join(","));
+  lines.push("");
+  for (const row of report.expenses)
+    lines.push([q("Expense"), q(row.account.code), q(row.account.name), row.amount.toFixed(2)].join(","));
+  lines.push([q("Total Expenses"), "", "", report.totalExpenses.toFixed(2)].join(","));
+  lines.push("");
+  const label = report.netIncome >= 0 ? "Net Income" : "Net Loss";
+  lines.push([q(label), "", "", report.netIncome.toFixed(2)].join(","));
+  return lines.join("\n");
+}
+
+export function balanceSheetToCSV(report: BalanceSheetReport, dateLabel: string): string {
+  const q = (s: string) => `"${String(s).replace(/"/g, '""')}"`;
+  const lines = [
+    q("Balance Sheet"),
+    q(`As of ${dateLabel}`),
+    "",
+    [q("Section"), q("Code"), q("Name"), q("Opening Balance"), q("Activity"), q("Total")].join(","),
+  ];
+  const row = (section: string, code: string, name: string, ob: number, activity: number, total: number) =>
+    [q(section), q(code), q(name), ob.toFixed(2), activity.toFixed(2), total.toFixed(2)].join(",");
+  for (const r of report.assets)
+    lines.push(row("Asset", r.account.code, r.account.name, r.openingBalance, r.ledgerBalance, r.totalBalance));
+  lines.push([q("Total Assets"), "", "", "", "", report.totalAssets.toFixed(2)].join(","));
+  lines.push("");
+  for (const r of report.liabilities)
+    lines.push(row("Liability", r.account.code, r.account.name, r.openingBalance, r.ledgerBalance, r.totalBalance));
+  lines.push([q("Total Liabilities"), "", "", "", "", report.totalLiabilities.toFixed(2)].join(","));
+  lines.push("");
+  for (const r of report.equity)
+    lines.push(row("Equity", r.account.code, r.account.name, r.openingBalance, r.ledgerBalance, r.totalBalance));
+  lines.push([q("Retained Earnings"), "", "", "", "", report.retainedEarnings.toFixed(2)].join(","));
+  lines.push([q("Total Equity"), "", "", "", "", report.totalEquity.toFixed(2)].join(","));
+  lines.push("");
+  lines.push([q("Total Liabilities + Equity"), "", "", "", "", (report.totalLiabilities + report.totalEquity).toFixed(2)].join(","));
+  return lines.join("\n");
 }

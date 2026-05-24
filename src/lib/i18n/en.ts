@@ -215,6 +215,8 @@ const en = {
     currentCountPlural: "You currently have {count} expenses. Choose how to handle the import:",
     addToExisting: "Add to existing expenses",
     replaceAll: "Replace all ({count} will be deleted)",
+    exportBackup: "Full backup (.json)",
+    fullBackupDetected: "Full backup detected — includes {accounts} custom account(s) and opening balances.",
   },
 
   trends: {

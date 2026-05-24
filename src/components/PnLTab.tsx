@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Card, CardBody, CardHeader, Divider, Select, SelectItem, Input } from "@nextui-org/react";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { Card, CardBody, CardHeader, Divider, Select, SelectItem, Input, Button } from "@nextui-org/react";
+import { TrendingUp, TrendingDown, Download } from "lucide-react";
 import type { Account, Expense, IncomeSource } from "@/lib/types";
 import { deriveAllEntries, computePnL } from "@/lib/ledger";
+import { pnlToCSV, download, downloadBlob } from "@/lib/importExport";
+import { generatePnLPDF } from "@/lib/exportPDF";
 import { useLanguage, useCurrency } from "@/app/providers";
 
 // ── Date range helpers ────────────────────────────────────────────────────────
@@ -104,6 +106,16 @@ export function PnLTab({ expenses, sources, accounts }: Props) {
   const hasData = report.totalRevenue > 0 || report.totalExpenses > 0;
   const isProfit = report.netIncome >= 0;
   const periodLabel = formatPeriodLabel(from, to, locale);
+  const today = new Date().toISOString().split("T")[0];
+
+  function handleExportCSV() {
+    download(pnlToCSV(report, periodLabel), `pnl-report-${today}.csv`, "text/csv");
+  }
+
+  async function handleExportPDF() {
+    const blob = await generatePnLPDF(report, periodLabel, fmt);
+    downloadBlob(blob, `pnl-report-${today}.pdf`);
+  }
 
   return (
     <div className="space-y-4">
@@ -143,9 +155,17 @@ export function PnLTab({ expenses, sources, accounts }: Props) {
 
       {/* Report */}
       <Card shadow="sm">
-        <CardHeader className="px-6 pt-5 pb-3 flex-col items-start gap-0.5">
-          <h2 className="text-lg font-bold text-default-900">{t("pnl.title")}</h2>
-          <p className="text-sm text-default-400">{periodLabel}</p>
+        <CardHeader className="px-6 pt-5 pb-3 flex items-start justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-default-900">{t("pnl.title")}</h2>
+            <p className="text-sm text-default-400">{periodLabel}</p>
+          </div>
+          {hasData && (
+            <div className="flex gap-2 shrink-0">
+              <Button size="sm" variant="flat" startContent={<Download size={13} />} onPress={handleExportCSV}>CSV</Button>
+              <Button size="sm" variant="flat" startContent={<Download size={13} />} onPress={handleExportPDF}>PDF</Button>
+            </div>
+          )}
         </CardHeader>
         <Divider />
 

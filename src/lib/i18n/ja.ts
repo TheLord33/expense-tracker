@@ -217,6 +217,8 @@ const ja: Translations = {
     currentCountPlural: "現在{count}件の支出があります。インポート方法を選択してください：",
     addToExisting: "既存の支出に追加",
     replaceAll: "すべて置き換える（{count}件が削除されます）",
+    exportBackup: "完全バックアップ (.json)",
+    fullBackupDetected: "完全バックアップを検出しました — {accounts}件のカスタム口座と期首残高を含みます。",
   },
 
   trends: {

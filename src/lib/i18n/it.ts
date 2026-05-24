@@ -217,6 +217,8 @@ const it: Translations = {
     currentCountPlural: "Hai attualmente {count} spese. Scegli come gestire l'importazione:",
     addToExisting: "Aggiungi alle spese esistenti",
     replaceAll: "Sostituisci tutto ({count} verranno eliminate)",
+    exportBackup: "Backup completo (.json)",
+    fullBackupDetected: "Backup completo rilevato — include {accounts} conto/i personalizzato/i e saldi iniziali.",
   },
 
   trends: {

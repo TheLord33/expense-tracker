@@ -39,5 +39,9 @@ export function useAccounts() {
     setCustomAccounts((prev) => prev.filter((a) => a.id !== id));
   }, []);
 
-  return { accounts, addAccount, updateAccount, deleteAccount, loaded };
+  const replaceCustomAccounts = useCallback((incoming: Account[]) => {
+    setCustomAccounts(incoming.filter((a) => !a.isBuiltin));
+  }, []);
+
+  return { accounts, addAccount, updateAccount, deleteAccount, replaceCustomAccounts, loaded };
 }

@@ -2,9 +2,11 @@
 
 import { useState, useMemo } from "react";
 import { Card, CardBody, CardHeader, Divider, Button, Input, Chip } from "@nextui-org/react";
-import { Scale, Settings, CheckCircle, AlertCircle } from "lucide-react";
+import { Scale, Settings, CheckCircle, AlertCircle, Download } from "lucide-react";
 import type { Account, Expense, IncomeSource } from "@/lib/types";
 import { deriveAllEntries, computeBalanceSheet, type BalanceSheetRow } from "@/lib/ledger";
+import { balanceSheetToCSV, download, downloadBlob } from "@/lib/importExport";
+import { generateBalanceSheetPDF } from "@/lib/exportPDF";
 import { useLanguage, useCurrency } from "@/app/providers";
 
 const BS_TYPES = ["asset", "liability", "equity"] as const;
@@ -39,6 +41,16 @@ export function BalanceSheetTab({ expenses, sources, accounts, openingBalances, 
   const bsAccounts = accounts.filter((a) => BS_TYPES.includes(a.type as BSType));
   const isBalanced = Math.abs(report.difference) < 0.01;
   const today = new Date().toLocaleDateString(locale, { month: "long", day: "numeric", year: "numeric" });
+  const todayISO = new Date().toISOString().split("T")[0];
+
+  function handleExportCSV() {
+    download(balanceSheetToCSV(report, today), `balance-sheet-${todayISO}.csv`, "text/csv");
+  }
+
+  async function handleExportPDF() {
+    const blob = await generateBalanceSheetPDF(report, today, fmt);
+    downloadBlob(blob, `balance-sheet-${todayISO}.pdf`);
+  }
 
   // ── Opening Balances editor ──────────────────────────────────────────────────
 
@@ -118,6 +130,12 @@ export function BalanceSheetTab({ expenses, sources, accounts, openingBalances, 
             {t("balanceSheet.tabSetup")}
           </Button>
         </div>
+        {view === "report" && (
+          <div className="flex gap-2">
+            <Button size="sm" variant="flat" startContent={<Download size={13} />} onPress={handleExportCSV}>CSV</Button>
+            <Button size="sm" variant="flat" startContent={<Download size={13} />} onPress={handleExportPDF}>PDF</Button>
+          </div>
+        )}
       </div>
 
       {/* ── Report ── */}

@@ -5,8 +5,8 @@ import {
   Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection,
   Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
 } from "@nextui-org/react";
-import { Expense, CategoryDef } from "@/lib/types";
-import { fromCSV, fromJSON, fromText, ImportResult } from "@/lib/importExport";
+import type { Account, Expense, CategoryDef } from "@/lib/types";
+import { fromCSV, fromJSON, fromText, toFullBackupJSON, download, type FullBackupResult } from "@/lib/importExport";
 import { ExportModal } from "@/components/ExportModal";
 import { CloudExportModal } from "@/components/CloudExportModal";
 import { useLanguage, useCurrency } from "@/app/providers";
@@ -14,7 +14,11 @@ import { useLanguage, useCurrency } from "@/app/providers";
 interface Props {
   expenses: Expense[];
   categories: CategoryDef[];
+  accounts: Account[];
+  openingBalances: Record<string, number>;
   onImport: (incoming: Omit<Expense, "id">[], replace: boolean) => void;
+  onImportAccounts: (accounts: Account[]) => void;
+  onImportOpeningBalances: (balances: Record<string, number>) => void;
 }
 
 type ImportFormat = "csv" | "json" | "txt";
@@ -25,12 +29,12 @@ const ACCEPT: Record<ImportFormat, string> = {
   txt: ".txt,text/plain",
 };
 
-export function ImportExportMenu({ expenses, categories, onImport }: Props) {
+export function ImportExportMenu({ expenses, categories, accounts, openingBalances, onImport, onImportAccounts, onImportOpeningBalances }: Props) {
   const { t } = useLanguage();
   const { fmt } = useCurrency();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingFormat, setPendingFormat] = useState<ImportFormat | null>(null);
-  const [importResult, setImportResult]   = useState<ImportResult | null>(null);
+  const [importResult, setImportResult]   = useState<FullBackupResult | null>(null);
   const [showExport, setShowExport]       = useState(false);
   const [showCloud, setShowCloud]         = useState(false);
 
@@ -51,19 +55,31 @@ export function ImportExportMenu({ expenses, categories, onImport }: Props) {
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string;
-      const parsed =
-        pendingFormat === "csv"  ? fromCSV(content) :
+      const bare = (r: { expenses: Omit<Expense, "id">[]; errors: string[] }): FullBackupResult =>
+        ({ ...r, isFullBackup: false, customAccounts: [], openingBalances: {} });
+      const parsed: FullBackupResult =
+        pendingFormat === "csv"  ? bare(fromCSV(content)) :
         pendingFormat === "json" ? fromJSON(content) :
-        fromText(content);
+        bare(fromText(content));
       setImportResult(parsed);
     };
     reader.readAsText(file);
   }
 
   function handleConfirm(replace: boolean) {
-    if (importResult) onImport(importResult.expenses, replace);
+    if (!importResult) return;
+    onImport(importResult.expenses, replace);
+    if (importResult.isFullBackup) {
+      onImportAccounts(importResult.customAccounts);
+      onImportOpeningBalances(importResult.openingBalances);
+    }
     setImportResult(null);
     setPendingFormat(null);
+  }
+
+  function handleExportBackup() {
+    const today = new Date().toISOString().split("T")[0];
+    download(toFullBackupJSON(expenses, accounts, openingBalances), `family-finances-backup-${today}.json`, "application/json");
   }
 
   function handleImportCancel() {
@@ -90,6 +106,9 @@ export function ImportExportMenu({ expenses, categories, onImport }: Props) {
           <DropdownSection title={t("importExport.exportSection")} showDivider>
             <DropdownItem key="export" onPress={() => setShowExport(true)}>
               {t("importExport.exportAction")}
+            </DropdownItem>
+            <DropdownItem key="backup" onPress={handleExportBackup}>
+              {t("importExport.exportBackup")}
             </DropdownItem>
             <DropdownItem key="cloud" onPress={() => setShowCloud(true)}>
               {t("cloudExport.title")} ✦
@@ -128,6 +147,13 @@ export function ImportExportMenu({ expenses, categories, onImport }: Props) {
           <ModalContent>
             <ModalHeader>{t("importExport.importTitle", { format: pendingFormat?.toUpperCase() ?? "" })}</ModalHeader>
             <ModalBody className="gap-3">
+              {importResult.isFullBackup && (
+                <div className="bg-primary-50 border border-primary-200 rounded-lg px-4 py-3 text-sm text-primary-700">
+                  {t("importExport.fullBackupDetected", {
+                    accounts: importResult.customAccounts.length,
+                  })}
+                </div>
+              )}
               {importResult.expenses.length > 0 && (
                 <div className="bg-success-50 border border-success-200 rounded-lg px-4 py-3 text-sm text-success-700">
                   <strong>{importResult.expenses.length}</strong>{" "}

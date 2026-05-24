@@ -217,6 +217,8 @@ const de: Translations = {
     currentCountPlural: "Sie haben derzeit {count} Ausgaben. Wählen Sie, wie mit dem Import umgegangen werden soll:",
     addToExisting: "Zu bestehenden Ausgaben hinzufügen",
     replaceAll: "Alles ersetzen ({count} werden gelöscht)",
+    exportBackup: "Vollständiges Backup (.json)",
+    fullBackupDetected: "Vollständiges Backup erkannt — enthält {accounts} benutzerdefiniertes/e Konto/Konten und Eröffnungssalden.",
   },
 
   trends: {
