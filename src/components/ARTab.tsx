@@ -8,8 +8,10 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   useDisclosure,
 } from "@nextui-org/react";
-import { Plus, Pencil, Trash2, BadgeDollarSign, CheckCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, BadgeDollarSign, CheckCircle, Download } from "lucide-react";
 import type { Account, Customer, Invoice, InvoicePayment } from "@/lib/types";
+import { generateInvoicePDF } from "@/lib/exportPDF";
+import { downloadBlob } from "@/lib/importExport";
 import { useLanguage, useCurrency } from "@/app/providers";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -75,6 +77,13 @@ export function ARTab({
 
   const [view, setView] = useState<"invoices" | "customers" | "aging">("invoices");
   const today = todayISO();
+
+  async function handleDownloadPDF(inv: Invoice) {
+    const customer = customers.find((c) => c.id === inv.customerId);
+    const pmts = invoicePayments.filter((p) => p.invoiceId === inv.id);
+    const blob = await generateInvoicePDF(inv, customer, pmts, fmt, locale);
+    downloadBlob(blob, `invoice-${inv.invoiceNumber || inv.id}.pdf`);
+  }
 
   // ── Invoice form ─────────────────────────────────────────────────────────────
   const invModal = useDisclosure();
@@ -326,6 +335,9 @@ export function ARTab({
                             {t("ar.recordPayment")}
                           </Button>
                         )}
+                        <Button isIconOnly size="sm" variant="light" title="Download PDF" onPress={() => handleDownloadPDF(inv)}>
+                          <Download size={13} />
+                        </Button>
                         <Button isIconOnly size="sm" variant="light" onPress={() => openEditInvoice(inv)}>
                           <Pencil size={13} />
                         </Button>

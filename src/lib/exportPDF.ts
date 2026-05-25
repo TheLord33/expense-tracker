@@ -1,4 +1,5 @@
 import { Expense } from "./types";
+import type { Customer, Invoice, InvoicePayment } from "./types";
 import type { PnLReport, BalanceSheetReport, TrialBalanceRow } from "./ledger";
 
 const APP_NAME = "Folio";
@@ -220,6 +221,200 @@ export async function generateBalanceSheetPDF(
     styles: { cellPadding: 3 },
     margin: margins,
   });
+
+  return doc.output("blob");
+}
+
+export async function generateInvoicePDF(
+  invoice: Invoice,
+  customer: Customer | undefined,
+  payments: InvoicePayment[],
+  fmtFn: (n: number) => string,
+  locale: string
+): Promise<Blob> {
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
+
+  const doc = new jsPDF();
+  const PAGE_W = doc.internal.pageSize.getWidth();
+
+  const GREEN:    [number, number, number] = [22, 163, 74];
+  const GREEN_L:  [number, number, number] = [240, 253, 244];
+  const GREEN_D:  [number, number, number] = [21, 128, 61];
+  const RED_L:    [number, number, number] = [254, 242, 242];
+  const RED_D:    [number, number, number] = [185, 28, 28];
+  const YELLOW_L: [number, number, number] = [255, 251, 235];
+  const YELLOW_D: [number, number, number] = [146, 64, 14];
+  const DEFAULT_L:[number, number, number] = [249, 250, 251];
+  const DEFAULT_D:[number, number, number] = [55, 65, 81];
+
+  function fmtDateStr(iso: string) {
+    const [y, m, d] = iso.split("-");
+    return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString(locale, {
+      month: "long", day: "numeric", year: "numeric",
+    });
+  }
+
+  const collected = payments.reduce((s, p) => s + p.amount, 0);
+  const amountDue = Math.max(0, invoice.amount - collected);
+  const isPaid     = amountDue < 0.01;
+  const isOverdue  = !isPaid && invoice.dueDate < new Date().toISOString().split("T")[0];
+  const isDueSoon  = !isPaid && !isOverdue && (() => {
+    const days = Math.round((new Date(invoice.dueDate).getTime() - Date.now()) / 86400000);
+    return days <= 7;
+  })();
+
+  // ── Header band ───────────────────────────────────────────────────────────────
+  doc.setFillColor(...INDIGO);
+  doc.rect(0, 0, PAGE_W, 28, "F");
+
+  // App name (left)
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(255, 255, 255);
+  doc.text(APP_NAME, 14, 18);
+
+  // "INVOICE" label (right)
+  doc.setFontSize(20);
+  doc.setTextColor(255, 255, 255);
+  doc.text("INVOICE", PAGE_W - 14, 18, { align: "right" });
+
+  // ── Invoice meta (right column) ───────────────────────────────────────────────
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...GRAY);
+
+  const metaX = PAGE_W - 14;
+  let metaY = 38;
+
+  function metaRow(label: string, value: string) {
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...DEFAULT_D);
+    doc.text(label, metaX - 52, metaY, { align: "right" });
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(55, 65, 81);
+    doc.text(value, metaX, metaY, { align: "right" });
+    metaY += 7;
+  }
+
+  metaRow("Invoice #", invoice.invoiceNumber || "—");
+  metaRow("Date", fmtDateStr(invoice.date));
+  metaRow("Due", fmtDateStr(invoice.dueDate));
+
+  // ── Bill To (left column) ─────────────────────────────────────────────────────
+  let billY = 36;
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...GRAY);
+  doc.text("BILL TO", 14, billY);
+  billY += 6;
+
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(17, 24, 39);
+  doc.text(customer?.name ?? "—", 14, billY);
+  billY += 6;
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...GRAY);
+  if (customer?.email) { doc.text(customer.email, 14, billY); billY += 5; }
+  if (customer?.phone) { doc.text(customer.phone, 14, billY); billY += 5; }
+
+  // ── Divider ───────────────────────────────────────────────────────────────────
+  const tableStartY = Math.max(metaY, billY) + 6;
+
+  doc.setDrawColor(229, 231, 235);
+  doc.setLineWidth(0.3);
+  doc.line(14, tableStartY - 3, PAGE_W - 14, tableStartY - 3);
+
+  // ── Line items table ──────────────────────────────────────────────────────────
+  autoTable(doc, {
+    startY: tableStartY,
+    head: [["Description", "Amount"]],
+    body: [[invoice.description, fmtFn(invoice.amount)]],
+    headStyles: { fillColor: INDIGO, textColor: 255, fontStyle: "bold", fontSize: 9 },
+    bodyStyles: { fontSize: 10, cellPadding: 5 },
+    columnStyles: { 1: { halign: "right", cellWidth: 40 } },
+    margin: { left: 14, right: 14 },
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let y = (doc as any).lastAutoTable.finalY + 4;
+
+  // ── Payments received (if any) ────────────────────────────────────────────────
+  if (payments.length > 0) {
+    autoTable(doc, {
+      startY: y,
+      head: [["Payments Received", "Date", "Note", "Amount"]],
+      body: payments.map((p) => [
+        "", fmtDateStr(p.date), p.note ?? "", fmtFn(p.amount),
+      ]),
+      headStyles: { fillColor: GREEN, textColor: 255, fontStyle: "bold", fontSize: 8 },
+      bodyStyles: { fontSize: 9, cellPadding: 3, textColor: [55, 65, 81] },
+      columnStyles: {
+        0: { cellWidth: 0 },
+        1: { cellWidth: 36 },
+        2: { cellWidth: 80 },
+        3: { halign: "right", cellWidth: 36 },
+      },
+      margin: { left: 14, right: 14 },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    y = (doc as any).lastAutoTable.finalY + 4;
+  }
+
+  // ── Totals block ──────────────────────────────────────────────────────────────
+  const totalsBody: [string, string][] = [
+    ["Subtotal", fmtFn(invoice.amount)],
+  ];
+  if (collected > 0) totalsBody.push(["Collected", fmtFn(collected)]);
+
+  autoTable(doc, {
+    startY: y,
+    body: totalsBody,
+    bodyStyles: { fontSize: 9, cellPadding: 3, textColor: [55, 65, 81] },
+    columnStyles: { 0: { halign: "right" }, 1: { halign: "right", cellWidth: 40 } },
+    margin: { left: 14, right: 14 },
+    tableWidth: "wrap",
+    tableLineWidth: 0,
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  y = (doc as any).lastAutoTable.finalY + 2;
+
+  // Amount due highlight row
+  const dueFill  = isPaid ? GREEN_L  : isOverdue ? RED_L    : isDueSoon ? YELLOW_L : DEFAULT_L;
+  const dueColor = isPaid ? GREEN_D  : isOverdue ? RED_D    : isDueSoon ? YELLOW_D : DEFAULT_D;
+  autoTable(doc, {
+    startY: y,
+    body: [["Amount Due", fmtFn(amountDue)]],
+    bodyStyles: { fillColor: dueFill, textColor: dueColor, fontStyle: "bold", fontSize: 12, cellPadding: 4 },
+    columnStyles: { 0: { halign: "right" }, 1: { halign: "right", cellWidth: 40 } },
+    margin: { left: 14, right: 14 },
+    tableWidth: "wrap",
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  y = (doc as any).lastAutoTable.finalY + 6;
+
+  // Status badge
+  const statusLabel = isPaid ? "PAID" : isOverdue ? "OVERDUE" : isDueSoon ? "DUE SOON" : "UNPAID";
+  const badgeFill   = isPaid ? GREEN  : isOverdue ? [220, 38, 38] as [number, number, number] : isDueSoon ? [245, 158, 11] as [number, number, number] : [107, 114, 128] as [number, number, number];
+  doc.setFillColor(...badgeFill);
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  const badgeW = doc.getTextWidth(statusLabel) + 10;
+  doc.roundedRect(PAGE_W - 14 - badgeW, y, badgeW, 8, 2, 2, "F");
+  doc.text(statusLabel, PAGE_W - 14 - badgeW / 2, y + 5.5, { align: "center" });
+
+  // ── Footer ────────────────────────────────────────────────────────────────────
+  const PAGE_H = doc.internal.pageSize.getHeight();
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...GRAY);
+  doc.text(`Generated by ${APP_NAME}`, PAGE_W / 2, PAGE_H - 8, { align: "center" });
 
   return doc.output("blob");
 }
