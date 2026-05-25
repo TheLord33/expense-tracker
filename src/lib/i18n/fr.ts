@@ -23,6 +23,7 @@ const fr: Translations = {
     ledger: "Grand Livre",
     pnl: "P&L",
     balanceSheet: "Bilan",
+    trialBalance: "B/V",
   },
 
   summary: {
@@ -416,6 +417,20 @@ const fr: Translations = {
     tabSetup: "Soldes initiaux",
     openingBalanceHint: "Définissez les soldes initiaux avant le début du suivi",
     saveBalances: "Enregistrer les soldes",
+  },
+
+  trialBalance: {
+    title: "Balance de vérification",
+    asOfLabel: "Date d'arrêté",
+    asOf: "Au {date}",
+    code: "Code",
+    account: "Compte",
+    debit: "Débit",
+    credit: "Crédit",
+    totals: "Totaux",
+    balanced: "Équilibré — les débits égalent les crédits",
+    outOfBalance: "Écart de {amount}",
+    noData: "Aucune transaction enregistrée",
   },
 };
 

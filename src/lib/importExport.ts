@@ -1,5 +1,5 @@
 import type { Account, Expense } from "./types";
-import type { PnLReport, BalanceSheetReport } from "./ledger";
+import type { PnLReport, BalanceSheetReport, TrialBalanceRow } from "./ledger";
 
 // ── Export ────────────────────────────────────────────────────────────────────
 
@@ -350,5 +350,27 @@ export function balanceSheetToCSV(report: BalanceSheetReport, dateLabel: string)
   lines.push([q("Total Equity"), "", "", "", "", report.totalEquity.toFixed(2)].join(","));
   lines.push("");
   lines.push([q("Total Liabilities + Equity"), "", "", "", "", (report.totalLiabilities + report.totalEquity).toFixed(2)].join(","));
+  return lines.join("\n");
+}
+
+export function trialBalanceToCSV(
+  rows: TrialBalanceRow[],
+  dateLabel: string,
+  totalDebit: number,
+  totalCredit: number
+): string {
+  const q = (s: string) => `"${String(s).replace(/"/g, '""')}"`;
+  const lines = [
+    q("Trial Balance"),
+    q(`As of ${dateLabel}`),
+    "",
+    [q("Code"), q("Account"), q("Type"), q("Debit"), q("Credit")].join(","),
+  ];
+  for (const r of rows)
+    lines.push([q(r.account.code), q(r.account.name), q(r.account.type), r.totalDebit.toFixed(2), r.totalCredit.toFixed(2)].join(","));
+  lines.push("");
+  lines.push([q("Totals"), "", "", totalDebit.toFixed(2), totalCredit.toFixed(2)].join(","));
+  const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01;
+  lines.push([q(isBalanced ? "Balanced" : "Out of balance"), "", "", "", ""].join(","));
   return lines.join("\n");
 }

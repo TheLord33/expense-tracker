@@ -23,6 +23,7 @@ const es: Translations = {
     ledger: "Mayor",
     pnl: "P&G",
     balanceSheet: "B/G",
+    trialBalance: "B/C",
   },
 
   summary: {
@@ -416,6 +417,20 @@ const es: Translations = {
     tabSetup: "Saldos Iniciales",
     openingBalanceHint: "Establece los saldos iniciales antes de comenzar el seguimiento",
     saveBalances: "Guardar Saldos",
+  },
+
+  trialBalance: {
+    title: "Balanza de Comprobación",
+    asOfLabel: "Fecha de corte",
+    asOf: "Al {date}",
+    code: "Código",
+    account: "Cuenta",
+    debit: "Debe",
+    credit: "Haber",
+    totals: "Totales",
+    balanced: "Balanceado — débitos igualan créditos",
+    outOfBalance: "Diferencia de {amount}",
+    noData: "No hay transacciones registradas aún",
   },
 };
 

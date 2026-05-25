@@ -21,6 +21,7 @@ const en = {
     ledger: "Ledger",
     pnl: "P&L",
     balanceSheet: "B/S",
+    trialBalance: "T/B",
   },
 
   summary: {
@@ -414,6 +415,20 @@ const en = {
     tabSetup: "Opening Balances",
     openingBalanceHint: "Set starting balances for each account before you began tracking",
     saveBalances: "Save Balances",
+  },
+
+  trialBalance: {
+    title: "Trial Balance",
+    asOfLabel: "As of date",
+    asOf: "As of {date}",
+    code: "Code",
+    account: "Account",
+    debit: "Debit",
+    credit: "Credit",
+    totals: "Totals",
+    balanced: "Balanced — debits equal credits",
+    outOfBalance: "Out of balance by {amount}",
+    noData: "No transactions recorded yet",
   },
 };
 

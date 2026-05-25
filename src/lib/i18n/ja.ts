@@ -23,6 +23,7 @@ const ja: Translations = {
     ledger: "元帳",
     pnl: "損益",
     balanceSheet: "貸借",
+    trialBalance: "試算",
   },
 
   summary: {
@@ -416,6 +417,20 @@ const ja: Translations = {
     tabSetup: "期首残高",
     openingBalanceHint: "記録開始前の各勘定科目の期首残高を入力してください",
     saveBalances: "残高を保存",
+  },
+
+  trialBalance: {
+    title: "試算表",
+    asOfLabel: "基準日",
+    asOf: "{date} 現在",
+    code: "コード",
+    account: "勘定科目",
+    debit: "借方",
+    credit: "貸方",
+    totals: "合計",
+    balanced: "一致 — 借方合計と貸方合計が等しい",
+    outOfBalance: "{amount} の差異",
+    noData: "取引がまだ記録されていません",
   },
 };
 

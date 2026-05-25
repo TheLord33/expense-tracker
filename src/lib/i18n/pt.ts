@@ -23,6 +23,7 @@ const pt: Translations = {
     ledger: "Razão",
     pnl: "DRE",
     balanceSheet: "B/P",
+    trialBalance: "B/V",
   },
 
   summary: {
@@ -416,6 +417,20 @@ const pt: Translations = {
     tabSetup: "Saldos Iniciais",
     openingBalanceHint: "Defina os saldos iniciais antes de começar o acompanhamento",
     saveBalances: "Salvar Saldos",
+  },
+
+  trialBalance: {
+    title: "Balancete de Verificação",
+    asOfLabel: "Data de corte",
+    asOf: "Em {date}",
+    code: "Código",
+    account: "Conta",
+    debit: "Débito",
+    credit: "Crédito",
+    totals: "Totais",
+    balanced: "Balanceado — débitos igualam créditos",
+    outOfBalance: "Diferença de {amount}",
+    noData: "Nenhuma transação registrada ainda",
   },
 };
 

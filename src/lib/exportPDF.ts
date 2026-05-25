@@ -1,5 +1,5 @@
 import { Expense } from "./types";
-import type { PnLReport, BalanceSheetReport } from "./ledger";
+import type { PnLReport, BalanceSheetReport, TrialBalanceRow } from "./ledger";
 
 const APP_NAME = "Family Finances Organizer";
 const INDIGO: [number, number, number] = [79, 70, 229];
@@ -219,6 +219,58 @@ export async function generateBalanceSheetPDF(
     columnStyles: { 1: { halign: "right" } },
     styles: { cellPadding: 3 },
     margin: margins,
+  });
+
+  return doc.output("blob");
+}
+
+export async function generateTrialBalancePDF(
+  rows: TrialBalanceRow[],
+  dateLabel: string,
+  fmtFn: (n: number) => string,
+  totalDebit: number,
+  totalCredit: number
+): Promise<Blob> {
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
+  const doc = new jsPDF();
+  const now = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+
+  doc.setFontSize(18); doc.setTextColor(...INDIGO); doc.text(APP_NAME, 14, 18);
+  doc.setFontSize(12); doc.setTextColor(55, 65, 81); doc.text("Trial Balance", 14, 27);
+  doc.setFontSize(9);  doc.setTextColor(...GRAY);
+  doc.text(`As of ${dateLabel}`, 14, 34);
+  doc.text(`Generated: ${now}`, 14, 40);
+
+  const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01;
+
+  autoTable(doc, {
+    startY: 47,
+    head: [["Code", "Account", "Type", "Debit", "Credit"]],
+    body: rows.map((r) => [
+      r.account.code,
+      r.account.name,
+      r.account.type.charAt(0).toUpperCase() + r.account.type.slice(1),
+      r.totalDebit > 0 ? fmtFn(r.totalDebit) : "—",
+      r.totalCredit > 0 ? fmtFn(r.totalCredit) : "—",
+    ]),
+    foot: [
+      ["", "Totals", "", fmtFn(totalDebit), fmtFn(totalCredit)],
+      ["", isBalanced ? "✓ Balanced" : "⚠ Out of balance", "", "", ""],
+    ],
+    headStyles: { fillColor: INDIGO, textColor: 255, fontStyle: "bold" },
+    footStyles: { fillColor: [238, 242, 255], textColor: [55, 48, 163], fontStyle: "bold" },
+    columnStyles: {
+      0: { cellWidth: 18 },
+      2: { cellWidth: 22 },
+      3: { halign: "right", cellWidth: 28 },
+      4: { halign: "right", cellWidth: 28 },
+    },
+    alternateRowStyles: { fillColor: [249, 250, 251] },
+    styles: { fontSize: 9, cellPadding: 3 },
+    margin: { left: 14, right: 14 },
   });
 
   return doc.output("blob");

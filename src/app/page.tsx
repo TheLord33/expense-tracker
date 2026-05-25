@@ -7,7 +7,7 @@ import {
   Card, CardBody, CardHeader, Divider,
   Tabs, Tab,
 } from "@nextui-org/react";
-import { Receipt, PiggyBank, RefreshCw, TrendingUp, BookOpen, BarChart2, Scale } from "lucide-react";
+import { Receipt, PiggyBank, RefreshCw, TrendingUp, BookOpen, BarChart2, Scale, ClipboardList } from "lucide-react";
 
 import { useExpenses } from "@/lib/useExpenses";
 import { useCategories } from "@/lib/useCategories";
@@ -35,6 +35,7 @@ import { IncomeTab } from "@/components/IncomeTab";
 import { LedgerTab } from "@/components/LedgerTab";
 import { PnLTab } from "@/components/PnLTab";
 import { BalanceSheetTab } from "@/components/BalanceSheetTab";
+import { TrialBalanceTab } from "@/components/TrialBalanceTab";
 
 import type { Expense, ChipColor } from "@/lib/types";
 import { useLanguage, useToast, useCurrency } from "@/app/providers";
@@ -326,6 +327,17 @@ export default function HomePage() {
                 accounts={accounts}
                 openingBalances={openingBalances}
                 onSetBalance={setOpeningBalance}
+              />
+            </div>
+          </Tab>
+
+          {/* ── Trial Balance ── */}
+          <Tab key="trialBalance" title={tabTitle(t("tabs.trialBalance"), ClipboardList)}>
+            <div className="pt-4">
+              <TrialBalanceTab
+                expenses={expenses}
+                sources={sources}
+                accounts={accounts}
               />
             </div>
           </Tab>

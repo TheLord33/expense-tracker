@@ -23,6 +23,7 @@ const it: Translations = {
     ledger: "Mastro",
     pnl: "C/E",
     balanceSheet: "S/P",
+    trialBalance: "B/V",
   },
 
   summary: {
@@ -416,6 +417,20 @@ const it: Translations = {
     tabSetup: "Saldi iniziali",
     openingBalanceHint: "Imposta i saldi iniziali prima di iniziare il monitoraggio",
     saveBalances: "Salva saldi",
+  },
+
+  trialBalance: {
+    title: "Bilancio di Verifica",
+    asOfLabel: "Data di riferimento",
+    asOf: "Al {date}",
+    code: "Codice",
+    account: "Conto",
+    debit: "Dare",
+    credit: "Avere",
+    totals: "Totali",
+    balanced: "In pareggio — dare uguale ad avere",
+    outOfBalance: "Differenza di {amount}",
+    noData: "Nessuna transazione registrata",
   },
 };
 

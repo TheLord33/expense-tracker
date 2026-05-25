@@ -23,6 +23,7 @@ const de: Translations = {
     ledger: "Hauptbuch",
     pnl: "G&V",
     balanceSheet: "Bilanz",
+    trialBalance: "Sal.",
   },
 
   summary: {
@@ -416,6 +417,20 @@ const de: Translations = {
     tabSetup: "Eröffnungsbilanzen",
     openingBalanceHint: "Eröffnungssalden für jedes Konto vor Beginn der Erfassung eingeben",
     saveBalances: "Salden speichern",
+  },
+
+  trialBalance: {
+    title: "Saldenliste",
+    asOfLabel: "Stichtag",
+    asOf: "Stand {date}",
+    code: "Konto-Nr.",
+    account: "Konto",
+    debit: "Soll",
+    credit: "Haben",
+    totals: "Summen",
+    balanced: "Ausgeglichen — Soll gleich Haben",
+    outOfBalance: "Differenz von {amount}",
+    noData: "Noch keine Buchungen erfasst",
   },
 };
 
