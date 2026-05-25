@@ -21,6 +21,7 @@ import { useVendors } from "@/lib/useVendors";
 import { useBills } from "@/lib/useBills";
 import { useInventory } from "@/lib/useInventory";
 import { useAR } from "@/lib/useAR";
+import { useCompanyProfile } from "@/lib/useCompanyProfile";
 import type { Budget, RecurringExpense, IncomeSource } from "@/lib/types";
 
 import { AppHeader } from "@/components/AppHeader";
@@ -81,6 +82,7 @@ export default function HomePage() {
   const { bills, billPayments, addBill, updateBill, deleteBill, addPayment, paidAmount, outstanding } = useBills();
   const { items: inventoryItems, movements: inventoryMovements, addItem, updateItem, deleteItem, addMovement, deleteMovement, qtyOnHand, inventoryValue, totalInventoryValue } = useInventory();
   const { customers, invoices, payments: invoicePayments, addCustomer, updateCustomer, deleteCustomer, addInvoice, updateInvoice, deleteInvoice, addPayment: addInvoicePayment, collectedAmount, outstanding: invoiceOutstanding } = useAR();
+  const { profile: companyProfile, updateProfile: updateCompanyProfile } = useCompanyProfile();
 
   // ── Edit expense state ───────────────────────────────────────────────────────
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -424,6 +426,8 @@ export default function HomePage() {
                 invoices={invoices}
                 invoicePayments={invoicePayments}
                 accounts={accounts}
+                company={companyProfile}
+                onUpdateCompany={updateCompanyProfile}
                 onAddCustomer={addCustomer}
                 onUpdateCustomer={updateCustomer}
                 onDeleteCustomer={deleteCustomer}

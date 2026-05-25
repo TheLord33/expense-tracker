@@ -8,8 +8,8 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   useDisclosure,
 } from "@nextui-org/react";
-import { Plus, Pencil, Trash2, BadgeDollarSign, CheckCircle, Download } from "lucide-react";
-import type { Account, Customer, Invoice, InvoicePayment } from "@/lib/types";
+import { Plus, Pencil, Trash2, BadgeDollarSign, CheckCircle, Download, Settings } from "lucide-react";
+import type { Account, CompanyProfile, Customer, Invoice, InvoicePayment } from "@/lib/types";
 import { generateInvoicePDF } from "@/lib/exportPDF";
 import { downloadBlob } from "@/lib/importExport";
 import { useLanguage, useCurrency } from "@/app/providers";
@@ -53,6 +53,8 @@ interface Props {
   invoices: Invoice[];
   invoicePayments: InvoicePayment[];
   accounts: Account[];
+  company: CompanyProfile;
+  onUpdateCompany: (data: Partial<CompanyProfile>) => void;
   onAddCustomer: (c: Omit<Customer, "id">) => void;
   onUpdateCustomer: (id: string, data: Partial<Omit<Customer, "id">>) => void;
   onDeleteCustomer: (id: string) => void;
@@ -68,6 +70,7 @@ interface Props {
 
 export function ARTab({
   customers, invoices, invoicePayments, accounts,
+  company, onUpdateCompany,
   onAddCustomer, onUpdateCustomer, onDeleteCustomer,
   onAddInvoice, onUpdateInvoice, onDeleteInvoice,
   onAddPayment, collectedAmount, outstanding,
@@ -81,7 +84,7 @@ export function ARTab({
   async function handleDownloadPDF(inv: Invoice) {
     const customer = customers.find((c) => c.id === inv.customerId);
     const pmts = invoicePayments.filter((p) => p.invoiceId === inv.id);
-    const blob = await generateInvoicePDF(inv, customer, pmts, fmt, locale);
+    const blob = await generateInvoicePDF(inv, customer, pmts, company, fmt, locale);
     downloadBlob(blob, `invoice-${inv.invoiceNumber || inv.id}.pdf`);
   }
 
@@ -109,9 +112,19 @@ export function ARTab({
   const custModal = useDisclosure();
   const [editingCust,  setEditingCust]  = useState<Customer | null>(null);
   const [fCustName,    setFCustName]    = useState("");
+  const [fCustAddress, setFCustAddress] = useState("");
   const [fCustEmail,   setFCustEmail]   = useState("");
   const [fCustPhone,   setFCustPhone]   = useState("");
   const [fCustErr,     setFCustErr]     = useState("");
+
+  // ── Company profile modal ─────────────────────────────────────────────────────
+  const bizModal = useDisclosure();
+  const [fBizName,    setFBizName]    = useState("");
+  const [fBizAddress, setFBizAddress] = useState("");
+  const [fBizEmail,   setFBizEmail]   = useState("");
+  const [fBizPhone,   setFBizPhone]   = useState("");
+  const [fBizWebsite, setFBizWebsite] = useState("");
+  const [fBizTaxId,   setFBizTaxId]   = useState("");
 
   // ── Derived ──────────────────────────────────────────────────────────────────
 
@@ -206,13 +219,14 @@ export function ARTab({
 
   function openAddCustomer() {
     setEditingCust(null);
-    setFCustName(""); setFCustEmail(""); setFCustPhone(""); setFCustErr("");
+    setFCustName(""); setFCustAddress(""); setFCustEmail(""); setFCustPhone(""); setFCustErr("");
     custModal.onOpen();
   }
 
   function openEditCustomer(c: Customer) {
     setEditingCust(c);
-    setFCustName(c.name); setFCustEmail(c.email ?? ""); setFCustPhone(c.phone ?? ""); setFCustErr("");
+    setFCustName(c.name); setFCustAddress(c.address ?? "");
+    setFCustEmail(c.email ?? ""); setFCustPhone(c.phone ?? ""); setFCustErr("");
     custModal.onOpen();
   }
 
@@ -221,12 +235,38 @@ export function ARTab({
     if (!fCustName.trim()) { setFCustErr(t("ar.errorCustomer")); return; }
     const data: Omit<Customer, "id"> = {
       name: fCustName.trim(),
+      address: fCustAddress.trim() || undefined,
       email: fCustEmail.trim() || undefined,
       phone: fCustPhone.trim() || undefined,
     };
     if (editingCust) onUpdateCustomer(editingCust.id, data);
     else             onAddCustomer(data);
     custModal.onClose();
+  }
+
+  // ── Company profile handlers ──────────────────────────────────────────────────
+
+  function openBizModal() {
+    setFBizName(company.name ?? "");
+    setFBizAddress(company.address ?? "");
+    setFBizEmail(company.email ?? "");
+    setFBizPhone(company.phone ?? "");
+    setFBizWebsite(company.website ?? "");
+    setFBizTaxId(company.taxId ?? "");
+    bizModal.onOpen();
+  }
+
+  function handleBizSubmit(e: FormEvent) {
+    e.preventDefault();
+    onUpdateCompany({
+      name:    fBizName.trim(),
+      address: fBizAddress.trim() || undefined,
+      email:   fBizEmail.trim()   || undefined,
+      phone:   fBizPhone.trim()   || undefined,
+      website: fBizWebsite.trim() || undefined,
+      taxId:   fBizTaxId.trim()   || undefined,
+    });
+    bizModal.onClose();
   }
 
   // ── Render helpers ────────────────────────────────────────────────────────────
@@ -271,16 +311,21 @@ export function ARTab({
             {t("ar.tabAging")}
           </Button>
         </div>
-        {view === "invoices" && (
-          <Button size="sm" color="primary" startContent={<Plus size={14} />} onPress={openAddInvoice}>
-            {t("ar.addInvoice")}
+        <div className="flex gap-2">
+          <Button isIconOnly size="sm" variant="flat" title={t("ar.businessProfile")} onPress={openBizModal}>
+            <Settings size={14} />
           </Button>
-        )}
-        {view === "customers" && (
-          <Button size="sm" color="primary" startContent={<Plus size={14} />} onPress={openAddCustomer}>
-            {t("ar.addCustomer")}
-          </Button>
-        )}
+          {view === "invoices" && (
+            <Button size="sm" color="primary" startContent={<Plus size={14} />} onPress={openAddInvoice}>
+              {t("ar.addInvoice")}
+            </Button>
+          )}
+          {view === "customers" && (
+            <Button size="sm" color="primary" startContent={<Plus size={14} />} onPress={openAddCustomer}>
+              {t("ar.addCustomer")}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* ── Invoices ── */}
@@ -374,6 +419,9 @@ export function ARTab({
                     <CardBody className="px-5 py-3 flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm text-default-900">{c.name}</p>
+                        {c.address && (
+                          <p className="text-xs text-default-400 mt-0.5 whitespace-pre-line">{c.address}</p>
+                        )}
                         {(c.email || c.phone) && (
                           <p className="text-xs text-default-400 mt-0.5">
                             {[c.email, c.phone].filter(Boolean).join(" · ")}
@@ -588,6 +636,13 @@ export function ARTab({
                 isInvalid={!!fCustErr} errorMessage={fCustErr}
                 size="sm"
               />
+              <textarea
+                placeholder={t("ar.customerAddress")}
+                value={fCustAddress}
+                onChange={(e) => setFCustAddress(e.target.value)}
+                rows={3}
+                className="w-full rounded-lg border border-default-200 bg-default-100 px-3 py-2 text-sm text-default-800 placeholder-default-400 focus:outline-none focus:border-primary resize-none"
+              />
               <Input
                 label={t("ar.customerEmail")} type="email"
                 value={fCustEmail} onValueChange={setFCustEmail} size="sm"
@@ -600,6 +655,63 @@ export function ARTab({
             <ModalFooter>
               <Button variant="flat" onPress={custModal.onClose}>{t("cancel")}</Button>
               <Button color="primary" type="submit">{editingCust ? t("save") : t("add")}</Button>
+            </ModalFooter>
+          </form>
+        </ModalContent>
+      </Modal>
+
+      {/* ── Business Profile Modal ── */}
+      <Modal isOpen={bizModal.isOpen} onClose={bizModal.onClose} placement="center" size="md">
+        <ModalContent>
+          <form onSubmit={handleBizSubmit}>
+            <ModalHeader>{t("ar.businessProfile")}</ModalHeader>
+            <ModalBody className="gap-3">
+              <p className="text-xs text-default-400">{t("ar.businessProfileHint")}</p>
+              <Input
+                label={t("ar.businessName")}
+                placeholder="Acme Inc."
+                value={fBizName}
+                onValueChange={setFBizName}
+                size="sm"
+              />
+              <div>
+                <p className="text-xs text-default-500 mb-1 ml-1">{t("ar.businessAddress")}</p>
+                <textarea
+                  placeholder={"123 Main St\nNew York, NY 10001\nUSA"}
+                  value={fBizAddress}
+                  onChange={(e) => setFBizAddress(e.target.value)}
+                  rows={3}
+                  className="w-full rounded-lg border border-default-200 bg-default-100 px-3 py-2 text-sm text-default-800 placeholder-default-400 focus:outline-none focus:border-primary resize-none"
+                />
+              </div>
+              <div className="flex gap-3">
+                <Input
+                  label={t("ar.businessEmail")} type="email"
+                  value={fBizEmail} onValueChange={setFBizEmail}
+                  size="sm" className="flex-1"
+                />
+                <Input
+                  label={t("ar.businessPhone")}
+                  value={fBizPhone} onValueChange={setFBizPhone}
+                  size="sm" className="flex-1"
+                />
+              </div>
+              <div className="flex gap-3">
+                <Input
+                  label={t("ar.businessWebsite")}
+                  value={fBizWebsite} onValueChange={setFBizWebsite}
+                  size="sm" className="flex-1"
+                />
+                <Input
+                  label={t("ar.businessTaxId")}
+                  value={fBizTaxId} onValueChange={setFBizTaxId}
+                  size="sm" className="flex-1"
+                />
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="flat" onPress={bizModal.onClose}>{t("cancel")}</Button>
+              <Button color="primary" type="submit">{t("ar.saveProfile")}</Button>
             </ModalFooter>
           </form>
         </ModalContent>

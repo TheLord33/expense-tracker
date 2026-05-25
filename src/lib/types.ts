@@ -226,9 +226,19 @@ export interface BillPayment {
 
 // ── Accounts Receivable ───────────────────────────────────────────────────────
 
+export interface CompanyProfile {
+  name: string;
+  address?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
+  taxId?: string;
+}
+
 export interface Customer {
   id: string;
   name: string;
+  address?: string;
   email?: string;
   phone?: string;
 }

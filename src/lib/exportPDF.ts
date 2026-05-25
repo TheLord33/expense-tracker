@@ -1,5 +1,5 @@
 import { Expense } from "./types";
-import type { Customer, Invoice, InvoicePayment } from "./types";
+import type { CompanyProfile, Customer, Invoice, InvoicePayment } from "./types";
 import type { PnLReport, BalanceSheetReport, TrialBalanceRow } from "./ledger";
 
 const APP_NAME = "Folio";
@@ -229,6 +229,7 @@ export async function generateInvoicePDF(
   invoice: Invoice,
   customer: Customer | undefined,
   payments: InvoicePayment[],
+  company: CompanyProfile | null,
   fmtFn: (n: number) => string,
   locale: string
 ): Promise<Blob> {
@@ -239,6 +240,7 @@ export async function generateInvoicePDF(
 
   const doc = new jsPDF();
   const PAGE_W = doc.internal.pageSize.getWidth();
+  const PAGE_H = doc.internal.pageSize.getHeight();
 
   const GREEN:    [number, number, number] = [22, 163, 74];
   const GREEN_L:  [number, number, number] = [240, 253, 244];
@@ -259,9 +261,9 @@ export async function generateInvoicePDF(
 
   const collected = payments.reduce((s, p) => s + p.amount, 0);
   const amountDue = Math.max(0, invoice.amount - collected);
-  const isPaid     = amountDue < 0.01;
-  const isOverdue  = !isPaid && invoice.dueDate < new Date().toISOString().split("T")[0];
-  const isDueSoon  = !isPaid && !isOverdue && (() => {
+  const isPaid    = amountDue < 0.01;
+  const isOverdue = !isPaid && invoice.dueDate < new Date().toISOString().split("T")[0];
+  const isDueSoon = !isPaid && !isOverdue && (() => {
     const days = Math.round((new Date(invoice.dueDate).getTime() - Date.now()) / 86400000);
     return days <= 7;
   })();
@@ -270,46 +272,80 @@ export async function generateInvoicePDF(
   doc.setFillColor(...INDIGO);
   doc.rect(0, 0, PAGE_W, 28, "F");
 
-  // App name (left)
+  // Left: app watermark
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(255, 255, 255, 0.6);
+  doc.setTextColor(200, 210, 255);
+  doc.text(APP_NAME, 14, 10);
+
+  // Left: company name (large) inside band
+  const senderName = company?.name?.trim() || APP_NAME;
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(255, 255, 255);
-  doc.text(APP_NAME, 14, 18);
+  doc.text(senderName, 14, 22);
 
-  // "INVOICE" label (right)
+  // Right: "INVOICE" label
   doc.setFontSize(20);
-  doc.setTextColor(255, 255, 255);
-  doc.text("INVOICE", PAGE_W - 14, 18, { align: "right" });
+  doc.text("INVOICE", PAGE_W - 14, 20, { align: "right" });
 
-  // ── Invoice meta (right column) ───────────────────────────────────────────────
+  // ── Sender info (left, below band) ───────────────────────────────────────────
+  let senderY = 34;
+  doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
   doc.setTextColor(...GRAY);
 
+  if (company?.address) {
+    // Split on newlines so multi-line addresses render correctly
+    const lines = company.address.split("\n").map((l) => l.trim()).filter(Boolean);
+    for (const line of lines) {
+      doc.text(line, 14, senderY);
+      senderY += 4.5;
+    }
+  }
+  if (company?.email)   { doc.text(company.email,   14, senderY); senderY += 4.5; }
+  if (company?.phone)   { doc.text(company.phone,   14, senderY); senderY += 4.5; }
+  if (company?.website) { doc.text(company.website, 14, senderY); senderY += 4.5; }
+  if (company?.taxId)   {
+    doc.setFont("helvetica", "bold");
+    doc.text(`Tax ID: ${company.taxId}`, 14, senderY);
+    doc.setFont("helvetica", "normal");
+    senderY += 4.5;
+  }
+
+  // ── Invoice meta (right column) ───────────────────────────────────────────────
   const metaX = PAGE_W - 14;
-  let metaY = 38;
+  let metaY = 34;
 
   function metaRow(label: string, value: string) {
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...DEFAULT_D);
-    doc.text(label, metaX - 52, metaY, { align: "right" });
+    doc.text(label, metaX - 50, metaY, { align: "right" });
     doc.setFont("helvetica", "normal");
     doc.setTextColor(55, 65, 81);
     doc.text(value, metaX, metaY, { align: "right" });
-    metaY += 7;
+    metaY += 6;
   }
 
   metaRow("Invoice #", invoice.invoiceNumber || "—");
-  metaRow("Date", fmtDateStr(invoice.date));
-  metaRow("Due", fmtDateStr(invoice.dueDate));
+  metaRow("Date",      fmtDateStr(invoice.date));
+  metaRow("Due",       fmtDateStr(invoice.dueDate));
 
-  // ── Bill To (left column) ─────────────────────────────────────────────────────
-  let billY = 36;
-  doc.setFontSize(8);
+  // ── Divider ───────────────────────────────────────────────────────────────────
+  const dividerY = Math.max(senderY, metaY) + 4;
+  doc.setDrawColor(229, 231, 235);
+  doc.setLineWidth(0.3);
+  doc.line(14, dividerY, PAGE_W - 14, dividerY);
+
+  // ── Bill To ───────────────────────────────────────────────────────────────────
+  let billY = dividerY + 6;
+  doc.setFontSize(7);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...GRAY);
   doc.text("BILL TO", 14, billY);
-  billY += 6;
+  billY += 5;
 
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
@@ -320,17 +356,16 @@ export async function generateInvoicePDF(
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...GRAY);
-  if (customer?.email) { doc.text(customer.email, 14, billY); billY += 5; }
-  if (customer?.phone) { doc.text(customer.phone, 14, billY); billY += 5; }
-
-  // ── Divider ───────────────────────────────────────────────────────────────────
-  const tableStartY = Math.max(metaY, billY) + 6;
-
-  doc.setDrawColor(229, 231, 235);
-  doc.setLineWidth(0.3);
-  doc.line(14, tableStartY - 3, PAGE_W - 14, tableStartY - 3);
+  if (customer?.address) {
+    const addrLines = customer.address.split("\n").map((l) => l.trim()).filter(Boolean);
+    for (const line of addrLines) { doc.text(line, 14, billY); billY += 4.5; }
+  }
+  if (customer?.email) { doc.text(customer.email, 14, billY); billY += 4.5; }
+  if (customer?.phone) { doc.text(customer.phone, 14, billY); billY += 4.5; }
 
   // ── Line items table ──────────────────────────────────────────────────────────
+  const tableStartY = billY + 6;
+
   autoTable(doc, {
     startY: tableStartY,
     head: [["Description", "Amount"]],
@@ -344,14 +379,12 @@ export async function generateInvoicePDF(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let y = (doc as any).lastAutoTable.finalY + 4;
 
-  // ── Payments received (if any) ────────────────────────────────────────────────
+  // ── Payments received ─────────────────────────────────────────────────────────
   if (payments.length > 0) {
     autoTable(doc, {
       startY: y,
       head: [["Payments Received", "Date", "Note", "Amount"]],
-      body: payments.map((p) => [
-        "", fmtDateStr(p.date), p.note ?? "", fmtFn(p.amount),
-      ]),
+      body: payments.map((p) => ["", fmtDateStr(p.date), p.note ?? "", fmtFn(p.amount)]),
       headStyles: { fillColor: GREEN, textColor: 255, fontStyle: "bold", fontSize: 8 },
       bodyStyles: { fontSize: 9, cellPadding: 3, textColor: [55, 65, 81] },
       columnStyles: {
@@ -367,9 +400,7 @@ export async function generateInvoicePDF(
   }
 
   // ── Totals block ──────────────────────────────────────────────────────────────
-  const totalsBody: [string, string][] = [
-    ["Subtotal", fmtFn(invoice.amount)],
-  ];
+  const totalsBody: [string, string][] = [["Subtotal", fmtFn(invoice.amount)]];
   if (collected > 0) totalsBody.push(["Collected", fmtFn(collected)]);
 
   autoTable(doc, {
@@ -384,9 +415,9 @@ export async function generateInvoicePDF(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   y = (doc as any).lastAutoTable.finalY + 2;
 
-  // Amount due highlight row
-  const dueFill  = isPaid ? GREEN_L  : isOverdue ? RED_L    : isDueSoon ? YELLOW_L : DEFAULT_L;
-  const dueColor = isPaid ? GREEN_D  : isOverdue ? RED_D    : isDueSoon ? YELLOW_D : DEFAULT_D;
+  // Amount due
+  const dueFill  = isPaid ? GREEN_L : isOverdue ? RED_L    : isDueSoon ? YELLOW_L : DEFAULT_L;
+  const dueColor = isPaid ? GREEN_D : isOverdue ? RED_D    : isDueSoon ? YELLOW_D : DEFAULT_D;
   autoTable(doc, {
     startY: y,
     body: [["Amount Due", fmtFn(amountDue)]],
@@ -400,7 +431,13 @@ export async function generateInvoicePDF(
 
   // Status badge
   const statusLabel = isPaid ? "PAID" : isOverdue ? "OVERDUE" : isDueSoon ? "DUE SOON" : "UNPAID";
-  const badgeFill   = isPaid ? GREEN  : isOverdue ? [220, 38, 38] as [number, number, number] : isDueSoon ? [245, 158, 11] as [number, number, number] : [107, 114, 128] as [number, number, number];
+  const badgeFill   = isPaid
+    ? GREEN
+    : isOverdue
+      ? [220, 38, 38] as [number, number, number]
+      : isDueSoon
+        ? [245, 158, 11] as [number, number, number]
+        : [107, 114, 128] as [number, number, number];
   doc.setFillColor(...badgeFill);
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(9);
@@ -410,11 +447,12 @@ export async function generateInvoicePDF(
   doc.text(statusLabel, PAGE_W - 14 - badgeW / 2, y + 5.5, { align: "center" });
 
   // ── Footer ────────────────────────────────────────────────────────────────────
-  const PAGE_H = doc.internal.pageSize.getHeight();
+  doc.setFillColor(248, 250, 252);
+  doc.rect(0, PAGE_H - 14, PAGE_W, 14, "F");
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...GRAY);
-  doc.text(`Generated by ${APP_NAME}`, PAGE_W / 2, PAGE_H - 8, { align: "center" });
+  doc.text(`Generated by ${APP_NAME}`, PAGE_W / 2, PAGE_H - 5, { align: "center" });
 
   return doc.output("blob");
 }
