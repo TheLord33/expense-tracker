@@ -140,7 +140,7 @@ export interface JournalLine {
   credit: number;
 }
 
-export type JournalEntrySource = "expense" | "income" | "manual";
+export type JournalEntrySource = "expense" | "income" | "manual" | "bill" | "bill-payment";
 
 export interface JournalEntry {
   id: string;
@@ -166,6 +166,34 @@ export const BUILTIN_ACCOUNTS: Account[] = [
   { id: "acc-5600", code: "5600", name: "Shopping",            type: "expense",   isBuiltin: true, categoryName: "Shopping"      },
   { id: "acc-5900", code: "5900", name: "Other",               type: "expense",   isBuiltin: true, categoryName: "Other"         },
 ];
+
+// ── Accounts Payable ──────────────────────────────────────────────────────────
+
+export interface Vendor {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface Bill {
+  id: string;
+  vendorId: string;
+  billNumber: string;
+  date: string;             // YYYY-MM-DD received
+  dueDate: string;          // YYYY-MM-DD
+  amount: number;
+  description: string;
+  expenseAccountId: string;
+}
+
+export interface BillPayment {
+  id: string;
+  billId: string;
+  date: string;             // YYYY-MM-DD
+  amount: number;
+  note?: string;
+}
 
 // ── Cloud Export ──────────────────────────────────────────────────────────────
 

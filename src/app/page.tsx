@@ -7,7 +7,7 @@ import {
   Card, CardBody, CardHeader, Divider,
   Tabs, Tab,
 } from "@nextui-org/react";
-import { Receipt, PiggyBank, RefreshCw, TrendingUp, BookOpen, BarChart2, Scale, ClipboardList } from "lucide-react";
+import { Receipt, PiggyBank, RefreshCw, TrendingUp, BookOpen, BarChart2, Scale, ClipboardList, Wallet } from "lucide-react";
 
 import { useExpenses } from "@/lib/useExpenses";
 import { useCategories } from "@/lib/useCategories";
@@ -17,6 +17,8 @@ import { useRecurring, generateDueExpenses } from "@/lib/useRecurring";
 import { useIncome } from "@/lib/useIncome";
 import { useAccounts } from "@/lib/useAccounts";
 import { useOpeningBalances } from "@/lib/useOpeningBalances";
+import { useVendors } from "@/lib/useVendors";
+import { useBills } from "@/lib/useBills";
 import type { Budget, RecurringExpense, IncomeSource } from "@/lib/types";
 
 import { AppHeader } from "@/components/AppHeader";
@@ -36,6 +38,7 @@ import { LedgerTab } from "@/components/LedgerTab";
 import { PnLTab } from "@/components/PnLTab";
 import { BalanceSheetTab } from "@/components/BalanceSheetTab";
 import { TrialBalanceTab } from "@/components/TrialBalanceTab";
+import { APTab } from "@/components/APTab";
 
 import type { Expense, ChipColor } from "@/lib/types";
 import { useLanguage, useToast, useCurrency } from "@/app/providers";
@@ -70,6 +73,8 @@ export default function HomePage() {
 
   const { accounts, addAccount, updateAccount, deleteAccount, replaceCustomAccounts } = useAccounts();
   const { balances: openingBalances, setBalance: setOpeningBalance, setAllBalances } = useOpeningBalances();
+  const { vendors, addVendor, updateVendor, deleteVendor } = useVendors();
+  const { bills, billPayments, addBill, updateBill, deleteBill, addPayment, paidAmount, outstanding } = useBills();
 
   // ── Edit expense state ───────────────────────────────────────────────────────
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -304,6 +309,8 @@ export default function HomePage() {
                 expenses={expenses}
                 sources={sources}
                 accounts={accounts}
+                bills={bills}
+                billPayments={billPayments}
                 onAddAccount={addAccount}
                 onUpdateAccount={updateAccount}
                 onDeleteAccount={deleteAccount}
@@ -314,7 +321,7 @@ export default function HomePage() {
           {/* ── P&L ── */}
           <Tab key="pnl" title={tabTitle(t("tabs.pnl"), BarChart2)}>
             <div className="pt-4">
-              <PnLTab expenses={expenses} sources={sources} accounts={accounts} />
+              <PnLTab expenses={expenses} sources={sources} accounts={accounts} bills={bills} billPayments={billPayments} />
             </div>
           </Tab>
 
@@ -325,6 +332,8 @@ export default function HomePage() {
                 expenses={expenses}
                 sources={sources}
                 accounts={accounts}
+                bills={bills}
+                billPayments={billPayments}
                 openingBalances={openingBalances}
                 onSetBalance={setOpeningBalance}
               />
@@ -338,6 +347,29 @@ export default function HomePage() {
                 expenses={expenses}
                 sources={sources}
                 accounts={accounts}
+                bills={bills}
+                billPayments={billPayments}
+              />
+            </div>
+          </Tab>
+
+          {/* ── Accounts Payable ── */}
+          <Tab key="ap" title={tabTitle(t("tabs.ap"), Wallet)}>
+            <div className="pt-4">
+              <APTab
+                vendors={vendors}
+                bills={bills}
+                billPayments={billPayments}
+                accounts={accounts}
+                onAddVendor={addVendor}
+                onUpdateVendor={updateVendor}
+                onDeleteVendor={deleteVendor}
+                onAddBill={addBill}
+                onUpdateBill={updateBill}
+                onDeleteBill={deleteBill}
+                onAddPayment={addPayment}
+                paidAmount={paidAmount}
+                outstanding={outstanding}
               />
             </div>
           </Tab>

@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { Card, CardBody, CardHeader, Divider, Button, Input, Chip } from "@nextui-org/react";
 import { Scale, Settings, CheckCircle, AlertCircle, Download } from "lucide-react";
-import type { Account, Expense, IncomeSource } from "@/lib/types";
+import type { Account, Bill, BillPayment, Expense, IncomeSource } from "@/lib/types";
 import { deriveAllEntries, computeBalanceSheet, type BalanceSheetRow } from "@/lib/ledger";
 import { balanceSheetToCSV, download, downloadBlob } from "@/lib/importExport";
 import { generateBalanceSheetPDF } from "@/lib/exportPDF";
@@ -16,11 +16,13 @@ interface Props {
   expenses: Expense[];
   sources: IncomeSource[];
   accounts: Account[];
+  bills?: Bill[];
+  billPayments?: BillPayment[];
   openingBalances: Record<string, number>;
   onSetBalance: (id: string, amount: number) => void;
 }
 
-export function BalanceSheetTab({ expenses, sources, accounts, openingBalances, onSetBalance }: Props) {
+export function BalanceSheetTab({ expenses, sources, accounts, bills = [], billPayments = [], openingBalances, onSetBalance }: Props) {
   const { t, locale } = useLanguage();
   const { fmt } = useCurrency();
 
@@ -29,8 +31,8 @@ export function BalanceSheetTab({ expenses, sources, accounts, openingBalances, 
   const [draft, setDraft] = useState<Record<string, string>>({});
 
   const entries = useMemo(
-    () => deriveAllEntries(expenses, sources, accounts),
-    [expenses, sources, accounts]
+    () => deriveAllEntries(expenses, sources, accounts, bills, billPayments),
+    [expenses, sources, accounts, bills, billPayments]
   );
 
   const report = useMemo(

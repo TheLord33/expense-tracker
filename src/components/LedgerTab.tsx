@@ -9,7 +9,7 @@ import {
   useDisclosure,
 } from "@nextui-org/react";
 import { BookOpen, List, Plus, Pencil, Trash2 } from "lucide-react";
-import type { Account, AccountType, Expense, IncomeSource } from "@/lib/types";
+import type { Account, AccountType, Bill, BillPayment, Expense, IncomeSource } from "@/lib/types";
 import { deriveAllEntries, accountLedger } from "@/lib/ledger";
 import { useLanguage, useCurrency } from "@/app/providers";
 
@@ -31,6 +31,8 @@ interface Props {
   expenses: Expense[];
   sources: IncomeSource[];
   accounts: Account[];
+  bills?: Bill[];
+  billPayments?: BillPayment[];
   onAddAccount: (a: Omit<Account, "id">) => void;
   onUpdateAccount: (id: string, data: Partial<Omit<Account, "id">>) => void;
   onDeleteAccount: (id: string) => void;
@@ -38,7 +40,7 @@ interface Props {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function LedgerTab({ expenses, sources, accounts, onAddAccount, onUpdateAccount, onDeleteAccount }: Props) {
+export function LedgerTab({ expenses, sources, accounts, bills = [], billPayments = [], onAddAccount, onUpdateAccount, onDeleteAccount }: Props) {
   const { t, locale } = useLanguage();
   const { fmt } = useCurrency();
 
@@ -55,8 +57,8 @@ export function LedgerTab({ expenses, sources, accounts, onAddAccount, onUpdateA
 
   // Derived data
   const entries = useMemo(
-    () => deriveAllEntries(expenses, sources, accounts),
-    [expenses, sources, accounts]
+    () => deriveAllEntries(expenses, sources, accounts, bills, billPayments),
+    [expenses, sources, accounts, bills, billPayments]
   );
 
   const selectedAccount = accounts.find((a) => a.id === selectedId) ?? null;

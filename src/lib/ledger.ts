@@ -1,4 +1,4 @@
-import type { Account, AccountType, Expense, IncomeSource, JournalEntry } from "./types";
+import type { Account, AccountType, Bill, BillPayment, Expense, IncomeSource, JournalEntry } from "./types";
 import { toMonthly } from "./useIncome";
 
 const CASH_CODE     = "1000";
@@ -84,16 +84,67 @@ export function deriveIncomeEntries(sources: IncomeSource[], accounts: Account[]
   return entries;
 }
 
-/** All derived journal entries (expenses + income), sorted ascending by date. */
+const AP_ACCOUNT_ID = "acc-2000"; // Accounts Payable (builtin)
+
+/** Derive journal entries from AP bills and payments. */
+export function deriveBillEntries(
+  bills: Bill[],
+  payments: BillPayment[],
+  accounts: Account[]
+): JournalEntry[] {
+  const apAccount   = accounts.find((a) => a.id === AP_ACCOUNT_ID);
+  const cashAccount = accounts.find((a) => a.code === CASH_CODE);
+  if (!apAccount || !cashAccount) return [];
+
+  const entries: JournalEntry[] = [];
+
+  for (const bill of bills) {
+    const expAccount = accounts.find((a) => a.id === bill.expenseAccountId);
+    if (!expAccount) continue;
+    entries.push({
+      id:          `bill-${bill.id}`,
+      date:        bill.date,
+      description: `Bill #${bill.billNumber}: ${bill.description}`,
+      sourceId:    bill.id,
+      sourceType:  "bill",
+      lines: [
+        { accountId: expAccount.id, debit: bill.amount, credit: 0           },
+        { accountId: apAccount.id,  debit: 0,           credit: bill.amount },
+      ],
+    });
+  }
+
+  for (const payment of payments) {
+    const bill = bills.find((b) => b.id === payment.billId);
+    entries.push({
+      id:          `billpay-${payment.id}`,
+      date:        payment.date,
+      description: payment.note ?? (bill ? `Payment — Bill #${bill.billNumber}` : "Bill payment"),
+      sourceId:    payment.id,
+      sourceType:  "bill-payment",
+      lines: [
+        { accountId: apAccount.id,   debit: payment.amount, credit: 0              },
+        { accountId: cashAccount.id, debit: 0,              credit: payment.amount },
+      ],
+    });
+  }
+
+  return entries;
+}
+
+/** All derived journal entries (expenses + income + AP bills/payments), sorted ascending by date. */
 export function deriveAllEntries(
   expenses: Expense[],
   sources: IncomeSource[],
-  accounts: Account[]
+  accounts: Account[],
+  bills: Bill[] = [],
+  billPayments: BillPayment[] = []
 ): JournalEntry[] {
   if (accounts.length === 0) return [];
-  const expEntries = expenses.map((e) => expenseToEntry(e, accounts));
-  const incEntries = deriveIncomeEntries(sources, accounts);
-  return [...expEntries, ...incEntries].sort((a, b) => a.date.localeCompare(b.date));
+  const expEntries  = expenses.map((e) => expenseToEntry(e, accounts));
+  const incEntries  = deriveIncomeEntries(sources, accounts);
+  const billEntries = deriveBillEntries(bills, billPayments, accounts);
+  return [...expEntries, ...incEntries, ...billEntries].sort((a, b) => a.date.localeCompare(b.date));
 }
 
 export interface LedgerRow {
