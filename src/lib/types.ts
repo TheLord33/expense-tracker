@@ -140,7 +140,7 @@ export interface JournalLine {
   credit: number;
 }
 
-export type JournalEntrySource = "expense" | "income" | "manual" | "bill" | "bill-payment" | "inventory";
+export type JournalEntrySource = "expense" | "income" | "manual" | "bill" | "bill-payment" | "inventory" | "invoice" | "invoice-payment";
 
 export interface JournalEntry {
   id: string;
@@ -219,6 +219,34 @@ export interface Bill {
 export interface BillPayment {
   id: string;
   billId: string;
+  date: string;             // YYYY-MM-DD
+  amount: number;
+  note?: string;
+}
+
+// ── Accounts Receivable ───────────────────────────────────────────────────────
+
+export interface Customer {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface Invoice {
+  id: string;
+  customerId: string;
+  invoiceNumber: string;
+  date: string;             // YYYY-MM-DD issued
+  dueDate: string;          // YYYY-MM-DD
+  amount: number;
+  description: string;
+  revenueAccountId: string; // credit side (default: acc-4000)
+}
+
+export interface InvoicePayment {
+  id: string;
+  invoiceId: string;
   date: string;             // YYYY-MM-DD
   amount: number;
   note?: string;

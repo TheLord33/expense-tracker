@@ -1,4 +1,4 @@
-import type { Account, AccountType, Bill, BillPayment, Expense, IncomeSource, InventoryItem, JournalEntry, StockMovement } from "./types";
+import type { Account, AccountType, Bill, BillPayment, Customer, Expense, IncomeSource, InventoryItem, Invoice, InvoicePayment, JournalEntry, StockMovement } from "./types";
 import { toMonthly } from "./useIncome";
 
 const CASH_CODE     = "1000";
@@ -173,7 +173,55 @@ export function deriveInventoryEntries(
   return entries;
 }
 
-/** All derived journal entries (expenses + income + AP + inventory), sorted ascending by date. */
+const AR_ACCOUNT_ID = "acc-1100"; // Accounts Receivable (builtin)
+
+/** Derive journal entries from AR invoices and payments received. */
+export function deriveAREntries(
+  invoices: Invoice[],
+  payments: InvoicePayment[],
+  accounts: Account[]
+): JournalEntry[] {
+  const arAccount   = accounts.find((a) => a.id === AR_ACCOUNT_ID);
+  const cashAccount = accounts.find((a) => a.code === CASH_CODE);
+  if (!arAccount || !cashAccount) return [];
+
+  const entries: JournalEntry[] = [];
+
+  for (const inv of invoices) {
+    const revAccount = accounts.find((a) => a.id === inv.revenueAccountId);
+    if (!revAccount) continue;
+    entries.push({
+      id:          `inv-${inv.id}`,
+      date:        inv.date,
+      description: `Invoice #${inv.invoiceNumber}: ${inv.description}`,
+      sourceId:    inv.id,
+      sourceType:  "invoice",
+      lines: [
+        { accountId: arAccount.id,   debit: inv.amount, credit: 0          },
+        { accountId: revAccount.id,  debit: 0,          credit: inv.amount },
+      ],
+    });
+  }
+
+  for (const payment of payments) {
+    const inv = invoices.find((i) => i.id === payment.invoiceId);
+    entries.push({
+      id:          `invpay-${payment.id}`,
+      date:        payment.date,
+      description: payment.note ?? (inv ? `Payment — Invoice #${inv.invoiceNumber}` : "Invoice payment"),
+      sourceId:    payment.id,
+      sourceType:  "invoice-payment",
+      lines: [
+        { accountId: cashAccount.id, debit: payment.amount, credit: 0              },
+        { accountId: arAccount.id,   debit: 0,              credit: payment.amount },
+      ],
+    });
+  }
+
+  return entries;
+}
+
+/** All derived journal entries (expenses + income + AP + inventory + AR), sorted ascending by date. */
 export function deriveAllEntries(
   expenses: Expense[],
   sources: IncomeSource[],
@@ -181,14 +229,17 @@ export function deriveAllEntries(
   bills: Bill[] = [],
   billPayments: BillPayment[] = [],
   inventoryItems: InventoryItem[] = [],
-  inventoryMovements: StockMovement[] = []
+  inventoryMovements: StockMovement[] = [],
+  invoices: Invoice[] = [],
+  invoicePayments: InvoicePayment[] = []
 ): JournalEntry[] {
   if (accounts.length === 0) return [];
   const expEntries = expenses.map((e) => expenseToEntry(e, accounts));
   const incEntries = deriveIncomeEntries(sources, accounts);
   const billEntries  = deriveBillEntries(bills, billPayments, accounts);
   const invEntries   = deriveInventoryEntries(inventoryItems, inventoryMovements);
-  return [...expEntries, ...incEntries, ...billEntries, ...invEntries].sort((a, b) => a.date.localeCompare(b.date));
+  const arEntries    = deriveAREntries(invoices, invoicePayments, accounts);
+  return [...expEntries, ...incEntries, ...billEntries, ...invEntries, ...arEntries].sort((a, b) => a.date.localeCompare(b.date));
 }
 
 export interface LedgerRow {

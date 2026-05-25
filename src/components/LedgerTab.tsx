@@ -9,7 +9,7 @@ import {
   useDisclosure,
 } from "@nextui-org/react";
 import { BookOpen, List, Plus, Pencil, Trash2 } from "lucide-react";
-import type { Account, AccountType, Bill, BillPayment, Expense, IncomeSource, InventoryItem, StockMovement } from "@/lib/types";
+import type { Account, AccountType, Bill, BillPayment, Expense, IncomeSource, InventoryItem, Invoice, InvoicePayment, StockMovement } from "@/lib/types";
 import { deriveAllEntries, accountLedger } from "@/lib/ledger";
 import { useLanguage, useCurrency } from "@/app/providers";
 
@@ -35,6 +35,8 @@ interface Props {
   billPayments?: BillPayment[];
   inventoryItems?: InventoryItem[];
   inventoryMovements?: StockMovement[];
+  invoices?: Invoice[];
+  invoicePayments?: InvoicePayment[];
   onAddAccount: (a: Omit<Account, "id">) => void;
   onUpdateAccount: (id: string, data: Partial<Omit<Account, "id">>) => void;
   onDeleteAccount: (id: string) => void;
@@ -42,7 +44,7 @@ interface Props {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function LedgerTab({ expenses, sources, accounts, bills = [], billPayments = [], inventoryItems = [], inventoryMovements = [], onAddAccount, onUpdateAccount, onDeleteAccount }: Props) {
+export function LedgerTab({ expenses, sources, accounts, bills = [], billPayments = [], inventoryItems = [], inventoryMovements = [], invoices = [], invoicePayments = [], onAddAccount, onUpdateAccount, onDeleteAccount }: Props) {
   const { t, locale } = useLanguage();
   const { fmt } = useCurrency();
 
@@ -59,8 +61,8 @@ export function LedgerTab({ expenses, sources, accounts, bills = [], billPayment
 
   // Derived data
   const entries = useMemo(
-    () => deriveAllEntries(expenses, sources, accounts, bills, billPayments, inventoryItems, inventoryMovements),
-    [expenses, sources, accounts, bills, billPayments, inventoryItems, inventoryMovements]
+    () => deriveAllEntries(expenses, sources, accounts, bills, billPayments, inventoryItems, inventoryMovements, invoices, invoicePayments),
+    [expenses, sources, accounts, bills, billPayments, inventoryItems, inventoryMovements, invoices, invoicePayments]
   );
 
   const selectedAccount = accounts.find((a) => a.id === selectedId) ?? null;
