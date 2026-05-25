@@ -9,8 +9,8 @@ const es: Translations = {
   to: "Hasta",
 
   header: {
-    title: "Organizador Financiero Familiar",
-    subtitle: "Ingresos, gastos y presupuestos — todo en un lugar",
+    title: "Folio",
+    subtitle: "Contabilidad Personal y para Pequeñas Empresas",
     addCategory: "Categoría",
     addExpense: "Agregar Gasto",
   },

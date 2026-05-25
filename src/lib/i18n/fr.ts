@@ -9,8 +9,8 @@ const fr: Translations = {
   to: "Au",
 
   header: {
-    title: "Organisateur Financier Familial",
-    subtitle: "Revenus, dépenses et budgets — tout en un seul endroit",
+    title: "Folio",
+    subtitle: "Comptabilité personnelle et petite entreprise",
     addCategory: "Catégorie",
     addExpense: "Ajouter une dépense",
   },

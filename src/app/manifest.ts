@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Family Finance Tracker",
-    short_name: "Finance",
-    description: "Track your family's income, expenses, and budgets",
+    name: "Folio",
+    short_name: "Folio",
+    description: "Personal & small business accounting",
     start_url: "/",
     display: "standalone",
     orientation: "portrait",

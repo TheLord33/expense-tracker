@@ -1,7 +1,7 @@
 import { Expense } from "./types";
 import type { PnLReport, BalanceSheetReport, TrialBalanceRow } from "./ledger";
 
-const APP_NAME = "Family Finances Organizer";
+const APP_NAME = "Folio";
 const INDIGO: [number, number, number] = [79, 70, 229];
 const GRAY:   [number, number, number] = [107, 114, 128];
 

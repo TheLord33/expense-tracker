@@ -9,8 +9,8 @@ const ja: Translations = {
   to: "終了",
 
   header: {
-    title: "家族財務オーガナイザー",
-    subtitle: "収入・支出・予算 — すべて一か所で",
+    title: "Folio",
+    subtitle: "個人・中小企業向け会計",
     addCategory: "カテゴリー",
     addExpense: "支出を追加",
   },

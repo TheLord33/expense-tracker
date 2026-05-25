@@ -7,8 +7,8 @@ const en = {
   to: "To",
 
   header: {
-    title: "Family Finances Organizer",
-    subtitle: "Income, expenses & budgets — all in one place",
+    title: "Folio",
+    subtitle: "Personal & Small Business Accounting",
     addCategory: "Category",
     addExpense: "Add Expense",
   },

@@ -9,8 +9,8 @@ const de: Translations = {
   to: "Bis",
 
   header: {
-    title: "Familien-Finanzorganizer",
-    subtitle: "Einnahmen, Ausgaben und Budgets — alles an einem Ort",
+    title: "Folio",
+    subtitle: "Buchhaltung für Privatpersonen und Kleinunternehmen",
     addCategory: "Kategorie",
     addExpense: "Ausgabe hinzufügen",
   },
