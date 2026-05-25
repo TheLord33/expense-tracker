@@ -1,4 +1,4 @@
-import type { Account, AccountType, Bill, BillPayment, Expense, IncomeSource, JournalEntry } from "./types";
+import type { Account, AccountType, Bill, BillPayment, Expense, IncomeSource, InventoryItem, JournalEntry, StockMovement } from "./types";
 import { toMonthly } from "./useIncome";
 
 const CASH_CODE     = "1000";
@@ -132,19 +132,63 @@ export function deriveBillEntries(
   return entries;
 }
 
-/** All derived journal entries (expenses + income + AP bills/payments), sorted ascending by date. */
+/** Derive journal entries from inventory stock movements. */
+export function deriveInventoryEntries(
+  items: InventoryItem[],
+  movements: StockMovement[]
+): JournalEntry[] {
+  const entries: JournalEntry[] = [];
+
+  for (const movement of movements) {
+    const item   = items.find((i) => i.id === movement.itemId);
+    if (!item) continue;
+
+    const absQty = Math.abs(movement.quantity);
+    const amount = absQty * movement.unitCost;
+    if (amount < 0.005) continue;
+
+    // Does this movement increase or decrease the inventory asset?
+    const inventoryIncreases =
+      movement.type === "purchase" ||
+      (movement.type === "adjustment" && movement.quantity > 0);
+
+    entries.push({
+      id:          `inv-${movement.id}`,
+      date:        movement.date,
+      description: movement.note ?? `${item.name} — ${movement.type}`,
+      sourceId:    movement.id,
+      sourceType:  "inventory",
+      lines: inventoryIncreases
+        ? [
+            { accountId: item.inventoryAccountId,   debit: amount, credit: 0      },
+            { accountId: movement.counterAccountId, debit: 0,      credit: amount },
+          ]
+        : [
+            { accountId: movement.counterAccountId, debit: amount, credit: 0      },
+            { accountId: item.inventoryAccountId,   debit: 0,      credit: amount },
+          ],
+    });
+  }
+
+  return entries;
+}
+
+/** All derived journal entries (expenses + income + AP + inventory), sorted ascending by date. */
 export function deriveAllEntries(
   expenses: Expense[],
   sources: IncomeSource[],
   accounts: Account[],
   bills: Bill[] = [],
-  billPayments: BillPayment[] = []
+  billPayments: BillPayment[] = [],
+  inventoryItems: InventoryItem[] = [],
+  inventoryMovements: StockMovement[] = []
 ): JournalEntry[] {
   if (accounts.length === 0) return [];
-  const expEntries  = expenses.map((e) => expenseToEntry(e, accounts));
-  const incEntries  = deriveIncomeEntries(sources, accounts);
-  const billEntries = deriveBillEntries(bills, billPayments, accounts);
-  return [...expEntries, ...incEntries, ...billEntries].sort((a, b) => a.date.localeCompare(b.date));
+  const expEntries = expenses.map((e) => expenseToEntry(e, accounts));
+  const incEntries = deriveIncomeEntries(sources, accounts);
+  const billEntries  = deriveBillEntries(bills, billPayments, accounts);
+  const invEntries   = deriveInventoryEntries(inventoryItems, inventoryMovements);
+  return [...expEntries, ...incEntries, ...billEntries, ...invEntries].sort((a, b) => a.date.localeCompare(b.date));
 }
 
 export interface LedgerRow {

@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { Card, CardBody, CardHeader, Divider, Button, Input, Chip } from "@nextui-org/react";
 import { CheckCircle, AlertCircle, Download } from "lucide-react";
-import type { Account, Bill, BillPayment, Expense, IncomeSource } from "@/lib/types";
+import type { Account, Bill, BillPayment, Expense, IncomeSource, InventoryItem, StockMovement } from "@/lib/types";
 import { deriveAllEntries, trialBalance } from "@/lib/ledger";
 import { trialBalanceToCSV, download, downloadBlob } from "@/lib/importExport";
 import { generateTrialBalancePDF } from "@/lib/exportPDF";
@@ -15,9 +15,11 @@ interface Props {
   accounts: Account[];
   bills?: Bill[];
   billPayments?: BillPayment[];
+  inventoryItems?: InventoryItem[];
+  inventoryMovements?: StockMovement[];
 }
 
-export function TrialBalanceTab({ expenses, sources, accounts, bills = [], billPayments = [] }: Props) {
+export function TrialBalanceTab({ expenses, sources, accounts, bills = [], billPayments = [], inventoryItems = [], inventoryMovements = [] }: Props) {
   const { t, locale } = useLanguage();
   const { fmt } = useCurrency();
 
@@ -25,8 +27,8 @@ export function TrialBalanceTab({ expenses, sources, accounts, bills = [], billP
   const [asOf, setAsOf] = useState(todayISO);
 
   const entries = useMemo(
-    () => deriveAllEntries(expenses, sources, accounts, bills, billPayments).filter((e) => e.date <= asOf),
-    [expenses, sources, accounts, bills, billPayments, asOf]
+    () => deriveAllEntries(expenses, sources, accounts, bills, billPayments, inventoryItems, inventoryMovements).filter((e) => e.date <= asOf),
+    [expenses, sources, accounts, bills, billPayments, inventoryItems, inventoryMovements, asOf]
   );
 
   const rows = useMemo(() => trialBalance(accounts, entries), [accounts, entries]);

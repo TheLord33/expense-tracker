@@ -140,7 +140,7 @@ export interface JournalLine {
   credit: number;
 }
 
-export type JournalEntrySource = "expense" | "income" | "manual" | "bill" | "bill-payment";
+export type JournalEntrySource = "expense" | "income" | "manual" | "bill" | "bill-payment" | "inventory";
 
 export interface JournalEntry {
   id: string;
@@ -154,10 +154,12 @@ export interface JournalEntry {
 export const BUILTIN_ACCOUNTS: Account[] = [
   { id: "acc-1000", code: "1000", name: "Cash & Bank",         type: "asset",     isBuiltin: true },
   { id: "acc-1100", code: "1100", name: "Accounts Receivable", type: "asset",     isBuiltin: true },
+  { id: "acc-1200", code: "1200", name: "Inventory",           type: "asset",     isBuiltin: true },
   { id: "acc-2000", code: "2000", name: "Accounts Payable",    type: "liability", isBuiltin: true },
   { id: "acc-2100", code: "2100", name: "Credit Cards",        type: "liability", isBuiltin: true },
   { id: "acc-3000", code: "3000", name: "Owner's Equity",      type: "equity",    isBuiltin: true },
   { id: "acc-4000", code: "4000", name: "General Income",      type: "revenue",   isBuiltin: true },
+  { id: "acc-5000", code: "5000", name: "Cost of Goods Sold",  type: "expense",   isBuiltin: true },
   { id: "acc-5100", code: "5100", name: "Food",                type: "expense",   isBuiltin: true, categoryName: "Food"          },
   { id: "acc-5200", code: "5200", name: "Transport",           type: "expense",   isBuiltin: true, categoryName: "Transport"     },
   { id: "acc-5300", code: "5300", name: "Housing",             type: "expense",   isBuiltin: true, categoryName: "Housing"       },
@@ -166,6 +168,33 @@ export const BUILTIN_ACCOUNTS: Account[] = [
   { id: "acc-5600", code: "5600", name: "Shopping",            type: "expense",   isBuiltin: true, categoryName: "Shopping"      },
   { id: "acc-5900", code: "5900", name: "Other",               type: "expense",   isBuiltin: true, categoryName: "Other"         },
 ];
+
+// ── Inventory ─────────────────────────────────────────────────────────────────
+
+export type MovementType = "purchase" | "consumption" | "adjustment";
+
+export interface InventoryItem {
+  id: string;
+  sku: string;
+  name: string;
+  description?: string;
+  unit: string;                  // "each", "kg", "liter", etc.
+  costPerUnit: number;           // standard cost used for valuation
+  reorderPoint: number;          // alert when qty on hand falls below
+  inventoryAccountId: string;    // asset account (default: acc-1200)
+  cogsAccountId: string;         // expense account for consumption (default: acc-5000)
+}
+
+export interface StockMovement {
+  id: string;
+  itemId: string;
+  date: string;                  // YYYY-MM-DD
+  type: MovementType;
+  quantity: number;              // purchase/consumption: always positive; adjustment: signed
+  unitCost: number;              // cost per unit at time of movement
+  note?: string;
+  counterAccountId: string;      // purchase → credit acct (Cash/AP); consumption → debit acct (COGS); adjustment → other side
+}
 
 // ── Accounts Payable ──────────────────────────────────────────────────────────
 
