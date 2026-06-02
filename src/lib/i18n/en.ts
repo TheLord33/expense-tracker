@@ -6,6 +6,28 @@ const en = {
   from: "From",
   to: "To",
 
+  auth: {
+    loginTitle: "Sign In",
+    setupTitle: "Create Your Account",
+    setupSub: "Set up credentials to protect your financial data",
+    username: "Username",
+    password: "Password",
+    confirmPassword: "Confirm Password",
+    loginBtn: "Sign In",
+    setupBtn: "Create Account",
+    logout: "Lock",
+    errorInvalid: "Invalid username or password",
+    errorPasswordMatch: "Passwords do not match",
+    errorUsername: "Username is required",
+    errorPassword: "Password must be at least 6 characters",
+    changePassword: "Change Password",
+    currentPassword: "Current Password",
+    newPassword: "New Password",
+    confirmNewPassword: "Confirm New Password",
+    errorWrongPassword: "Current password is incorrect",
+    passwordChanged: "Password updated successfully",
+  },
+
   header: {
     title: "Folio",
     subtitle: "Personal & Small Business Accounting",
@@ -579,6 +601,13 @@ const en = {
     errorCounter: "Select a counter account",
     deleteItem: "Delete Item",
     deleteMovement: "Delete",
+    tabProfitability: "Profitability",
+    profitUnitsSold: "Units Sold",
+    profitRevenue: "Revenue",
+    profitCogs: "COGS",
+    profitGrossProfit: "Gross Profit",
+    profitMargin: "Margin %",
+    profitNoSales: "No inventory items linked to any invoices yet",
   },
 
   trialBalance: {

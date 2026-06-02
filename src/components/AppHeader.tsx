@@ -12,9 +12,10 @@ interface Props {
   onAddExpense: () => void;
   onAddCategory: () => void;
   importExportSlot: React.ReactNode;
+  lockSlot?: React.ReactNode;
 }
 
-export function AppHeader({ onAddExpense, onAddCategory, importExportSlot }: Props) {
+export function AppHeader({ onAddExpense, onAddCategory, importExportSlot, lockSlot }: Props) {
   const { theme, toggleTheme } = useTheme();
   const { t, language, setLanguage } = useLanguage();
   const { currency, setCurrency } = useCurrency();
@@ -115,6 +116,8 @@ export function AppHeader({ onAddExpense, onAddCategory, importExportSlot }: Pro
           <div className="[&>button]:bg-white/10 [&>button]:text-white [&>button]:border-white/20 [&>button:hover]:bg-white/20">
             {importExportSlot}
           </div>
+
+          {lockSlot}
 
           <Button
             variant="bordered"

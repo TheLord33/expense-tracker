@@ -8,6 +8,28 @@ const es: Translations = {
   from: "Desde",
   to: "Hasta",
 
+  auth: {
+    loginTitle: "Iniciar Sesión",
+    setupTitle: "Crear tu Cuenta",
+    setupSub: "Configura credenciales para proteger tus datos financieros",
+    username: "Usuario",
+    password: "Contraseña",
+    confirmPassword: "Confirmar Contraseña",
+    loginBtn: "Iniciar Sesión",
+    setupBtn: "Crear Cuenta",
+    logout: "Bloquear",
+    errorInvalid: "Usuario o contraseña incorrectos",
+    errorPasswordMatch: "Las contraseñas no coinciden",
+    errorUsername: "El usuario es obligatorio",
+    errorPassword: "La contraseña debe tener al menos 6 caracteres",
+    changePassword: "Cambiar Contraseña",
+    currentPassword: "Contraseña Actual",
+    newPassword: "Nueva Contraseña",
+    confirmNewPassword: "Confirmar Nueva Contraseña",
+    errorWrongPassword: "La contraseña actual es incorrecta",
+    passwordChanged: "Contraseña actualizada correctamente",
+  },
+
   header: {
     title: "Folio",
     subtitle: "Contabilidad Personal y para Pequeñas Empresas",
@@ -581,6 +603,13 @@ const es: Translations = {
     errorCounter: "Seleccione una cuenta contraparte",
     deleteItem: "Eliminar Artículo",
     deleteMovement: "Eliminar",
+    tabProfitability: "Rentabilidad",
+    profitUnitsSold: "Uds. Vendidas",
+    profitRevenue: "Ingresos",
+    profitCogs: "Costo",
+    profitGrossProfit: "Utilidad Bruta",
+    profitMargin: "Margen %",
+    profitNoSales: "Ningún artículo vinculado a facturas aún",
   },
 
   trialBalance: {

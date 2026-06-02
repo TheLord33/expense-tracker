@@ -8,6 +8,28 @@ const pt: Translations = {
   from: "De",
   to: "Até",
 
+  auth: {
+    loginTitle: "Entrar",
+    setupTitle: "Criar sua Conta",
+    setupSub: "Configure credenciais para proteger seus dados financeiros",
+    username: "Usuário",
+    password: "Senha",
+    confirmPassword: "Confirmar Senha",
+    loginBtn: "Entrar",
+    setupBtn: "Criar Conta",
+    logout: "Bloquear",
+    errorInvalid: "Usuário ou senha inválidos",
+    errorPasswordMatch: "As senhas não coincidem",
+    errorUsername: "Usuário é obrigatório",
+    errorPassword: "A senha deve ter pelo menos 6 caracteres",
+    changePassword: "Alterar Senha",
+    currentPassword: "Senha Atual",
+    newPassword: "Nova Senha",
+    confirmNewPassword: "Confirmar Nova Senha",
+    errorWrongPassword: "Senha atual incorreta",
+    passwordChanged: "Senha atualizada com sucesso",
+  },
+
   header: {
     title: "Folio",
     subtitle: "Contabilidade Pessoal e para Pequenas Empresas",
@@ -581,6 +603,13 @@ const pt: Translations = {
     errorCounter: "Selecione uma conta contrapartida",
     deleteItem: "Excluir Item",
     deleteMovement: "Excluir",
+    tabProfitability: "Lucratividade",
+    profitUnitsSold: "Qtd. Vendida",
+    profitRevenue: "Receita",
+    profitCogs: "CMV",
+    profitGrossProfit: "Lucro Bruto",
+    profitMargin: "Margem %",
+    profitNoSales: "Nenhum item de estoque vinculado a faturas ainda",
   },
 
   trialBalance: {

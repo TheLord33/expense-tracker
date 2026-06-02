@@ -8,6 +8,28 @@ const fr: Translations = {
   from: "Du",
   to: "Au",
 
+  auth: {
+    loginTitle: "Connexion",
+    setupTitle: "Créer votre Compte",
+    setupSub: "Configurez vos identifiants pour protéger vos données financières",
+    username: "Nom d'utilisateur",
+    password: "Mot de passe",
+    confirmPassword: "Confirmer le mot de passe",
+    loginBtn: "Se connecter",
+    setupBtn: "Créer le compte",
+    logout: "Verrouiller",
+    errorInvalid: "Identifiant ou mot de passe incorrect",
+    errorPasswordMatch: "Les mots de passe ne correspondent pas",
+    errorUsername: "Le nom d'utilisateur est requis",
+    errorPassword: "Le mot de passe doit comporter au moins 6 caractères",
+    changePassword: "Changer le mot de passe",
+    currentPassword: "Mot de passe actuel",
+    newPassword: "Nouveau mot de passe",
+    confirmNewPassword: "Confirmer le nouveau mot de passe",
+    errorWrongPassword: "Le mot de passe actuel est incorrect",
+    passwordChanged: "Mot de passe mis à jour avec succès",
+  },
+
   header: {
     title: "Folio",
     subtitle: "Comptabilité personnelle et petite entreprise",
@@ -581,6 +603,13 @@ const fr: Translations = {
     errorCounter: "Sélectionnez un compte de contrepartie",
     deleteItem: "Supprimer l'article",
     deleteMovement: "Supprimer",
+    tabProfitability: "Rentabilité",
+    profitUnitsSold: "Unités vendues",
+    profitRevenue: "Chiffre d'affaires",
+    profitCogs: "Coût des ventes",
+    profitGrossProfit: "Bénéfice brut",
+    profitMargin: "Marge %",
+    profitNoSales: "Aucun article d'inventaire lié à des factures pour l'instant",
   },
 
   trialBalance: {

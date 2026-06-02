@@ -8,8 +8,8 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   useDisclosure,
 } from "@nextui-org/react";
-import { Package, ArrowDownToLine, ArrowUpFromLine, SlidersHorizontal, Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
-import type { Account, InventoryItem, MovementType, StockMovement } from "@/lib/types";
+import { Package, ArrowDownToLine, ArrowUpFromLine, SlidersHorizontal, Plus, Pencil, Trash2, AlertTriangle, TrendingUp } from "lucide-react";
+import type { Account, InventoryItem, Invoice, MovementType, StockMovement } from "@/lib/types";
 import { useLanguage, useCurrency } from "@/app/providers";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -18,6 +18,7 @@ interface Props {
   accounts: Account[];
   items: InventoryItem[];
   movements: StockMovement[];
+  invoices?: Invoice[];
   qtyOnHand: (itemId: string) => number;
   inventoryValue: (itemId: string) => number;
   totalInventoryValue: () => number;
@@ -37,7 +38,7 @@ const DEFAULT_CASH_ACCOUNT      = "acc-1000";
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function InventoryTab({
-  accounts, items, movements,
+  accounts, items, movements, invoices = [],
   qtyOnHand, inventoryValue, totalInventoryValue,
   onAddItem, onUpdateItem, onDeleteItem,
   onAddMovement, onDeleteMovement,
@@ -45,7 +46,7 @@ export function InventoryTab({
   const { t, locale } = useLanguage();
   const { fmt } = useCurrency();
 
-  const [view, setView] = useState<"items" | "movements" | "summary">("items");
+  const [view, setView] = useState<"items" | "movements" | "summary" | "profitability">("items");
 
   // ── Item modal ───────────────────────────────────────────────────────────────
   const itemModal = useDisclosure();
@@ -86,6 +87,37 @@ export function InventoryTab({
     () => items.filter((item) => qtyOnHand(item.id) < item.reorderPoint),
     [items, qtyOnHand]
   );
+
+  interface ProfitRow {
+    item: InventoryItem;
+    unitsSold: number;
+    revenue: number;
+    cogs: number;
+    grossProfit: number;
+    margin: number | null;
+  }
+
+  const profitabilityRows = useMemo((): ProfitRow[] => {
+    return items
+      .map((item) => {
+        let unitsSold = 0;
+        let revenue   = 0;
+        for (const inv of invoices) {
+          for (const line of inv.lines ?? []) {
+            if (line.inventoryItemId === item.id) {
+              unitsSold += line.quantity;
+              revenue   += line.quantity * line.unitPrice;
+            }
+          }
+        }
+        const cogs        = unitsSold * item.costPerUnit;
+        const grossProfit = revenue - cogs;
+        const margin      = revenue > 0 ? (grossProfit / revenue) * 100 : null;
+        return { item, unitsSold, revenue, cogs, grossProfit, margin };
+      })
+      .filter((r) => r.unitsSold > 0)
+      .sort((a, b) => b.grossProfit - a.grossProfit);
+  }, [items, invoices]);
 
   // ── Item form ────────────────────────────────────────────────────────────────
 
@@ -246,6 +278,15 @@ export function InventoryTab({
             onPress={() => setView("summary")}
           >
             {t("inventory.tabSummary")}
+          </Button>
+          <Button
+            size="sm"
+            variant={view === "profitability" ? "solid" : "flat"}
+            color={view === "profitability" ? "success" : "default"}
+            startContent={<TrendingUp size={14} />}
+            onPress={() => setView("profitability")}
+          >
+            {t("inventory.tabProfitability")}
           </Button>
         </div>
         {view === "items" && (
@@ -480,6 +521,90 @@ export function InventoryTab({
               )}
             </CardBody>
           </Card>
+        </div>
+      )}
+
+      {/* ── Profitability ── */}
+      {view === "profitability" && (
+        <div className="space-y-4">
+          {profitabilityRows.length === 0 ? (
+            <Card shadow="none" className="border-2 border-dashed border-default-200">
+              <CardBody className="py-16 text-center text-default-400">
+                <TrendingUp size={32} className="mx-auto mb-3 opacity-30" />
+                <p className="text-sm font-medium">{t("inventory.profitNoSales")}</p>
+              </CardBody>
+            </Card>
+          ) : (
+            <>
+              {/* Summary totals */}
+              {(() => {
+                const totRev  = profitabilityRows.reduce((s, r) => s + r.revenue, 0);
+                const totCogs = profitabilityRows.reduce((s, r) => s + r.cogs, 0);
+                const totGP   = totRev - totCogs;
+                const totMarg = totRev > 0 ? (totGP / totRev) * 100 : null;
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                      { label: t("inventory.profitRevenue"),     value: fmt(totRev),  color: "text-default-900" },
+                      { label: t("inventory.profitCogs"),        value: fmt(totCogs), color: "text-danger-600" },
+                      { label: t("inventory.profitGrossProfit"), value: fmt(totGP),   color: totGP >= 0 ? "text-success-600" : "text-danger-600" },
+                      { label: t("inventory.profitMargin"),      value: totMarg !== null ? `${totMarg.toFixed(1)}%` : "—", color: totMarg !== null && totMarg >= 0 ? "text-success-600" : "text-danger-600" },
+                    ].map(({ label, value, color }) => (
+                      <Card key={label} shadow="sm">
+                        <CardBody className="px-4 py-3">
+                          <p className="text-xs text-default-500 mb-1">{label}</p>
+                          <p className={`text-lg font-bold font-mono ${color}`}>{value}</p>
+                        </CardBody>
+                      </Card>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* Per-item table */}
+              <Card shadow="sm">
+                <CardBody className="p-0">
+                  <Table aria-label={t("inventory.tabProfitability")} removeWrapper>
+                    <TableHeader>
+                      <TableColumn>{t("inventory.name")}</TableColumn>
+                      <TableColumn className="text-right w-24">{t("inventory.profitUnitsSold")}</TableColumn>
+                      <TableColumn className="text-right w-32">{t("inventory.profitRevenue")}</TableColumn>
+                      <TableColumn className="text-right w-32">{t("inventory.profitCogs")}</TableColumn>
+                      <TableColumn className="text-right w-32">{t("inventory.profitGrossProfit")}</TableColumn>
+                      <TableColumn className="text-right w-24">{t("inventory.profitMargin")}</TableColumn>
+                    </TableHeader>
+                    <TableBody>
+                      {profitabilityRows.map(({ item, unitsSold, revenue, cogs, grossProfit, margin }) => (
+                        <TableRow key={item.id}>
+                          <TableCell>
+                            <div>
+                              <span className="font-medium text-default-900">{item.name}</span>
+                              <span className="ml-2 font-mono text-xs text-default-400">{item.sku}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm text-default-700">
+                            {unitsSold} {item.unit}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm text-default-700">
+                            {fmt(revenue)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm text-danger-600">
+                            {fmt(cogs)}
+                          </TableCell>
+                          <TableCell className={`text-right font-mono text-sm font-semibold ${grossProfit >= 0 ? "text-success-600" : "text-danger-600"}`}>
+                            {fmt(grossProfit)}
+                          </TableCell>
+                          <TableCell className={`text-right font-mono text-sm ${margin !== null && margin >= 0 ? "text-success-600" : "text-danger-600"}`}>
+                            {margin !== null ? `${margin.toFixed(1)}%` : "—"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardBody>
+              </Card>
+            </>
+          )}
         </div>
       )}
 

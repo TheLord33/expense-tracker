@@ -8,6 +8,28 @@ const de: Translations = {
   from: "Von",
   to: "Bis",
 
+  auth: {
+    loginTitle: "Anmelden",
+    setupTitle: "Konto erstellen",
+    setupSub: "Legen Sie Zugangsdaten an, um Ihre Finanzdaten zu schützen",
+    username: "Benutzername",
+    password: "Passwort",
+    confirmPassword: "Passwort bestätigen",
+    loginBtn: "Anmelden",
+    setupBtn: "Konto erstellen",
+    logout: "Sperren",
+    errorInvalid: "Ungültiger Benutzername oder Passwort",
+    errorPasswordMatch: "Die Passwörter stimmen nicht überein",
+    errorUsername: "Benutzername ist erforderlich",
+    errorPassword: "Das Passwort muss mindestens 6 Zeichen lang sein",
+    changePassword: "Passwort ändern",
+    currentPassword: "Aktuelles Passwort",
+    newPassword: "Neues Passwort",
+    confirmNewPassword: "Neues Passwort bestätigen",
+    errorWrongPassword: "Das aktuelle Passwort ist falsch",
+    passwordChanged: "Passwort erfolgreich geändert",
+  },
+
   header: {
     title: "Folio",
     subtitle: "Buchhaltung für Privatpersonen und Kleinunternehmen",
@@ -581,6 +603,13 @@ const de: Translations = {
     errorCounter: "Wählen Sie ein Gegenkonto aus",
     deleteItem: "Artikel löschen",
     deleteMovement: "Löschen",
+    tabProfitability: "Rentabilität",
+    profitUnitsSold: "Verk. Einheiten",
+    profitRevenue: "Umsatz",
+    profitCogs: "Wareneinsatz",
+    profitGrossProfit: "Bruttogewinn",
+    profitMargin: "Marge %",
+    profitNoSales: "Noch keine Lagerartikel mit Rechnungen verknüpft",
   },
 
   trialBalance: {

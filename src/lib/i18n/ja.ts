@@ -8,6 +8,28 @@ const ja: Translations = {
   from: "開始",
   to: "終了",
 
+  auth: {
+    loginTitle: "サインイン",
+    setupTitle: "アカウントを作成",
+    setupSub: "財務データを保護するための認証情報を設定してください",
+    username: "ユーザー名",
+    password: "パスワード",
+    confirmPassword: "パスワードの確認",
+    loginBtn: "サインイン",
+    setupBtn: "アカウントを作成",
+    logout: "ロック",
+    errorInvalid: "ユーザー名またはパスワードが無効です",
+    errorPasswordMatch: "パスワードが一致しません",
+    errorUsername: "ユーザー名は必須です",
+    errorPassword: "パスワードは6文字以上必要です",
+    changePassword: "パスワードを変更",
+    currentPassword: "現在のパスワード",
+    newPassword: "新しいパスワード",
+    confirmNewPassword: "新しいパスワードの確認",
+    errorWrongPassword: "現在のパスワードが正しくありません",
+    passwordChanged: "パスワードが正常に更新されました",
+  },
+
   header: {
     title: "Folio",
     subtitle: "個人・中小企業向け会計",
@@ -581,6 +603,13 @@ const ja: Translations = {
     errorCounter: "相手勘定を選択してください",
     deleteItem: "品目を削除",
     deleteMovement: "削除",
+    tabProfitability: "収益性",
+    profitUnitsSold: "販売数",
+    profitRevenue: "売上高",
+    profitCogs: "売上原価",
+    profitGrossProfit: "売上総利益",
+    profitMargin: "利益率 %",
+    profitNoSales: "請求書にリンクされた在庫品目はまだありません",
   },
 
   trialBalance: {

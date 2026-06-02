@@ -12,7 +12,7 @@ import {
 import {
   Receipt, PiggyBank, RefreshCw, TrendingUp,
   BookOpen, BarChart2, Scale, ClipboardList, Wallet, Package, BadgeDollarSign,
-  Banknote, Calculator, Building2, ChevronDown, ShoppingCart, ListChecks, Pencil, Trash2,
+  Banknote, Calculator, Building2, ChevronDown, ShoppingCart, ListChecks, Pencil, Trash2, Lock,
 } from "lucide-react";
 
 import { useExpenses } from "@/lib/useExpenses";
@@ -56,6 +56,8 @@ import { CashFlowTab } from "@/components/CashFlowTab";
 import { FinCalcTab } from "@/components/FinCalcTab";
 import { POTab } from "@/components/POTab";
 import { CheckRecTab } from "@/components/CheckRecTab";
+import { LoginGate } from "@/components/LoginGate";
+import { useAuth } from "@/lib/useAuth";
 
 import type { Expense, ChipColor } from "@/lib/types";
 import { useLanguage, useToast, useCurrency } from "@/app/providers";
@@ -72,6 +74,8 @@ export default function HomePage() {
   const { t } = useLanguage();
   const { showToast } = useToast();
   const { fmt } = useCurrency();
+
+  const { isAuthenticated, hasCredentials, loaded: authLoaded, login, setup, logout } = useAuth();
 
   // ── Navigation state ─────────────────────────────────────────────────────────
   const [activeTab,    setActiveTab]    = useState<ActiveTab>("expenses");
@@ -294,6 +298,18 @@ export default function HomePage() {
       active ? "bg-indigo-600 text-white" : "bg-default-100 text-default-600 hover:bg-default-200",
     ].join(" ");
 
+  if (!authLoaded) return null;
+
+  if (!isAuthenticated) {
+    return (
+      <LoginGate
+        hasCredentials={!!hasCredentials}
+        onLogin={login}
+        onSetup={setup}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen">
       <AppHeader
@@ -309,6 +325,19 @@ export default function HomePage() {
             onImportAccounts={replaceCustomAccounts}
             onImportOpeningBalances={setAllBalances}
           />
+        }
+        lockSlot={
+          <Button
+            isIconOnly
+            size="sm"
+            variant="light"
+            className="text-white hover:bg-white/10"
+            onPress={logout}
+            title={t("auth.logout")}
+            aria-label={t("auth.logout")}
+          >
+            <Lock size={15} />
+          </Button>
         }
       />
 
@@ -608,6 +637,7 @@ export default function HomePage() {
               <InventoryTab
                 accounts={accounts}
                 items={inventoryItems} movements={inventoryMovements}
+                invoices={invoices}
                 qtyOnHand={qtyOnHand} inventoryValue={inventoryValue}
                 totalInventoryValue={totalInventoryValue}
                 onAddItem={addItem} onUpdateItem={updateItem} onDeleteItem={deleteItem}
