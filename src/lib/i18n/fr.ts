@@ -8,6 +8,38 @@ const fr: Translations = {
   from: "Du",
   to: "Au",
 
+  account: {
+    settings: "Compte",
+    changePassword: "Changer le mot de passe",
+    currentPassword: "Mot de passe actuel",
+    newPassword: "Nouveau mot de passe",
+    confirmNewPassword: "Confirmer le nouveau mot de passe",
+    errorWrongPassword: "Le mot de passe actuel est incorrect",
+    errorPasswordMatch: "Les mots de passe ne correspondent pas",
+    errorPassword: "Le nouveau mot de passe doit comporter au moins 6 caractères",
+    passwordChanged: "Mot de passe mis à jour",
+  },
+
+  help: {
+    title: "Aide et Documentation",
+    open: "Aide",
+    sections: {
+      gettingStarted: "Premiers pas",
+      expenses: "Dépenses et Budgets",
+      income: "Revenus",
+      accounting: "Comptabilité",
+      ap: "Comptes Fournisseurs",
+      ar: "Comptes Clients",
+      inventory: "Inventaire",
+      po: "Bons de Commande",
+      checkRec: "Rapprochement des Chèques",
+      companies: "Multi-Société",
+      backup: "Sauvegarde et Restauration",
+      security: "Sécurité",
+      calculator: "Calculatrice Financière",
+    },
+  },
+
   auth: {
     loginTitle: "Connexion",
     setupTitle: "Créer votre Compte",
@@ -17,7 +49,7 @@ const fr: Translations = {
     confirmPassword: "Confirmer le mot de passe",
     loginBtn: "Se connecter",
     setupBtn: "Créer le compte",
-    logout: "Verrouiller",
+    logout: "Se déconnecter",
     errorInvalid: "Identifiant ou mot de passe incorrect",
     errorPasswordMatch: "Les mots de passe ne correspondent pas",
     errorUsername: "Le nom d'utilisateur est requis",
@@ -248,8 +280,11 @@ const fr: Translations = {
     currentCountPlural: "Vous avez actuellement {count} dépenses. Choisissez comment gérer l'importation :",
     addToExisting: "Ajouter aux dépenses existantes",
     replaceAll: "Tout remplacer ({count} seront supprimées)",
-    exportBackup: "Sauvegarde complète (.json)",
+    exportBackup: "Sauvegarde des dépenses (.json)",
     fullBackupDetected: "Sauvegarde complète détectée — inclut {accounts} compte(s) personnalisé(s) et soldes d'ouverture.",
+    exportFullBackup: "Sauvegarde comptable complète (.json) ★",
+    v2RestoreError: "Impossible de restaurer la sauvegarde. Le fichier peut être corrompu.",
+    v2RestoreDetected: "Sauvegarde comptable complète détectée. Toutes les données seront remplacées et la page sera rechargée.",
   },
 
   trends: {

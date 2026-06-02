@@ -8,6 +8,38 @@ const es: Translations = {
   from: "Desde",
   to: "Hasta",
 
+  account: {
+    settings: "Cuenta",
+    changePassword: "Cambiar Contraseña",
+    currentPassword: "Contraseña Actual",
+    newPassword: "Nueva Contraseña",
+    confirmNewPassword: "Confirmar Nueva Contraseña",
+    errorWrongPassword: "La contraseña actual es incorrecta",
+    errorPasswordMatch: "Las contraseñas no coinciden",
+    errorPassword: "La nueva contraseña debe tener al menos 6 caracteres",
+    passwordChanged: "Contraseña actualizada",
+  },
+
+  help: {
+    title: "Ayuda y Documentación",
+    open: "Ayuda",
+    sections: {
+      gettingStarted: "Primeros Pasos",
+      expenses: "Gastos y Presupuestos",
+      income: "Ingresos",
+      accounting: "Contabilidad",
+      ap: "Cuentas por Pagar",
+      ar: "Cuentas por Cobrar",
+      inventory: "Inventario",
+      po: "Órdenes de Compra",
+      checkRec: "Conciliación de Cheques",
+      companies: "Multi-Empresa",
+      backup: "Respaldo y Restauración",
+      security: "Seguridad",
+      calculator: "Calculadora Financiera",
+    },
+  },
+
   auth: {
     loginTitle: "Iniciar Sesión",
     setupTitle: "Crear tu Cuenta",
@@ -17,7 +49,7 @@ const es: Translations = {
     confirmPassword: "Confirmar Contraseña",
     loginBtn: "Iniciar Sesión",
     setupBtn: "Crear Cuenta",
-    logout: "Bloquear",
+    logout: "Cerrar sesión",
     errorInvalid: "Usuario o contraseña incorrectos",
     errorPasswordMatch: "Las contraseñas no coinciden",
     errorUsername: "El usuario es obligatorio",
@@ -248,8 +280,11 @@ const es: Translations = {
     currentCountPlural: "Tienes {count} gastos actualmente. Elige cómo manejar la importación:",
     addToExisting: "Agregar a los gastos existentes",
     replaceAll: "Reemplazar todo ({count} se eliminarán)",
-    exportBackup: "Respaldo completo (.json)",
+    exportBackup: "Respaldo de gastos (.json)",
     fullBackupDetected: "Respaldo completo detectado — incluye {accounts} cuenta(s) personalizada(s) y saldos iniciales.",
+    exportFullBackup: "Respaldo contable completo (.json) ★",
+    v2RestoreError: "No se pudo restaurar el respaldo. El archivo puede estar dañado.",
+    v2RestoreDetected: "Respaldo contable completo detectado. Todos los datos serán reemplazados y la página se recargará.",
   },
 
   trends: {

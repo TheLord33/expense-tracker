@@ -6,7 +6,7 @@ import {
   Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
 } from "@nextui-org/react";
 import type { Account, Expense, CategoryDef } from "@/lib/types";
-import { fromCSV, fromJSON, fromText, toFullBackupJSON, download, type FullBackupResult } from "@/lib/importExport";
+import { fromCSV, fromJSON, fromText, toFullBackupJSON, exportStorageBackup, importStorageBackup, download, type FullBackupResult } from "@/lib/importExport";
 import { ExportModal } from "@/components/ExportModal";
 import { CloudExportModal } from "@/components/CloudExportModal";
 import { useLanguage, useCurrency } from "@/app/providers";
@@ -33,10 +33,11 @@ export function ImportExportMenu({ expenses, categories, accounts, openingBalanc
   const { t } = useLanguage();
   const { fmt } = useCurrency();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [pendingFormat, setPendingFormat] = useState<ImportFormat | null>(null);
-  const [importResult, setImportResult]   = useState<FullBackupResult | null>(null);
-  const [showExport, setShowExport]       = useState(false);
-  const [showCloud, setShowCloud]         = useState(false);
+  const [pendingFormat, setPendingFormat]   = useState<ImportFormat | null>(null);
+  const [importResult, setImportResult]     = useState<FullBackupResult | null>(null);
+  const [showExport, setShowExport]         = useState(false);
+  const [showCloud, setShowCloud]           = useState(false);
+  const [v2RestoreErr, setV2RestoreErr]     = useState("");
 
   // ── Import ────────────────────────────────────────────────────────────
 
@@ -55,6 +56,21 @@ export function ImportExportMenu({ expenses, categories, accounts, openingBalanc
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string;
+      // Detect v2 comprehensive backup before regular JSON parse
+      if (pendingFormat === "json") {
+        try {
+          const probe = JSON.parse(content) as Record<string, unknown>;
+          if (probe.type === "full-backup-v2") {
+            const ok = importStorageBackup(content);
+            if (ok) {
+              window.location.reload();
+            } else {
+              setV2RestoreErr(t("importExport.v2RestoreError"));
+            }
+            return;
+          }
+        } catch { /* fall through to regular parse */ }
+      }
       const bare = (r: { expenses: Omit<Expense, "id">[]; errors: string[] }): FullBackupResult =>
         ({ ...r, isFullBackup: false, customAccounts: [], openingBalances: {} });
       const parsed: FullBackupResult =
@@ -79,7 +95,12 @@ export function ImportExportMenu({ expenses, categories, accounts, openingBalanc
 
   function handleExportBackup() {
     const today = new Date().toISOString().split("T")[0];
-    download(toFullBackupJSON(expenses, accounts, openingBalances), `family-finances-backup-${today}.json`, "application/json");
+    download(toFullBackupJSON(expenses, accounts, openingBalances), `folio-backup-${today}.json`, "application/json");
+  }
+
+  function handleExportFullBackup() {
+    const today = new Date().toISOString().split("T")[0];
+    download(exportStorageBackup(), `folio-full-backup-${today}.json`, "application/json");
   }
 
   function handleImportCancel() {
@@ -110,6 +131,9 @@ export function ImportExportMenu({ expenses, categories, accounts, openingBalanc
             <DropdownItem key="backup" onPress={handleExportBackup}>
               {t("importExport.exportBackup")}
             </DropdownItem>
+            <DropdownItem key="backup-full" onPress={handleExportFullBackup}>
+              {t("importExport.exportFullBackup")}
+            </DropdownItem>
             <DropdownItem key="cloud" onPress={() => setShowCloud(true)}>
               {t("cloudExport.title")} ✦
             </DropdownItem>
@@ -124,6 +148,17 @@ export function ImportExportMenu({ expenses, categories, accounts, openingBalanc
 
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
+
+      {/* v2 restore error */}
+      {v2RestoreErr && (
+        <Modal isOpen onClose={() => setV2RestoreErr("")} placement="center" size="sm">
+          <ModalContent>
+            <ModalHeader>{t("importExport.importTitle", { format: "JSON" })}</ModalHeader>
+            <ModalBody><p className="text-sm text-danger-600">{v2RestoreErr}</p></ModalBody>
+            <ModalFooter><Button onPress={() => setV2RestoreErr("")}>{t("close")}</Button></ModalFooter>
+          </ModalContent>
+        </Modal>
+      )}
 
       {/* Export modal */}
       <ExportModal

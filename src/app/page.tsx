@@ -12,7 +12,7 @@ import {
 import {
   Receipt, PiggyBank, RefreshCw, TrendingUp,
   BookOpen, BarChart2, Scale, ClipboardList, Wallet, Package, BadgeDollarSign,
-  Banknote, Calculator, Building2, ChevronDown, ShoppingCart, ListChecks, Pencil, Trash2, Lock,
+  Banknote, Calculator, Building2, ChevronDown, ShoppingCart, ListChecks, Pencil, Trash2, Crown,
 } from "lucide-react";
 
 import { useExpenses } from "@/lib/useExpenses";
@@ -57,7 +57,10 @@ import { FinCalcTab } from "@/components/FinCalcTab";
 import { POTab } from "@/components/POTab";
 import { CheckRecTab } from "@/components/CheckRecTab";
 import { LoginGate } from "@/components/LoginGate";
+import { HelpModal } from "@/components/HelpModal";
 import { useAuth } from "@/lib/useAuth";
+import { usePlan } from "@/lib/usePlan";
+import Link from "next/link";
 
 import type { Expense, ChipColor } from "@/lib/types";
 import { useLanguage, useToast, useCurrency } from "@/app/providers";
@@ -75,7 +78,13 @@ export default function HomePage() {
   const { showToast } = useToast();
   const { fmt } = useCurrency();
 
-  const { isAuthenticated, hasCredentials, loaded: authLoaded, login, setup, logout } = useAuth();
+  const { isAuthenticated, hasCredentials, loaded: authLoaded, login, setup, logout, changePassword, getUsername } = useAuth();
+  const { isPro, activatePlan, activateLicense } = usePlan();
+  const [showHelp, setShowHelp] = useState(false);
+  const [showLicenseModal, setShowLicenseModal] = useState(false);
+  const [licenseKey, setLicenseKey] = useState("");
+  const [licenseError, setLicenseError] = useState("");
+  const [licenseActivating, setLicenseActivating] = useState(false);
 
   // ── Navigation state ─────────────────────────────────────────────────────────
   const [activeTab,    setActiveTab]    = useState<ActiveTab>("expenses");
@@ -198,6 +207,34 @@ export default function HomePage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [addExpenseModal]);
 
+  // ── Handle ?activate= URL param (plan activation) ────────────────────────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("activate");
+    if (!token) return;
+    window.history.replaceState({}, "", window.location.pathname);
+    if (token === "license") { setShowLicenseModal(true); return; }
+    activatePlan(token).then((ok) => {
+      showToast(ok ? "✓ Pro plan activated! Welcome to Folio Pro." : "Activation link is invalid or expired.");
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── License key activation handler ───────────────────────────────────────────
+  async function handleLicenseActivate() {
+    if (!licenseKey.trim()) { setLicenseError("Enter your license key."); return; }
+    setLicenseError("");
+    setLicenseActivating(true);
+    const ok = await activateLicense(licenseKey.trim());
+    setLicenseActivating(false);
+    if (ok) {
+      showToast("✓ License activated! Folio Self-Hosted is now unlocked.");
+      setShowLicenseModal(false);
+      setLicenseKey("");
+    } else {
+      setLicenseError("License key not found. Please check and try again.");
+    }
+  }
+
   // ── Auto-generate recurring expenses ─────────────────────────────────────────
   const processedRuleIds = useRef(new Set<string>());
   useEffect(() => {
@@ -298,6 +335,22 @@ export default function HomePage() {
       active ? "bg-indigo-600 text-white" : "bg-default-100 text-default-600 hover:bg-default-200",
     ].join(" ");
 
+  const upgradePrompt = (
+    <Card className="mt-4">
+      <CardBody className="py-14 text-center space-y-4">
+        <Crown size={40} className="mx-auto text-warning" />
+        <h3 className="text-xl font-bold">Pro plan required</h3>
+        <p className="text-default-500 text-sm max-w-sm mx-auto">
+          Accounts Payable, Accounts Receivable, Inventory, Purchase Orders, and Bank Reconciliation are available on Pro Cloud and Self-Hosted plans.
+        </p>
+        <div className="flex justify-center gap-3 flex-wrap">
+          <Link href="/pricing"><Button color="primary" size="sm">View pricing</Button></Link>
+          <Button variant="flat" size="sm" onPress={() => setShowLicenseModal(true)}>Enter license key</Button>
+        </div>
+      </CardBody>
+    </Card>
+  );
+
   if (!authLoaded) return null;
 
   if (!isAuthenticated) {
@@ -326,19 +379,10 @@ export default function HomePage() {
             onImportOpeningBalances={setAllBalances}
           />
         }
-        lockSlot={
-          <Button
-            isIconOnly
-            size="sm"
-            variant="light"
-            className="text-white hover:bg-white/10"
-            onPress={logout}
-            title={t("auth.logout")}
-            aria-label={t("auth.logout")}
-          >
-            <Lock size={15} />
-          </Button>
-        }
+        onHelp={() => setShowHelp(true)}
+        onLock={logout}
+        onChangePassword={changePassword}
+        username={getUsername()}
       />
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-5">
@@ -621,7 +665,7 @@ export default function HomePage() {
               />
             )}
 
-            {acctModule === "ap" && (
+            {acctModule === "ap" && (isPro ? (
               <APTab
                 vendors={vendors} bills={bills} billPayments={billPayments}
                 accounts={accounts} company={activeCompany}
@@ -631,9 +675,9 @@ export default function HomePage() {
                 onAddPayment={addPayment} onAddChecks={addChecks}
                 paidAmount={paidAmount} outstanding={outstanding}
               />
-            )}
+            ) : upgradePrompt)}
 
-            {acctModule === "inventory" && (
+            {acctModule === "inventory" && (isPro ? (
               <InventoryTab
                 accounts={accounts}
                 items={inventoryItems} movements={inventoryMovements}
@@ -643,9 +687,9 @@ export default function HomePage() {
                 onAddItem={addItem} onUpdateItem={updateItem} onDeleteItem={deleteItem}
                 onAddMovement={addMovement} onDeleteMovement={deleteMovement}
               />
-            )}
+            ) : upgradePrompt)}
 
-            {acctModule === "ar" && (
+            {acctModule === "ar" && (isPro ? (
               <ARTab
                 customers={customers} invoices={invoices} invoicePayments={invoicePayments}
                 accounts={accounts} inventoryItems={inventoryItems} company={activeCompany}
@@ -655,9 +699,9 @@ export default function HomePage() {
                 onAddPayment={addInvoicePayment}
                 collectedAmount={collectedAmount} outstanding={invoiceOutstanding}
               />
-            )}
+            ) : upgradePrompt)}
 
-            {acctModule === "po" && (
+            {acctModule === "po" && (isPro ? (
               <POTab
                 vendors={vendors}
                 inventoryItems={inventoryItems}
@@ -671,11 +715,11 @@ export default function HomePage() {
                 onAddMovement={addMovement}
                 onAddBill={addBill}
               />
-            )}
+            ) : upgradePrompt)}
 
-            {acctModule === "checkRec" && (
+            {acctModule === "checkRec" && (isPro ? (
               <CheckRecTab checks={checks} onUpdateCheck={updateCheck} />
-            )}
+            ) : upgradePrompt)}
           </div>
         )}
       </main>
@@ -737,6 +781,36 @@ export default function HomePage() {
               <Button color="primary" type="submit">{t("save")}</Button>
             </ModalFooter>
           </form>
+        </ModalContent>
+      </Modal>
+
+      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
+
+      {/* License key activation modal */}
+      <Modal isOpen={showLicenseModal} onClose={() => { setShowLicenseModal(false); setLicenseKey(""); setLicenseError(""); }} placement="center">
+        <ModalContent>
+          <ModalHeader className="flex items-center gap-2">
+            <Crown size={18} className="text-warning" /> Enter license key
+          </ModalHeader>
+          <ModalBody className="pb-2">
+            <p className="text-default-500 text-sm mb-2">
+              Paste your Self-Hosted license key to unlock all Pro features on this device.
+            </p>
+            <Input
+              label="License key"
+              placeholder="FOLIO-XXXXXXXX-XXXXXXXX-XXXXXXXX"
+              value={licenseKey}
+              onValueChange={(v) => { setLicenseKey(v); setLicenseError(""); }}
+              isInvalid={!!licenseError}
+              errorMessage={licenseError}
+              variant="bordered"
+              autoFocus
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={() => { setShowLicenseModal(false); setLicenseKey(""); setLicenseError(""); }}>Cancel</Button>
+            <Button color="primary" isLoading={licenseActivating} onPress={handleLicenseActivate}>Activate</Button>
+          </ModalFooter>
         </ModalContent>
       </Modal>
     </div>

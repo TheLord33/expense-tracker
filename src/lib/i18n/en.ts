@@ -6,6 +6,38 @@ const en = {
   from: "From",
   to: "To",
 
+  account: {
+    settings: "Account",
+    changePassword: "Change Password",
+    currentPassword: "Current Password",
+    newPassword: "New Password",
+    confirmNewPassword: "Confirm New Password",
+    errorWrongPassword: "Current password is incorrect",
+    errorPasswordMatch: "Passwords do not match",
+    errorPassword: "New password must be at least 6 characters",
+    passwordChanged: "Password updated",
+  },
+
+  help: {
+    title: "Help & Documentation",
+    open: "Help",
+    sections: {
+      gettingStarted: "Getting Started",
+      expenses: "Expenses & Budgets",
+      income: "Income",
+      accounting: "Accounting",
+      ap: "Accounts Payable",
+      ar: "Accounts Receivable",
+      inventory: "Inventory",
+      po: "Purchase Orders",
+      checkRec: "Check Reconciliation",
+      companies: "Multi-Company",
+      backup: "Backup & Restore",
+      security: "Security",
+      calculator: "Financial Calculator",
+    },
+  },
+
   auth: {
     loginTitle: "Sign In",
     setupTitle: "Create Your Account",
@@ -15,7 +47,7 @@ const en = {
     confirmPassword: "Confirm Password",
     loginBtn: "Sign In",
     setupBtn: "Create Account",
-    logout: "Lock",
+    logout: "Log out",
     errorInvalid: "Invalid username or password",
     errorPasswordMatch: "Passwords do not match",
     errorUsername: "Username is required",
@@ -246,8 +278,11 @@ const en = {
     currentCountPlural: "You currently have {count} expenses. Choose how to handle the import:",
     addToExisting: "Add to existing expenses",
     replaceAll: "Replace all ({count} will be deleted)",
-    exportBackup: "Full backup (.json)",
+    exportBackup: "Expenses backup (.json)",
+    exportFullBackup: "Full accounting backup (.json) ★",
     fullBackupDetected: "Full backup detected — includes {accounts} custom account(s) and opening balances.",
+    v2RestoreError: "Could not restore backup. File may be corrupted or from an incompatible version.",
+    v2RestoreDetected: "Full accounting backup detected. All data will be replaced and the page will reload.",
   },
 
   trends: {
