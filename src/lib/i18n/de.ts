@@ -663,6 +663,8 @@ const de: Translations = {
     yrs: "J.",
     na: "N/V",
     results: "Ergebnisse",
+    sendToROI: "In ROI analysieren",
+    fromLoan: "Aus Kredit übertragen — geben Sie Ihre erwartete Nettorendite ein",
   },
 
   cashFlow: {

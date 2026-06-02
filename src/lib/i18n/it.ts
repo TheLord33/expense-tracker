@@ -663,6 +663,8 @@ const it: Translations = {
     yrs: "anni",
     na: "N/D",
     results: "Risultati",
+    sendToROI: "Analizza in ROI",
+    fromLoan: "Precompilato dal prestito — inserisci il rendimento netto atteso",
   },
 
   cashFlow: {

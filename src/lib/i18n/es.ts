@@ -663,6 +663,8 @@ const es: Translations = {
     yrs: "años",
     na: "N/D",
     results: "Resultados",
+    sendToROI: "Analizar en ROI",
+    fromLoan: "Prellenado desde préstamo — ingrese su retorno neto esperado",
   },
 
   cashFlow: {

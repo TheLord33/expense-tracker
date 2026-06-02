@@ -663,6 +663,8 @@ const ja: Translations = {
     yrs: "年",
     na: "N/A",
     results: "結果",
+    sendToROI: "ROIで分析",
+    fromLoan: "ローンから入力済み — 期待純利益を入力してください",
   },
 
   cashFlow: {

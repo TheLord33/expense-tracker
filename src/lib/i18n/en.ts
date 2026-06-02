@@ -595,6 +595,8 @@ const en = {
     yrs: "yrs",
     na: "N/A",
     results: "Results",
+    sendToROI: "Analyze in ROI",
+    fromLoan: "Pre-filled from loan — enter your expected net return",
   },
 
   cashFlow: {
