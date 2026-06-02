@@ -8,6 +8,38 @@ const pt: Translations = {
   from: "De",
   to: "Até",
 
+  account: {
+    settings: "Conta",
+    changePassword: "Alterar Senha",
+    currentPassword: "Senha Atual",
+    newPassword: "Nova Senha",
+    confirmNewPassword: "Confirmar Nova Senha",
+    errorWrongPassword: "Senha atual incorreta",
+    errorPasswordMatch: "As senhas não coincidem",
+    errorPassword: "A nova senha deve ter pelo menos 6 caracteres",
+    passwordChanged: "Senha atualizada",
+  },
+
+  help: {
+    title: "Ajuda e Documentação",
+    open: "Ajuda",
+    sections: {
+      gettingStarted: "Primeiros Passos",
+      expenses: "Despesas e Orçamentos",
+      income: "Receitas",
+      accounting: "Contabilidade",
+      ap: "Contas a Pagar",
+      ar: "Contas a Receber",
+      inventory: "Estoque",
+      po: "Ordens de Compra",
+      checkRec: "Conciliação de Cheques",
+      companies: "Multi-Empresa",
+      backup: "Backup e Restauração",
+      security: "Segurança",
+      calculator: "Calculadora Financeira",
+    },
+  },
+
   auth: {
     loginTitle: "Entrar",
     setupTitle: "Criar sua Conta",
@@ -248,8 +280,11 @@ const pt: Translations = {
     currentCountPlural: "Você tem {count} despesas atualmente. Escolha como lidar com a importação:",
     addToExisting: "Adicionar às despesas existentes",
     replaceAll: "Substituir tudo ({count} serão excluídas)",
-    exportBackup: "Backup completo (.json)",
+    exportBackup: "Backup de despesas (.json)",
     fullBackupDetected: "Backup completo detectado — inclui {accounts} conta(s) personalizada(s) e saldos iniciais.",
+    exportFullBackup: "Backup contábil completo (.json) ★",
+    v2RestoreError: "Não foi possível restaurar o backup. O arquivo pode estar corrompido.",
+    v2RestoreDetected: "Backup contábil completo detectado. Todos os dados serão substituídos e a página será recarregada.",
   },
 
   trends: {

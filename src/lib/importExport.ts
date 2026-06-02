@@ -303,6 +303,47 @@ export function fromText(content: string): ImportResult {
   return { expenses, errors };
 }
 
+// ── Comprehensive storage backup (v2) ────────────────────────────────────────
+// Dumps every folio-* key from localStorage so all modules are captured.
+// folio-auth is intentionally excluded — credentials should never travel in a backup.
+
+export function exportStorageBackup(): string {
+  const storage: Record<string, unknown> = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)!;
+    if (key.startsWith("folio-") && key !== "folio-auth") {
+      try { storage[key] = JSON.parse(localStorage.getItem(key)!); }
+      catch { storage[key] = localStorage.getItem(key); }
+    }
+  }
+  return JSON.stringify(
+    { version: 2, type: "full-backup-v2", exportedAt: new Date().toISOString(), storage },
+    null, 2
+  );
+}
+
+export function importStorageBackup(content: string): boolean {
+  try {
+    const parsed = JSON.parse(content) as Record<string, unknown>;
+    if (parsed.type !== "full-backup-v2" || typeof parsed.storage !== "object") return false;
+    const incoming = parsed.storage as Record<string, unknown>;
+    // Remove current folio-* keys (except auth)
+    const toRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)!;
+      if (key.startsWith("folio-") && key !== "folio-auth") toRemove.push(key);
+    }
+    toRemove.forEach((k) => localStorage.removeItem(k));
+    // Write restored keys
+    for (const [key, value] of Object.entries(incoming)) {
+      if (key !== "folio-auth") {
+        localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value));
+      }
+    }
+    return true;
+  } catch { return false; }
+}
+
 // ── Report CSV exports ────────────────────────────────────────────────────────
 
 export function pnlToCSV(report: PnLReport, periodLabel: string): string {

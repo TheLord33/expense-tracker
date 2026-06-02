@@ -8,6 +8,38 @@ const ja: Translations = {
   from: "開始",
   to: "終了",
 
+  account: {
+    settings: "アカウント",
+    changePassword: "パスワードを変更",
+    currentPassword: "現在のパスワード",
+    newPassword: "新しいパスワード",
+    confirmNewPassword: "新しいパスワードの確認",
+    errorWrongPassword: "現在のパスワードが正しくありません",
+    errorPasswordMatch: "パスワードが一致しません",
+    errorPassword: "新しいパスワードは6文字以上必要です",
+    passwordChanged: "パスワードを更新しました",
+  },
+
+  help: {
+    title: "ヘルプ & ドキュメント",
+    open: "ヘルプ",
+    sections: {
+      gettingStarted: "はじめに",
+      expenses: "支出と予算",
+      income: "収入",
+      accounting: "会計",
+      ap: "買掛金",
+      ar: "売掛金",
+      inventory: "在庫",
+      po: "発注書",
+      checkRec: "小切手照合",
+      companies: "複数会社",
+      backup: "バックアップと復元",
+      security: "セキュリティ",
+      calculator: "金融計算機",
+    },
+  },
+
   auth: {
     loginTitle: "サインイン",
     setupTitle: "アカウントを作成",
@@ -248,8 +280,11 @@ const ja: Translations = {
     currentCountPlural: "現在{count}件の支出があります。インポート方法を選択してください：",
     addToExisting: "既存の支出に追加",
     replaceAll: "すべて置き換える（{count}件が削除されます）",
-    exportBackup: "完全バックアップ (.json)",
+    exportBackup: "支出バックアップ (.json)",
     fullBackupDetected: "完全バックアップを検出しました — {accounts}件のカスタム口座と期首残高を含みます。",
+    exportFullBackup: "完全会計バックアップ (.json) ★",
+    v2RestoreError: "バックアップを復元できませんでした。ファイルが破損している可能性があります。",
+    v2RestoreDetected: "完全会計バックアップを検出しました。すべてのデータが置き換えられ、ページがリロードされます。",
   },
 
   trends: {

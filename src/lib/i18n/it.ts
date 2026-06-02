@@ -8,6 +8,38 @@ const it: Translations = {
   from: "Dal",
   to: "Al",
 
+  account: {
+    settings: "Account",
+    changePassword: "Cambia password",
+    currentPassword: "Password attuale",
+    newPassword: "Nuova password",
+    confirmNewPassword: "Conferma nuova password",
+    errorWrongPassword: "La password attuale non è corretta",
+    errorPasswordMatch: "Le password non corrispondono",
+    errorPassword: "La nuova password deve essere di almeno 6 caratteri",
+    passwordChanged: "Password aggiornata",
+  },
+
+  help: {
+    title: "Guida e Documentazione",
+    open: "Guida",
+    sections: {
+      gettingStarted: "Per Iniziare",
+      expenses: "Spese e Budget",
+      income: "Entrate",
+      accounting: "Contabilità",
+      ap: "Fornitori (A/P)",
+      ar: "Clienti (A/R)",
+      inventory: "Magazzino",
+      po: "Ordini di Acquisto",
+      checkRec: "Riconciliazione Assegni",
+      companies: "Multi-Azienda",
+      backup: "Backup e Ripristino",
+      security: "Sicurezza",
+      calculator: "Calcolatrice Finanziaria",
+    },
+  },
+
   auth: {
     loginTitle: "Accedi",
     setupTitle: "Crea il tuo Account",
@@ -248,8 +280,11 @@ const it: Translations = {
     currentCountPlural: "Hai attualmente {count} spese. Scegli come gestire l'importazione:",
     addToExisting: "Aggiungi alle spese esistenti",
     replaceAll: "Sostituisci tutto ({count} verranno eliminate)",
-    exportBackup: "Backup completo (.json)",
+    exportBackup: "Backup delle spese (.json)",
     fullBackupDetected: "Backup completo rilevato — include {accounts} conto/i personalizzato/i e saldi iniziali.",
+    exportFullBackup: "Backup contabile completo (.json) ★",
+    v2RestoreError: "Impossibile ripristinare il backup. Il file potrebbe essere danneggiato.",
+    v2RestoreDetected: "Backup contabile completo rilevato. Tutti i dati verranno sostituiti e la pagina verrà ricaricata.",
   },
 
   trends: {

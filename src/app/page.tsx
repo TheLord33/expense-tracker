@@ -12,7 +12,7 @@ import {
 import {
   Receipt, PiggyBank, RefreshCw, TrendingUp,
   BookOpen, BarChart2, Scale, ClipboardList, Wallet, Package, BadgeDollarSign,
-  Banknote, Calculator, Building2, ChevronDown, ShoppingCart, ListChecks, Pencil, Trash2, Lock,
+  Banknote, Calculator, Building2, ChevronDown, ShoppingCart, ListChecks, Pencil, Trash2,
 } from "lucide-react";
 
 import { useExpenses } from "@/lib/useExpenses";
@@ -57,6 +57,7 @@ import { FinCalcTab } from "@/components/FinCalcTab";
 import { POTab } from "@/components/POTab";
 import { CheckRecTab } from "@/components/CheckRecTab";
 import { LoginGate } from "@/components/LoginGate";
+import { HelpModal } from "@/components/HelpModal";
 import { useAuth } from "@/lib/useAuth";
 
 import type { Expense, ChipColor } from "@/lib/types";
@@ -75,7 +76,8 @@ export default function HomePage() {
   const { showToast } = useToast();
   const { fmt } = useCurrency();
 
-  const { isAuthenticated, hasCredentials, loaded: authLoaded, login, setup, logout } = useAuth();
+  const { isAuthenticated, hasCredentials, loaded: authLoaded, login, setup, logout, changePassword, getUsername } = useAuth();
+  const [showHelp, setShowHelp] = useState(false);
 
   // ── Navigation state ─────────────────────────────────────────────────────────
   const [activeTab,    setActiveTab]    = useState<ActiveTab>("expenses");
@@ -326,19 +328,10 @@ export default function HomePage() {
             onImportOpeningBalances={setAllBalances}
           />
         }
-        lockSlot={
-          <Button
-            isIconOnly
-            size="sm"
-            variant="light"
-            className="text-white hover:bg-white/10"
-            onPress={logout}
-            title={t("auth.logout")}
-            aria-label={t("auth.logout")}
-          >
-            <Lock size={15} />
-          </Button>
-        }
+        onHelp={() => setShowHelp(true)}
+        onLock={logout}
+        onChangePassword={changePassword}
+        username={getUsername()}
       />
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-5">
@@ -739,6 +732,8 @@ export default function HomePage() {
           </form>
         </ModalContent>
       </Modal>
+
+      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
     </div>
   );
 }

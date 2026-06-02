@@ -8,6 +8,38 @@ const de: Translations = {
   from: "Von",
   to: "Bis",
 
+  account: {
+    settings: "Konto",
+    changePassword: "Passwort ändern",
+    currentPassword: "Aktuelles Passwort",
+    newPassword: "Neues Passwort",
+    confirmNewPassword: "Neues Passwort bestätigen",
+    errorWrongPassword: "Das aktuelle Passwort ist falsch",
+    errorPasswordMatch: "Die Passwörter stimmen nicht überein",
+    errorPassword: "Das neue Passwort muss mindestens 6 Zeichen lang sein",
+    passwordChanged: "Passwort aktualisiert",
+  },
+
+  help: {
+    title: "Hilfe & Dokumentation",
+    open: "Hilfe",
+    sections: {
+      gettingStarted: "Erste Schritte",
+      expenses: "Ausgaben & Budgets",
+      income: "Einnahmen",
+      accounting: "Buchhaltung",
+      ap: "Verbindlichkeiten",
+      ar: "Forderungen",
+      inventory: "Bestand",
+      po: "Bestellungen",
+      checkRec: "Scheckabgleich",
+      companies: "Mehrere Unternehmen",
+      backup: "Sicherung & Wiederherstellung",
+      security: "Sicherheit",
+      calculator: "Finanzrechner",
+    },
+  },
+
   auth: {
     loginTitle: "Anmelden",
     setupTitle: "Konto erstellen",
@@ -248,8 +280,11 @@ const de: Translations = {
     currentCountPlural: "Sie haben derzeit {count} Ausgaben. Wählen Sie, wie mit dem Import umgegangen werden soll:",
     addToExisting: "Zu bestehenden Ausgaben hinzufügen",
     replaceAll: "Alles ersetzen ({count} werden gelöscht)",
-    exportBackup: "Vollständiges Backup (.json)",
+    exportBackup: "Ausgaben-Backup (.json)",
     fullBackupDetected: "Vollständiges Backup erkannt — enthält {accounts} benutzerdefiniertes/e Konto/Konten und Eröffnungssalden.",
+    exportFullBackup: "Vollständiges Buchhaltungs-Backup (.json) ★",
+    v2RestoreError: "Backup konnte nicht wiederhergestellt werden. Die Datei ist möglicherweise beschädigt.",
+    v2RestoreDetected: "Vollständiges Buchhaltungs-Backup erkannt. Alle Daten werden ersetzt und die Seite neu geladen.",
   },
 
   trends: {
