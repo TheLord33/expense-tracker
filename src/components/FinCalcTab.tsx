@@ -10,7 +10,7 @@ import { useLanguage, useCurrency } from "@/app/providers";
 
 type CalcMode = "loan" | "compound" | "breakeven" | "roi";
 
-interface RoiPrefill { investment: string; years: string }
+interface RoiPrefill { investment: string; years: string; netReturn: string }
 
 // ── Math helpers ──────────────────────────────────────────────────────────────
 
@@ -86,7 +86,6 @@ function ResultRow({ label, value, highlight }: { label: string; value: string; 
   );
 }
 
-// Use text input with decimal keyboard to avoid browser native step-validation wiping values
 function NumInput({ label, value, onChange, placeholder = "0" }: {
   label: string; value: string; onChange: (v: string) => void; placeholder?: string;
 }) {
@@ -95,7 +94,7 @@ function NumInput({ label, value, onChange, placeholder = "0" }: {
       label={label}
       placeholder={placeholder}
       value={value}
-      onValueChange={onChange}
+      onChange={(e) => onChange(e.target.value)}
       type="text"
       inputMode="decimal"
       size="sm"
@@ -158,6 +157,7 @@ function LoanCalc({ onSendToROI }: { onSendToROI: (prefill: RoiPrefill) => void 
               onPress={() => onSendToROI({
                 investment: principal,
                 years: n > 0 ? String(+(n / 12).toFixed(2)) : "",
+                netReturn: result ? String(+result.totalInterest.toFixed(2)) : "",
               })}
             >
               {t("finCalc.sendToROI")}
@@ -322,7 +322,7 @@ function BreakevenCalc() {
           <Input
             label={t("finCalc.sellPrice")}
             value={price}
-            onValueChange={setPrice}
+            onChange={(e) => setPrice(e.target.value)}
             type="text"
             inputMode="decimal"
             size="sm"
@@ -363,7 +363,7 @@ function ROICalc({ prefill, onPrefillUsed }: { prefill: RoiPrefill | null; onPre
     if (!prefill) return;
     setInvestment(prefill.investment);
     setYears(prefill.years);
-    setNetReturn("");
+    setNetReturn(prefill.netReturn);
     setFromLoan(true);
     onPrefillUsed();
   }, [prefill]); // eslint-disable-line react-hooks/exhaustive-deps
