@@ -49,7 +49,7 @@ const fr: Translations = {
     confirmPassword: "Confirmer le mot de passe",
     loginBtn: "Se connecter",
     setupBtn: "Créer le compte",
-    logout: "Verrouiller",
+    logout: "Se déconnecter",
     errorInvalid: "Identifiant ou mot de passe incorrect",
     errorPasswordMatch: "Les mots de passe ne correspondent pas",
     errorUsername: "Le nom d'utilisateur est requis",

@@ -49,7 +49,7 @@ const es: Translations = {
     confirmPassword: "Confirmar Contraseña",
     loginBtn: "Iniciar Sesión",
     setupBtn: "Crear Cuenta",
-    logout: "Bloquear",
+    logout: "Cerrar sesión",
     errorInvalid: "Usuario o contraseña incorrectos",
     errorPasswordMatch: "Las contraseñas no coinciden",
     errorUsername: "El usuario es obligatorio",

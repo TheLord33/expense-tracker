@@ -49,7 +49,7 @@ const ja: Translations = {
     confirmPassword: "パスワードの確認",
     loginBtn: "サインイン",
     setupBtn: "アカウントを作成",
-    logout: "ロック",
+    logout: "ログアウト",
     errorInvalid: "ユーザー名またはパスワードが無効です",
     errorPasswordMatch: "パスワードが一致しません",
     errorUsername: "ユーザー名は必須です",

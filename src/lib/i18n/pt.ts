@@ -49,7 +49,7 @@ const pt: Translations = {
     confirmPassword: "Confirmar Senha",
     loginBtn: "Entrar",
     setupBtn: "Criar Conta",
-    logout: "Bloquear",
+    logout: "Sair",
     errorInvalid: "Usuário ou senha inválidos",
     errorPasswordMatch: "As senhas não coincidem",
     errorUsername: "Usuário é obrigatório",

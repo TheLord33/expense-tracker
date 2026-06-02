@@ -47,7 +47,7 @@ const en = {
     confirmPassword: "Confirm Password",
     loginBtn: "Sign In",
     setupBtn: "Create Account",
-    logout: "Lock",
+    logout: "Log out",
     errorInvalid: "Invalid username or password",
     errorPasswordMatch: "Passwords do not match",
     errorUsername: "Username is required",

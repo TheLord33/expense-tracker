@@ -49,7 +49,7 @@ const it: Translations = {
     confirmPassword: "Conferma password",
     loginBtn: "Accedi",
     setupBtn: "Crea account",
-    logout: "Blocca",
+    logout: "Disconnetti",
     errorInvalid: "Nome utente o password non validi",
     errorPasswordMatch: "Le password non corrispondono",
     errorUsername: "Il nome utente è obbligatorio",

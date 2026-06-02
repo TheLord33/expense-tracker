@@ -49,7 +49,7 @@ const de: Translations = {
     confirmPassword: "Passwort bestätigen",
     loginBtn: "Anmelden",
     setupBtn: "Konto erstellen",
-    logout: "Sperren",
+    logout: "Abmelden",
     errorInvalid: "Ungültiger Benutzername oder Passwort",
     errorPasswordMatch: "Die Passwörter stimmen nicht überein",
     errorUsername: "Benutzername ist erforderlich",
