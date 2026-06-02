@@ -1,5 +1,5 @@
 import { Expense } from "./types";
-import type { CompanyProfile, Customer, Invoice, InvoicePayment } from "./types";
+import type { Bill, BillPayment, CompanyProfile, Customer, Invoice, InvoicePayment, Vendor } from "./types";
 import type { PnLReport, BalanceSheetReport, TrialBalanceRow } from "./ledger";
 
 const APP_NAME = "Folio";
@@ -504,6 +504,135 @@ export async function generateTrialBalancePDF(
     alternateRowStyles: { fillColor: [249, 250, 251] },
     styles: { fontSize: 9, cellPadding: 3 },
     margin: { left: 14, right: 14 },
+  });
+
+  return doc.output("blob");
+}
+
+// ── Amount-to-words (English, up to 999,999.99) ───────────────────────────────
+function amountToWords(amount: number): string {
+  const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
+    "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+  const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+
+  function below100(n: number): string {
+    if (n < 20) return ones[n];
+    return tens[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : "");
+  }
+  function below1000(n: number): string {
+    if (n < 100) return below100(n);
+    return ones[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + below100(n % 100) : "");
+  }
+
+  const dollars = Math.floor(amount);
+  const cents   = Math.round((amount - dollars) * 100);
+  let words = "";
+  if (dollars >= 1000) words += below1000(Math.floor(dollars / 1000)) + " Thousand ";
+  words += below1000(dollars % 1000);
+  words = words.trim() || "Zero";
+  return words.toUpperCase() + ` AND ${String(cents).padStart(2, "0")}/100`;
+}
+
+export interface CheckData {
+  checkNumber: string;
+  date: string;
+  payee: string;
+  amount: number;
+  memo?: string;
+}
+
+export async function printChecksPDF(
+  checks: CheckData[],
+  company: CompanyProfile | null,
+  fmtFn: (n: number) => string
+): Promise<Blob> {
+  const { default: jsPDF } = await import("jspdf");
+
+  // Each check: 8.5" wide × 3.67" tall (standard top-of-page voucher format)
+  const W = 8.5, H = 3.67;
+  const doc = new jsPDF({ orientation: "landscape", unit: "in", format: [H, W] });
+
+  checks.forEach((chk, idx) => {
+    if (idx > 0) doc.addPage([H, W], "landscape");
+
+    doc.setDrawColor(180, 180, 180);
+    doc.setLineWidth(0.008);
+    doc.rect(0.15, 0.1, W - 0.3, H - 0.2);
+
+    // Company name + address
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(55, 65, 81);
+    doc.text(company?.name ?? "Your Company", 0.3, 0.45);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(107, 114, 128);
+    if (company?.address) doc.text(company.address, 0.3, 0.65);
+
+    // Date + check number (top right)
+    const dateStr = new Date(chk.date + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    doc.setFontSize(8.5);
+    doc.setTextColor(55, 65, 81);
+    doc.text("Date:", W - 2.5, 0.45);
+    doc.setFont("helvetica", "bold");
+    doc.text(dateStr, W - 2.0, 0.45);
+    doc.setFont("helvetica", "normal");
+    doc.text("Check #:", W - 2.5, 0.65);
+    doc.setFont("helvetica", "bold");
+    doc.text(chk.checkNumber, W - 1.8, 0.65);
+
+    // Pay to the order of
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
+    doc.text("Pay to the order of:", 0.3, 1.1);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(30, 30, 30);
+    doc.text(chk.payee, 1.95, 1.1);
+    doc.setDrawColor(100, 100, 100);
+    doc.setLineWidth(0.007);
+    doc.line(1.92, 1.15, W - 1.5, 1.15);
+
+    // Amount box
+    doc.setLineWidth(0.012);
+    doc.rect(W - 1.35, 0.9, 1.1, 0.35);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(30, 30, 30);
+    doc.text("$" + fmtFn(chk.amount).replace(/[^0-9.,]/g, ""), W - 1.28, 1.17);
+
+    // Amount in words
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(55, 65, 81);
+    doc.text(amountToWords(chk.amount) + " DOLLARS", 0.3, 1.55);
+    doc.setDrawColor(150, 150, 150);
+    doc.setLineWidth(0.006);
+    doc.line(0.3, 1.62, W - 0.3, 1.62);
+
+    // Memo
+    doc.setFontSize(8.5);
+    doc.setTextColor(107, 114, 128);
+    doc.text("Memo:", 0.3, 1.95);
+    doc.setTextColor(55, 65, 81);
+    if (chk.memo) doc.text(chk.memo, 0.85, 1.95);
+    doc.setDrawColor(180, 180, 180);
+    doc.line(0.82, 2.01, W / 2 - 0.5, 2.01);
+
+    // Signature line
+    doc.setDrawColor(100, 100, 100);
+    doc.setLineWidth(0.008);
+    doc.line(W - 2.4, 2.01, W - 0.3, 2.01);
+    doc.setFontSize(7.5);
+    doc.setTextColor(150, 150, 150);
+    doc.text("Authorized Signature", W - 2.05, 2.12);
+
+    // Decorative MICR-style footer
+    doc.setFont("courier", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(190, 190, 190);
+    doc.text(`⑆ ${chk.checkNumber.padStart(6, "0")} ⑆  ⑉ 000000000 ⑉  ⑈ 0000000000 ⑈`, 0.3, H - 0.22);
   });
 
   return doc.output("blob");

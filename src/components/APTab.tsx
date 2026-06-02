@@ -8,8 +8,9 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   useDisclosure,
 } from "@nextui-org/react";
-import { Plus, Pencil, Trash2, Wallet, CheckCircle } from "lucide-react";
-import type { Account, Bill, BillPayment, Vendor } from "@/lib/types";
+import { Plus, Pencil, Trash2, Wallet, CheckCircle, Printer } from "lucide-react";
+import type { Account, Bill, BillPayment, CompanyProfile, Vendor } from "@/lib/types";
+import { printChecksPDF } from "@/lib/exportPDF";
 import { useLanguage, useCurrency } from "@/app/providers";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -51,6 +52,7 @@ interface Props {
   bills: Bill[];
   billPayments: BillPayment[];
   accounts: Account[];
+  company?: CompanyProfile | null;
   onAddVendor: (v: Omit<Vendor, "id">) => void;
   onUpdateVendor: (id: string, data: Partial<Omit<Vendor, "id">>) => void;
   onDeleteVendor: (id: string) => void;
@@ -65,7 +67,7 @@ interface Props {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function APTab({
-  vendors, bills, billPayments, accounts,
+  vendors, bills, billPayments, accounts, company,
   onAddVendor, onUpdateVendor, onDeleteVendor,
   onAddBill, onUpdateBill, onDeleteBill,
   onAddPayment, paidAmount, outstanding,
@@ -75,6 +77,50 @@ export function APTab({
 
   const today = todayISO();
   const [view, setView] = useState<"bills" | "vendors" | "aging">("bills");
+
+  // ── Check selection ───────────────────────────────────────────────────────
+  const [selectedBills, setSelectedBills] = useState<Set<string>>(new Set());
+  const checkModal = useDisclosure();
+  const [checkDate, setCheckDate] = useState(today);
+  const [startingCheck, setStartingCheck] = useState("1001");
+  const [printing, setPrinting] = useState(false);
+
+  function toggleBillSelect(id: string) {
+    setSelectedBills((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function openPrintModal() {
+    setCheckDate(today);
+    checkModal.onOpen();
+  }
+
+  async function handlePrintChecks() {
+    setPrinting(true);
+    try {
+      const selected = sortedBills.filter((b) => selectedBills.has(b.id));
+      const checks = selected.map((bill, idx) => ({
+        checkNumber: String(Number(startingCheck) + idx),
+        date: checkDate,
+        payee: vendors.find((v) => v.id === bill.vendorId)?.name ?? "Unknown",
+        amount: outstanding(bill),
+        memo: bill.billNumber ? `Bill #${bill.billNumber} — ${bill.description}` : bill.description,
+      }));
+      const blob = await printChecksPDF(checks, company ?? null, fmt);
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href = url; a.download = `checks-${checkDate}.pdf`; a.click();
+      URL.revokeObjectURL(url);
+      setSelectedBills(new Set());
+      checkModal.onClose();
+    } finally {
+      setPrinting(false);
+    }
+  }
 
   // ── Expense accounts (for the bill form selector) ──────────────────────────
   const expenseAccounts = useMemo(
@@ -289,9 +335,19 @@ export function APTab({
           ))}
         </div>
         {view === "bills" && (
-          <Button size="sm" color="primary" startContent={<Plus size={14} />} onPress={openAddBill}>
-            {t("ap.addBill")}
-          </Button>
+          <div className="flex gap-2 items-center">
+            {selectedBills.size > 0 && (
+              <Button size="sm" color="secondary" variant="flat" startContent={<Printer size={14} />}
+                onPress={openPrintModal}>
+                {selectedBills.size === 1
+                  ? t("ap.checksSelected").replace("{count}", "1")
+                  : t("ap.checksSelectedPlural").replace("{count}", String(selectedBills.size))}
+              </Button>
+            )}
+            <Button size="sm" color="primary" startContent={<Plus size={14} />} onPress={openAddBill}>
+              {t("ap.addBill")}
+            </Button>
+          </div>
         )}
         {view === "vendors" && (
           <Button size="sm" color="primary" startContent={<Plus size={14} />} onPress={openAddVendor}>
@@ -326,9 +382,17 @@ export function APTab({
                 const owed       = outstanding(bill);
                 const status     = billStatus(bill, paid, today);
                 const isPaid     = status === "paid";
+                const canSelect  = !isPaid && owed > 0.005;
                 return (
                   <div key={bill.id} className={`px-6 py-4 ${i < sortedBills.length - 1 ? "border-b border-default-100" : ""} ${isPaid ? "opacity-60" : ""}`}>
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        className={`mt-1.5 w-4 h-4 rounded accent-indigo-600 shrink-0 ${canSelect ? "cursor-pointer" : "opacity-0 pointer-events-none"}`}
+                        checked={selectedBills.has(bill.id)}
+                        onChange={() => canSelect && toggleBillSelect(bill.id)}
+                      />
+                    <div className="flex flex-1 items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold text-default-900 text-sm">{vendor?.name ?? "—"}</span>
@@ -368,7 +432,8 @@ export function APTab({
                         <Trash2 size={13} />
                       </Button>
                     </div>
-                  </div>
+                    </div>
+                    </div>
                 );
               })}
             </CardBody>
@@ -455,6 +520,32 @@ export function APTab({
           </CardBody>
         </Card>
       )}
+
+      {/* ── Print Checks Modal ── */}
+      <Modal isOpen={checkModal.isOpen} onClose={checkModal.onClose} placement="center">
+        <ModalContent>
+          <ModalHeader className="flex items-center gap-2">
+            <Printer size={16} />{t("ap.printChecks")}
+          </ModalHeader>
+          <ModalBody className="gap-3">
+            <div className="bg-default-50 rounded-xl px-4 py-3 text-sm text-default-600">
+              {selectedBills.size === 1
+                ? t("ap.checksSelected").replace("{count}", "1")
+                : t("ap.checksSelectedPlural").replace("{count}", String(selectedBills.size))}
+            </div>
+            <Input type="date" label={t("ap.checkDate")} value={checkDate} onValueChange={setCheckDate} />
+            <Input label={t("ap.startingCheck")} value={startingCheck}
+              onValueChange={(v) => setStartingCheck(v.replace(/\D/g, ""))} />
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={checkModal.onClose}>{t("cancel")}</Button>
+            <Button color="primary" isLoading={printing} startContent={<Printer size={14} />}
+              onPress={handlePrintChecks}>
+              {t("ap.printDownload")}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* ── Bill Modal ── */}
       <Modal isOpen={billModal.isOpen} onClose={billModal.onClose} placement="center" scrollBehavior="inside"

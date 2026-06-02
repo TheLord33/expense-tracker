@@ -1,0 +1,452 @@
+"use client";
+
+import { useState, useMemo, type FormEvent } from "react";
+import {
+  Card, CardBody, CardHeader, Divider,
+  Button, Chip, Input, Select, SelectItem,
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
+  useDisclosure,
+} from "@nextui-org/react";
+import { Plus, Trash2, ShoppingCart, CheckCircle, Send, XCircle, Package } from "lucide-react";
+import type { Account, Bill, InventoryItem, PurchaseOrder, POLine, POStatus, StockMovement, Vendor } from "@/lib/types";
+import { useLanguage, useCurrency } from "@/app/providers";
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const todayISO = () => new Date().toISOString().split("T")[0];
+
+function addDays(iso: string, n: number) {
+  const d = new Date(iso + "T00:00:00");
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split("T")[0];
+}
+
+function fmtDate(iso: string, locale: string) {
+  const [y, m, d] = iso.split("-");
+  return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString(locale, {
+    month: "short", day: "numeric", year: "numeric",
+  });
+}
+
+const STATUS_ORDER: Record<POStatus, number> = { draft: 0, sent: 1, received: 3, cancelled: 4 };
+
+// ── Props ─────────────────────────────────────────────────────────────────────
+
+interface Props {
+  vendors: Vendor[];
+  inventoryItems: InventoryItem[];
+  accounts: Account[];
+  orders: PurchaseOrder[];
+  onAddOrder: (po: Omit<PurchaseOrder, "id">) => void;
+  onUpdateOrder: (id: string, data: Partial<Omit<PurchaseOrder, "id">>) => void;
+  onDeleteOrder: (id: string) => void;
+  poTotal: (po: PurchaseOrder) => number;
+  // Callbacks for the receive flow
+  onAddMovement: (m: Omit<StockMovement, "id">) => void;
+  onAddBill: (b: Omit<Bill, "id">) => string;
+}
+
+// ── Blank line helper ─────────────────────────────────────────────────────────
+
+function blankLine(): Omit<POLine, "id"> & { id: string } {
+  return { id: crypto.randomUUID(), inventoryItemId: "", qty: 1, unitCost: 0 };
+}
+
+// ── Status display ────────────────────────────────────────────────────────────
+
+type StatusColor = "default" | "primary" | "success" | "danger";
+
+function statusColor(s: POStatus): StatusColor {
+  if (s === "draft")     return "default";
+  if (s === "sent")      return "primary";
+  if (s === "received")  return "success";
+  return "danger";
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function POTab({
+  vendors, inventoryItems, accounts, orders,
+  onAddOrder, onUpdateOrder, onDeleteOrder, poTotal,
+  onAddMovement, onAddBill,
+}: Props) {
+  const { t, locale } = useLanguage();
+  const { fmt } = useCurrency();
+
+  const today = todayISO();
+
+  const AP_ACCOUNT_ID = "acc-2000";
+  const INV_ACCOUNT_ID = "acc-1200";
+
+  // ── PO form modal ─────────────────────────────────────────────────────────
+
+  const poModal = useDisclosure();
+  const [editingPO, setEditingPO] = useState<PurchaseOrder | null>(null);
+
+  type LineForm = { id: string; inventoryItemId: string; qty: string; unitCost: string };
+
+  const BLANK_FORM = { vendorId: "", poNumber: "", date: today, expectedDate: "", notes: "" };
+  const [pf, setPf] = useState(BLANK_FORM);
+  const [lines, setLines] = useState<LineForm[]>([{ ...blankLine(), qty: "1", unitCost: "0" }]);
+  const [pErr, setPErr] = useState<Record<string, string>>({});
+
+  function openAdd() {
+    setEditingPO(null);
+    const nextNum = String(orders.length + 1).padStart(4, "0");
+    setPf({ ...BLANK_FORM, poNumber: `PO-${nextNum}` });
+    setLines([{ id: crypto.randomUUID(), inventoryItemId: "", qty: "1", unitCost: "0" }]);
+    setPErr({});
+    poModal.onOpen();
+  }
+
+  function openEdit(po: PurchaseOrder) {
+    setEditingPO(po);
+    setPf({
+      vendorId: po.vendorId, poNumber: po.poNumber,
+      date: po.date, expectedDate: po.expectedDate ?? "", notes: po.notes ?? "",
+    });
+    setLines(po.lines.map((l) => ({ id: l.id, inventoryItemId: l.inventoryItemId, qty: String(l.qty), unitCost: String(l.unitCost) })));
+    setPErr({});
+    poModal.onOpen();
+  }
+
+  function addLine() {
+    setLines((prev) => [...prev, { id: crypto.randomUUID(), inventoryItemId: "", qty: "1", unitCost: "0" }]);
+  }
+
+  function removeLine(id: string) {
+    setLines((prev) => prev.filter((l) => l.id !== id));
+  }
+
+  function setLineField(id: string, field: keyof LineForm, value: string) {
+    setLines((prev) => prev.map((l) => {
+      if (l.id !== id) return l;
+      const updated = { ...l, [field]: value };
+      if (field === "inventoryItemId") {
+        const item = inventoryItems.find((i) => i.id === value);
+        if (item) updated.unitCost = String(item.costPerUnit);
+      }
+      return updated;
+    }));
+  }
+
+  function validatePO() {
+    const errs: Record<string, string> = {};
+    if (!pf.vendorId)   errs.vendorId = t("po.errorVendor");
+    if (!pf.date)       errs.date = t("po.errorDate");
+    if (lines.length === 0) errs.lines = t("po.errorNoLines");
+    lines.forEach((l, i) => {
+      if (!l.inventoryItemId)                 errs[`item-${i}`] = t("po.errorItem");
+      if (isNaN(Number(l.qty)) || Number(l.qty) <= 0) errs[`qty-${i}`] = t("po.errorQty");
+      if (isNaN(Number(l.unitCost)) || Number(l.unitCost) < 0) errs[`cost-${i}`] = t("po.errorCost");
+    });
+    setPErr(errs);
+    return Object.keys(errs).length === 0;
+  }
+
+  function handlePOSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!validatePO()) return;
+    const data: Omit<PurchaseOrder, "id"> = {
+      vendorId: pf.vendorId,
+      poNumber: pf.poNumber.trim(),
+      date: pf.date,
+      expectedDate: pf.expectedDate || undefined,
+      notes: pf.notes.trim() || undefined,
+      status: editingPO?.status ?? "draft",
+      lines: lines.map((l) => ({ id: l.id, inventoryItemId: l.inventoryItemId, qty: Number(l.qty), unitCost: Number(l.unitCost) })),
+      billId: editingPO?.billId,
+    };
+    if (editingPO) onUpdateOrder(editingPO.id, data);
+    else           onAddOrder(data);
+    poModal.onClose();
+  }
+
+  // ── Receive confirm modal ─────────────────────────────────────────────────
+
+  const receiveModal = useDisclosure();
+  const [receivingPO, setReceivingPO] = useState<PurchaseOrder | null>(null);
+  const [receiving, setReceiving] = useState(false);
+
+  function openReceive(po: PurchaseOrder) {
+    setReceivingPO(po);
+    receiveModal.onOpen();
+  }
+
+  function handleReceive() {
+    if (!receivingPO) return;
+    setReceiving(true);
+
+    const total = poTotal(receivingPO);
+
+    // Create one inventory movement per PO line (DR Inventory / CR AP via counterAccountId)
+    for (const line of receivingPO.lines) {
+      const item = inventoryItems.find((i) => i.id === line.inventoryItemId);
+      if (!item) continue;
+      onAddMovement({
+        itemId: line.inventoryItemId,
+        date: today,
+        type: "purchase",
+        quantity: line.qty,
+        unitCost: line.unitCost,
+        note: `PO ${receivingPO.poNumber}`,
+        counterAccountId: AP_ACCOUNT_ID,
+      });
+    }
+
+    // Create a tracking-only AP bill (fromPOId skips the duplicate GL entry in ledger.ts)
+    const vendor = vendors.find((v) => v.id === receivingPO.vendorId);
+    const billId = onAddBill({
+      vendorId: receivingPO.vendorId,
+      billNumber: receivingPO.poNumber,
+      date: today,
+      dueDate: addDays(today, 30),
+      amount: total,
+      description: `Received PO ${receivingPO.poNumber}${vendor ? ` — ${vendor.name}` : ""}`,
+      expenseAccountId: INV_ACCOUNT_ID,
+      fromPOId: receivingPO.id,
+    });
+
+    onUpdateOrder(receivingPO.id, { status: "received", billId });
+    setReceiving(false);
+    receiveModal.onClose();
+  }
+
+  // ── Sorted orders ─────────────────────────────────────────────────────────
+
+  const sortedOrders = useMemo(
+    () => [...orders].sort((a, b) => {
+      const diff = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
+      if (diff !== 0) return diff;
+      return b.date.localeCompare(a.date);
+    }),
+    [orders]
+  );
+
+  function statusLabel(s: POStatus) {
+    if (s === "draft")    return t("po.statusDraft");
+    if (s === "sent")     return t("po.statusSent");
+    if (s === "received") return t("po.statusReceived");
+    return t("po.statusCancelled");
+  }
+
+  // ── Grand total for form ──────────────────────────────────────────────────
+
+  const formTotal = lines.reduce((s, l) => s + (Number(l.qty) || 0) * (Number(l.unitCost) || 0), 0);
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-default-900">{t("po.title")}</h2>
+        <Button size="sm" color="primary" startContent={<Plus size={14} />} onPress={openAdd}>
+          {t("po.addPO")}
+        </Button>
+      </div>
+
+      {/* PO list */}
+      <Card shadow="sm">
+        {sortedOrders.length === 0 ? (
+          <CardBody className="py-16 text-center space-y-2">
+            <ShoppingCart className="mx-auto text-default-300" size={32} />
+            <p className="font-medium text-default-500">{t("po.noPOs")}</p>
+            <p className="text-sm text-default-400">{t("po.noPOsSub")}</p>
+          </CardBody>
+        ) : (
+          <CardBody className="px-0 py-0">
+            {sortedOrders.map((po, idx) => {
+              const vendor = vendors.find((v) => v.id === po.vendorId);
+              const total  = poTotal(po);
+              const isOpen = po.status === "draft" || po.status === "sent";
+              return (
+                <div key={po.id} className={`px-6 py-4 ${idx < sortedOrders.length - 1 ? "border-b border-default-100" : ""} ${!isOpen ? "opacity-60" : ""}`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-default-900 text-sm font-mono">#{po.poNumber}</span>
+                        <span className="text-sm text-default-600">{vendor?.name ?? "—"}</span>
+                        <Chip size="sm" variant="flat" color={statusColor(po.status)}>{statusLabel(po.status)}</Chip>
+                      </div>
+                      <div className="flex gap-4 mt-1 text-xs text-default-400 flex-wrap">
+                        <span>{t("po.date")}: {fmtDate(po.date, locale)}</span>
+                        {po.expectedDate && <span>{t("po.expectedDate").replace(" (optional)", "")}: {fmtDate(po.expectedDate, locale)}</span>}
+                        <span>{po.lines.length} {po.lines.length === 1 ? t("po.item") : t("po.lineItems")}</span>
+                      </div>
+                      {po.notes && <p className="text-xs text-default-400 mt-0.5 truncate">{po.notes}</p>}
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-bold text-default-900 text-sm">{fmt(total)}</p>
+                      {po.status === "received" && (
+                        <p className="text-xs text-success-600 flex items-center justify-end gap-0.5 mt-0.5">
+                          <CheckCircle size={11} />{t("po.statusReceived")}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 mt-3 flex-wrap">
+                    {po.status === "draft" && (
+                      <Button size="sm" variant="flat" startContent={<Send size={13} />}
+                        onPress={() => onUpdateOrder(po.id, { status: "sent" })}>
+                        {t("po.markSent")}
+                      </Button>
+                    )}
+                    {(po.status === "draft" || po.status === "sent") && (
+                      <Button size="sm" color="success" variant="flat" startContent={<Package size={13} />}
+                        onPress={() => openReceive(po)}>
+                        {t("po.receive")}
+                      </Button>
+                    )}
+                    {isOpen && (
+                      <Button size="sm" variant="flat" onPress={() => openEdit(po)}>
+                        {t("po.editPO")}
+                      </Button>
+                    )}
+                    {isOpen && (
+                      <Button size="sm" variant="flat" color="danger" startContent={<XCircle size={13} />}
+                        onPress={() => onUpdateOrder(po.id, { status: "cancelled" })}>
+                        {t("po.cancelPO")}
+                      </Button>
+                    )}
+                    {(po.status === "cancelled" || po.status === "received") && (
+                      <Button size="sm" variant="flat" color="danger" isIconOnly
+                        onPress={() => onDeleteOrder(po.id)}>
+                        <Trash2 size={13} />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </CardBody>
+        )}
+      </Card>
+
+      {/* ── PO Form Modal ── */}
+      <Modal isOpen={poModal.isOpen} onClose={poModal.onClose} placement="center"
+        scrollBehavior="inside" size="2xl"
+        classNames={{ base: "max-h-[90vh]", body: "overflow-y-auto" }}>
+        <ModalContent>
+          <form onSubmit={handlePOSubmit}>
+            <ModalHeader>{editingPO ? t("po.editPO") : t("po.addPO")}</ModalHeader>
+            <ModalBody className="gap-4">
+              {/* Header fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Select
+                  label={t("po.vendor")}
+                  selectedKeys={pf.vendorId ? [pf.vendorId] : []}
+                  onSelectionChange={(k) => setPf((p) => ({ ...p, vendorId: [...k][0] as string }))}
+                  isInvalid={!!pErr.vendorId} errorMessage={pErr.vendorId}
+                >
+                  {vendors.map((v) => <SelectItem key={v.id} textValue={v.name}>{v.name}</SelectItem>)}
+                </Select>
+                <Input label={t("po.poNumber")} value={pf.poNumber}
+                  onValueChange={(v) => setPf((p) => ({ ...p, poNumber: v }))} />
+                <Input type="date" label={t("po.date")} value={pf.date}
+                  onValueChange={(v) => setPf((p) => ({ ...p, date: v }))}
+                  isInvalid={!!pErr.date} errorMessage={pErr.date} />
+                <Input type="date" label={t("po.expectedDate")} value={pf.expectedDate}
+                  onValueChange={(v) => setPf((p) => ({ ...p, expectedDate: v }))} />
+              </div>
+
+              {/* Line items */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-semibold text-default-700">{t("po.lineItems")}</p>
+                  <Button size="sm" variant="flat" color="primary" startContent={<Plus size={13} />} onPress={addLine}>
+                    {t("po.addLine")}
+                  </Button>
+                </div>
+                {pErr.lines && <p className="text-tiny text-danger mb-2">{pErr.lines}</p>}
+
+                <div className="space-y-2">
+                  {/* Column headers */}
+                  <div className="grid grid-cols-[1fr_80px_90px_32px] gap-2 text-xs text-default-400 px-1">
+                    <span>{t("po.item")}</span>
+                    <span>{t("po.qty")}</span>
+                    <span>{t("po.unitCost")}</span>
+                    <span></span>
+                  </div>
+                  {lines.map((line, idx) => (
+                    <div key={line.id} className="grid grid-cols-[1fr_80px_90px_32px] gap-2 items-start">
+                      <Select
+                        size="sm"
+                        placeholder={t("po.selectItem")}
+                        selectedKeys={line.inventoryItemId ? [line.inventoryItemId] : []}
+                        onSelectionChange={(k) => setLineField(line.id, "inventoryItemId", [...k][0] as string)}
+                        isInvalid={!!pErr[`item-${idx}`]}
+                      >
+                        {inventoryItems.map((item) => (
+                          <SelectItem key={item.id} textValue={`${item.sku} ${item.name}`}>
+                            <span className="font-mono text-xs text-default-400 mr-1">{item.sku}</span>{item.name}
+                          </SelectItem>
+                        ))}
+                      </Select>
+                      <Input
+                        size="sm"
+                        type="number" min="1" step="1"
+                        value={line.qty}
+                        onValueChange={(v) => setLineField(line.id, "qty", v)}
+                        isInvalid={!!pErr[`qty-${idx}`]}
+                      />
+                      <Input
+                        size="sm"
+                        type="number" min="0" step="0.01"
+                        value={line.unitCost}
+                        onValueChange={(v) => setLineField(line.id, "unitCost", v)}
+                        isInvalid={!!pErr[`cost-${idx}`]}
+                      />
+                      <Button size="sm" isIconOnly variant="flat" color="danger" onPress={() => removeLine(line.id)}>
+                        <Trash2 size={13} />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Grand total */}
+                <div className="flex justify-end mt-3 pt-3 border-t border-default-100">
+                  <span className="text-sm font-semibold text-default-700 mr-2">{t("po.grandTotal")}:</span>
+                  <span className="text-sm font-bold text-indigo-600">{fmt(formTotal)}</span>
+                </div>
+              </div>
+
+              <Input label={t("po.notes")} value={pf.notes}
+                onValueChange={(v) => setPf((p) => ({ ...p, notes: v }))} />
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="flat" onPress={poModal.onClose}>{t("cancel")}</Button>
+              <Button color="primary" type="submit">{editingPO ? t("save") : t("add")}</Button>
+            </ModalFooter>
+          </form>
+        </ModalContent>
+      </Modal>
+
+      {/* ── Receive Confirm Modal ── */}
+      {receivingPO && (
+        <Modal isOpen={receiveModal.isOpen} onClose={receiveModal.onClose} placement="center">
+          <ModalContent>
+            <ModalHeader>{t("po.confirmReceiveTitle")}</ModalHeader>
+            <ModalBody>
+              <div className="bg-default-50 rounded-xl px-4 py-3 space-y-1 text-sm">
+                <p className="font-semibold text-default-800">#{receivingPO.poNumber}</p>
+                <p className="text-default-500">{vendors.find((v) => v.id === receivingPO.vendorId)?.name}</p>
+                <p className="text-default-500">{receivingPO.lines.length} {receivingPO.lines.length === 1 ? t("po.item") : t("po.lineItems")}</p>
+              </div>
+              <p className="text-sm text-default-600">
+                {t("po.confirmReceiveBody").replace("{amount}", fmt(poTotal(receivingPO)))}
+              </p>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="flat" onPress={receiveModal.onClose}>{t("cancel")}</Button>
+              <Button color="success" isLoading={receiving} onPress={handleReceive}>
+                {t("po.receive")}
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      )}
+    </div>
+  );
+}

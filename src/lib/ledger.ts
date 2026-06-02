@@ -99,6 +99,7 @@ export function deriveBillEntries(
   const entries: JournalEntry[] = [];
 
   for (const bill of bills) {
+    if (bill.fromPOId) continue; // GL handled by inventory movement on receipt
     const expAccount = accounts.find((a) => a.id === bill.expenseAccountId);
     if (!expAccount) continue;
     entries.push({

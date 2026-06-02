@@ -5,9 +5,14 @@ import { useState, useEffect, useRef } from "react";
 import {
   useDisclosure,
   Card, CardBody, CardHeader, Divider,
-  Tabs, Tab,
+  Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection,
+  Button,
 } from "@nextui-org/react";
-import { Receipt, PiggyBank, RefreshCw, TrendingUp, BookOpen, BarChart2, Scale, ClipboardList, Wallet, Package, BadgeDollarSign, Banknote, Calculator } from "lucide-react";
+import {
+  Receipt, PiggyBank, RefreshCw, TrendingUp,
+  BookOpen, BarChart2, Scale, ClipboardList, Wallet, Package, BadgeDollarSign,
+  Banknote, Calculator, Building2, ChevronDown, ShoppingCart,
+} from "lucide-react";
 
 import { useExpenses } from "@/lib/useExpenses";
 import { useCategories } from "@/lib/useCategories";
@@ -22,6 +27,7 @@ import { useBills } from "@/lib/useBills";
 import { useInventory } from "@/lib/useInventory";
 import { useAR } from "@/lib/useAR";
 import { useCompanyProfile } from "@/lib/useCompanyProfile";
+import { usePurchaseOrders } from "@/lib/usePurchaseOrders";
 import type { Budget, RecurringExpense, IncomeSource } from "@/lib/types";
 
 import { AppHeader } from "@/components/AppHeader";
@@ -46,14 +52,32 @@ import { InventoryTab } from "@/components/InventoryTab";
 import { ARTab } from "@/components/ARTab";
 import { CashFlowTab } from "@/components/CashFlowTab";
 import { FinCalcTab } from "@/components/FinCalcTab";
+import { POTab } from "@/components/POTab";
 
 import type { Expense, ChipColor } from "@/lib/types";
 import { useLanguage, useToast, useCurrency } from "@/app/providers";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type PersonalTab      = "expenses" | "budgets" | "recurring" | "income" | "finCalc";
+type AccountingModule = "ledger" | "pnl" | "balanceSheet" | "trialBalance" | "cashFlow" | "ap" | "inventory" | "ar" | "po";
+type ActiveTab        = PersonalTab | "accounting";
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
   const { t } = useLanguage();
   const { showToast } = useToast();
   const { fmt } = useCurrency();
+
+  // ── Navigation state ─────────────────────────────────────────────────────────
+  const [activeTab,    setActiveTab]    = useState<ActiveTab>("expenses");
+  const [acctModule,   setAcctModule]   = useState<AccountingModule>("ledger");
+
+  function openAcct(mod: AccountingModule) {
+    setAcctModule(mod);
+    setActiveTab("accounting");
+  }
 
   // ── Data hooks ──────────────────────────────────────────────────────────────
   const {
@@ -85,12 +109,13 @@ export default function HomePage() {
   const { items: inventoryItems, movements: inventoryMovements, addItem, updateItem, deleteItem, addMovement, deleteMovement, qtyOnHand, inventoryValue, totalInventoryValue } = useInventory();
   const { customers, invoices, payments: invoicePayments, addCustomer, updateCustomer, deleteCustomer, addInvoice, updateInvoice, deleteInvoice, addPayment: addInvoicePayment, collectedAmount, outstanding: invoiceOutstanding } = useAR();
   const { profile: companyProfile, updateProfile: updateCompanyProfile } = useCompanyProfile();
+  const { orders: purchaseOrders, addOrder, updateOrder, deleteOrder, poTotal } = usePurchaseOrders();
 
   // ── Edit expense state ───────────────────────────────────────────────────────
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
 
   // ── Modals ───────────────────────────────────────────────────────────────────
-  const addExpenseModal = useDisclosure();
+  const addExpenseModal  = useDisclosure();
   const addCategoryModal = useDisclosure();
 
   // ── Keyboard shortcut: N → open add expense modal ──────────────────────────
@@ -109,7 +134,7 @@ export default function HomePage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [addExpenseModal]);
 
-  // ── Auto-generate recurring expenses (once per session after data loads) ─────
+  // ── Auto-generate recurring expenses ─────────────────────────────────────────
   const processedRuleIds = useRef(new Set<string>());
   useEffect(() => {
     if (!expensesLoaded || !recurringLoaded) return;
@@ -171,15 +196,42 @@ export default function HomePage() {
 
   const thisMonthIncome = monthlyIncome();
 
-  // ── Tab title helper ─────────────────────────────────────────────────────────
-  function tabTitle(label: string, Icon: React.ElementType) {
-    return (
-      <div className="flex items-center gap-2">
-        <Icon size={15} />
-        <span>{label}</span>
-      </div>
-    );
-  }
+  // ── Tab styling ───────────────────────────────────────────────────────────────
+  const tabCls = (active: boolean) =>
+    [
+      "flex items-center gap-1.5 h-11 px-0 border-b-2 -mb-px text-sm font-medium shrink-0",
+      "transition-colors bg-transparent cursor-pointer outline-none whitespace-nowrap",
+      active
+        ? "text-indigo-600 border-indigo-600"
+        : "text-default-500 border-transparent hover:text-default-800",
+    ].join(" ");
+
+  // ── Accounting modules definition ─────────────────────────────────────────────
+  const REPORTS: { key: AccountingModule; label: string; icon: React.ElementType }[] = [
+    { key: "ledger",       label: t("tabs.ledger"),       icon: BookOpen      },
+    { key: "pnl",          label: t("tabs.pnl"),          icon: BarChart2     },
+    { key: "balanceSheet", label: t("tabs.balanceSheet"), icon: Scale         },
+    { key: "trialBalance", label: t("tabs.trialBalance"), icon: ClipboardList },
+    { key: "cashFlow",     label: t("tabs.cashFlow"),     icon: Banknote      },
+  ];
+
+  const MODULES: { key: AccountingModule; label: string; icon: React.ElementType }[] = [
+    { key: "ap",        label: t("tabs.ap"),        icon: Wallet          },
+    { key: "inventory", label: t("tabs.inventory"), icon: Package         },
+    { key: "ar",        label: t("tabs.ar"),        icon: BadgeDollarSign },
+    { key: "po",        label: t("tabs.po"),        icon: ShoppingCart    },
+  ];
+
+  const ALL_ACCT = [...REPORTS, ...MODULES];
+
+  const isAccounting = activeTab === "accounting";
+
+  // ── Sub-nav pill style ────────────────────────────────────────────────────────
+  const pillCls = (active: boolean) =>
+    [
+      "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer whitespace-nowrap",
+      active ? "bg-indigo-600 text-white" : "bg-default-100 text-default-600 hover:bg-default-200",
+    ].join(" ");
 
   return (
     <div className="min-h-screen">
@@ -208,266 +260,289 @@ export default function HomePage() {
           monthlyIncome={thisMonthIncome}
         />
 
-        {/* Tabs */}
-        <Tabs
-          aria-label="Navigation"
-          color="primary"
-          variant="underlined"
-          classNames={{
-            tabList: "gap-4 w-full border-b border-default-200 pb-0 bg-transparent overflow-x-auto scrollbar-hide flex-nowrap",
-            cursor: "w-full bg-indigo-600",
-            tab: "max-w-fit px-0 h-11 shrink-0",
-            tabContent: "group-data-[selected=true]:text-indigo-600 font-medium",
-          }}
-        >
-          {/* ── Expenses ── */}
-          <Tab key="expenses" title={tabTitle(t("tabs.expenses"), Receipt)}>
-            <div className="space-y-4 pt-4">
-              <Card shadow="sm">
-                <CardBody className="p-4">
-                  <FilterBar
-                    filter={filter} setFilter={setFilter}
+        {/* ── Tab bar ── */}
+        <div className="border-b border-default-200 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-5 flex-nowrap items-end pb-0">
+
+            {/* Personal tabs */}
+            <button className={tabCls(activeTab === "expenses")} onClick={() => setActiveTab("expenses")}>
+              <Receipt size={15} />{t("tabs.expenses")}
+            </button>
+            <button className={tabCls(activeTab === "budgets")} onClick={() => setActiveTab("budgets")}>
+              <PiggyBank size={15} />{t("tabs.budgets")}
+            </button>
+            <button className={tabCls(activeTab === "recurring")} onClick={() => setActiveTab("recurring")}>
+              <RefreshCw size={15} />{t("tabs.recurring")}
+            </button>
+            <button className={tabCls(activeTab === "income")} onClick={() => setActiveTab("income")}>
+              <TrendingUp size={15} />{t("tabs.income")}
+            </button>
+            <button className={tabCls(activeTab === "finCalc")} onClick={() => setActiveTab("finCalc")}>
+              <Calculator size={15} />{t("tabs.finCalc")}
+            </button>
+
+            {/* Accounting dropdown */}
+            <Dropdown>
+              <DropdownTrigger>
+                <Button
+                  variant="light"
+                  disableRipple
+                  className={[
+                    "h-11 px-0 rounded-none border-b-2 -mb-px min-w-0 gap-1.5 text-sm font-medium",
+                    "data-[hover=true]:bg-transparent",
+                    isAccounting
+                      ? "text-indigo-600 border-indigo-600"
+                      : "text-default-500 border-transparent data-[hover=true]:text-default-800",
+                  ].join(" ")}
+                >
+                  <Building2 size={15} />
+                  {t("tabs.accounting")}
+                  <ChevronDown size={12} />
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu
+                aria-label="Accounting modules"
+                selectionMode="single"
+                selectedKeys={isAccounting ? new Set([acctModule]) : new Set()}
+                onAction={(key) => openAcct(key as AccountingModule)}
+              >
+                <DropdownSection title="Reports" showDivider>
+                  {REPORTS.map(({ key, label, icon: Icon }) => (
+                    <DropdownItem key={key} startContent={<Icon size={14} />}>{label}</DropdownItem>
+                  ))}
+                </DropdownSection>
+                <DropdownSection title="Modules">
+                  {MODULES.map(({ key, label, icon: Icon }) => (
+                    <DropdownItem key={key} startContent={<Icon size={14} />}>{label}</DropdownItem>
+                  ))}
+                </DropdownSection>
+              </DropdownMenu>
+            </Dropdown>
+
+          </div>
+        </div>
+
+        {/* ── Content ── */}
+
+        {/* Expenses */}
+        {activeTab === "expenses" && (
+          <div className="space-y-4 pt-4">
+            <Card shadow="sm">
+              <CardBody className="p-4">
+                <FilterBar
+                  filter={filter} setFilter={setFilter}
+                  sortField={sortField} sortDir={sortDir} toggleSort={toggleSort}
+                  viewMode={viewMode} setViewMode={setViewMode}
+                  categories={categories}
+                  activeFilterCount={activeFilterCount}
+                  onReset={resetFilters}
+                />
+              </CardBody>
+            </Card>
+
+            <Card shadow="sm">
+              <CardHeader className="px-6 pt-5 pb-0 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-default-800">
+                  {filtered.length !== 1
+                    ? t("expenseList.countPlural", { count: filtered.length })
+                    : t("expenseList.count", { count: filtered.length })}
+                  {activeFilterCount > 0 && (
+                    <span className="text-default-400 font-normal text-sm ml-2">
+                      {t("expenseList.ofTotal", { total: expenses.length })}
+                    </span>
+                  )}
+                </h2>
+                <span className="font-bold text-default-900">
+                  {fmt(filtered.reduce((s, e) => s + e.amount, 0))}
+                </span>
+              </CardHeader>
+              <Divider className="mt-4" />
+              <CardBody className={viewMode === "list" ? "px-2 py-0" : "p-4"}>
+                {viewMode === "list" && (
+                  <ListView
+                    expenses={filtered} categories={categories}
+                    onDelete={handleDeleteExpense} onEdit={handleEdit}
+                    loaded={expensesLoaded}
                     sortField={sortField} sortDir={sortDir} toggleSort={toggleSort}
-                    viewMode={viewMode} setViewMode={setViewMode}
-                    categories={categories}
-                    activeFilterCount={activeFilterCount}
-                    onReset={resetFilters}
                   />
-                </CardBody>
-              </Card>
+                )}
+                {viewMode === "category" && (
+                  <CategoryGroupView
+                    expenses={filtered} categories={categories}
+                    onDelete={handleDeleteExpense} onEdit={handleEdit}
+                  />
+                )}
+                {viewMode === "monthly" && (
+                  <MonthlyGroupView
+                    expenses={filtered} categories={categories}
+                    onDelete={handleDeleteExpense} onEdit={handleEdit}
+                  />
+                )}
+                {viewMode === "trends" && (
+                  <TrendsView expenses={filtered} categories={categories} />
+                )}
+              </CardBody>
+            </Card>
+          </div>
+        )}
 
-              <Card shadow="sm">
-                <CardHeader className="px-6 pt-5 pb-0 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-default-800">
-                    {filtered.length !== 1
-                      ? t("expenseList.countPlural", { count: filtered.length })
-                      : t("expenseList.count", { count: filtered.length })}
-                    {activeFilterCount > 0 && (
-                      <span className="text-default-400 font-normal text-sm ml-2">
-                        {t("expenseList.ofTotal", { total: expenses.length })}
-                      </span>
-                    )}
-                  </h2>
-                  <span className="font-bold text-default-900">
-                    {fmt(filtered.reduce((s, e) => s + e.amount, 0))}
-                  </span>
-                </CardHeader>
-                <Divider className="mt-4" />
-                <CardBody className={viewMode === "list" ? "px-2 py-0" : "p-4"}>
-                  {viewMode === "list" && (
-                    <ListView
-                      expenses={filtered} categories={categories}
-                      onDelete={handleDeleteExpense} onEdit={handleEdit}
-                      loaded={expensesLoaded}
-                      sortField={sortField} sortDir={sortDir} toggleSort={toggleSort}
-                    />
-                  )}
-                  {viewMode === "category" && (
-                    <CategoryGroupView
-                      expenses={filtered} categories={categories}
-                      onDelete={handleDeleteExpense} onEdit={handleEdit}
-                    />
-                  )}
-                  {viewMode === "monthly" && (
-                    <MonthlyGroupView
-                      expenses={filtered} categories={categories}
-                      onDelete={handleDeleteExpense} onEdit={handleEdit}
-                    />
-                  )}
-                  {viewMode === "trends" && (
-                    <TrendsView expenses={filtered} categories={categories} />
-                  )}
-                </CardBody>
-              </Card>
+        {/* Budgets */}
+        {activeTab === "budgets" && (
+          <div className="pt-4">
+            <BudgetsTab
+              budgets={budgets} categories={categories} expenses={expenses}
+              onAdd={addBudget} onUpdate={updateBudget} onDelete={handleDeleteBudget}
+            />
+          </div>
+        )}
+
+        {/* Recurring */}
+        {activeTab === "recurring" && (
+          <div className="pt-4">
+            <RecurringTab
+              recurring={recurring} categories={categories}
+              onAdd={addRecurring} onUpdate={updateRecurring} onDelete={handleDeleteRecurring}
+            />
+          </div>
+        )}
+
+        {/* Income */}
+        {activeTab === "income" && (
+          <div className="pt-4">
+            <IncomeTab
+              sources={sources} monthlyIncome={monthlyIncome}
+              onAdd={addSource} onUpdate={updateSource} onDelete={handleDeleteIncome}
+            />
+          </div>
+        )}
+
+        {/* Finance Calculator */}
+        {activeTab === "finCalc" && (
+          <div className="pt-4">
+            <FinCalcTab />
+          </div>
+        )}
+
+        {/* ── Accounting area ── */}
+        {activeTab === "accounting" && (
+          <div className="space-y-4">
+            {/* Sub-nav */}
+            <div className="pt-3 space-y-2">
+              <div className="flex gap-2 flex-wrap">
+                {REPORTS.map(({ key, label, icon: Icon }) => (
+                  <button key={key} className={pillCls(acctModule === key)} onClick={() => setAcctModule(key)}>
+                    <Icon size={13} />{label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {MODULES.map(({ key, label, icon: Icon }) => (
+                  <button key={key} className={pillCls(acctModule === key)} onClick={() => setAcctModule(key)}>
+                    <Icon size={13} />{label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </Tab>
 
-          {/* ── Budgets ── */}
-          <Tab key="budgets" title={tabTitle(t("tabs.budgets"), PiggyBank)}>
-            <div className="pt-4">
-              <BudgetsTab
-                budgets={budgets} categories={categories} expenses={expenses}
-                onAdd={addBudget} onUpdate={updateBudget} onDelete={handleDeleteBudget}
-              />
-            </div>
-          </Tab>
-
-          {/* ── Recurring ── */}
-          <Tab key="recurring" title={tabTitle(t("tabs.recurring"), RefreshCw)}>
-            <div className="pt-4">
-              <RecurringTab
-                recurring={recurring} categories={categories}
-                onAdd={addRecurring} onUpdate={updateRecurring} onDelete={handleDeleteRecurring}
-              />
-            </div>
-          </Tab>
-
-          {/* ── Income ── */}
-          <Tab key="income" title={tabTitle(t("tabs.income"), TrendingUp)}>
-            <div className="pt-4">
-              <IncomeTab
-                sources={sources} monthlyIncome={monthlyIncome}
-                onAdd={addSource} onUpdate={updateSource} onDelete={handleDeleteIncome}
-              />
-            </div>
-          </Tab>
-
-          {/* ── Ledger ── */}
-          <Tab key="ledger" title={tabTitle(t("tabs.ledger"), BookOpen)}>
-            <div className="pt-4">
+            {/* Module content */}
+            {acctModule === "ledger" && (
               <LedgerTab
-                expenses={expenses}
-                sources={sources}
-                accounts={accounts}
-                bills={bills}
-                billPayments={billPayments}
-                inventoryItems={inventoryItems}
-                inventoryMovements={inventoryMovements}
-                invoices={invoices}
-                invoicePayments={invoicePayments}
-                onAddAccount={addAccount}
-                onUpdateAccount={updateAccount}
-                onDeleteAccount={deleteAccount}
+                expenses={expenses} sources={sources} accounts={accounts}
+                bills={bills} billPayments={billPayments}
+                inventoryItems={inventoryItems} inventoryMovements={inventoryMovements}
+                invoices={invoices} invoicePayments={invoicePayments}
+                onAddAccount={addAccount} onUpdateAccount={updateAccount} onDeleteAccount={deleteAccount}
               />
-            </div>
-          </Tab>
+            )}
 
-          {/* ── P&L ── */}
-          <Tab key="pnl" title={tabTitle(t("tabs.pnl"), BarChart2)}>
-            <div className="pt-4">
+            {acctModule === "pnl" && (
               <PnLTab
                 expenses={expenses} sources={sources} accounts={accounts}
                 bills={bills} billPayments={billPayments}
                 inventoryItems={inventoryItems} inventoryMovements={inventoryMovements}
                 invoices={invoices} invoicePayments={invoicePayments}
               />
-            </div>
-          </Tab>
+            )}
 
-          {/* ── Balance Sheet ── */}
-          <Tab key="balanceSheet" title={tabTitle(t("tabs.balanceSheet"), Scale)}>
-            <div className="pt-4">
+            {acctModule === "balanceSheet" && (
               <BalanceSheetTab
-                expenses={expenses}
-                sources={sources}
-                accounts={accounts}
-                bills={bills}
-                billPayments={billPayments}
-                inventoryItems={inventoryItems}
-                inventoryMovements={inventoryMovements}
-                invoices={invoices}
-                invoicePayments={invoicePayments}
+                expenses={expenses} sources={sources} accounts={accounts}
+                bills={bills} billPayments={billPayments}
+                inventoryItems={inventoryItems} inventoryMovements={inventoryMovements}
+                invoices={invoices} invoicePayments={invoicePayments}
                 openingBalances={openingBalances}
                 onSetBalance={setOpeningBalance}
               />
-            </div>
-          </Tab>
+            )}
 
-          {/* ── Trial Balance ── */}
-          <Tab key="trialBalance" title={tabTitle(t("tabs.trialBalance"), ClipboardList)}>
-            <div className="pt-4">
+            {acctModule === "trialBalance" && (
               <TrialBalanceTab
-                expenses={expenses}
-                sources={sources}
-                accounts={accounts}
-                bills={bills}
-                billPayments={billPayments}
-                inventoryItems={inventoryItems}
-                inventoryMovements={inventoryMovements}
-                invoices={invoices}
-                invoicePayments={invoicePayments}
+                expenses={expenses} sources={sources} accounts={accounts}
+                bills={bills} billPayments={billPayments}
+                inventoryItems={inventoryItems} inventoryMovements={inventoryMovements}
+                invoices={invoices} invoicePayments={invoicePayments}
               />
-            </div>
-          </Tab>
+            )}
 
-          {/* ── Cash Flow ── */}
-          <Tab key="cashFlow" title={tabTitle(t("tabs.cashFlow"), Banknote)}>
-            <div className="pt-4">
+            {acctModule === "cashFlow" && (
               <CashFlowTab
-                expenses={expenses}
-                sources={sources}
-                accounts={accounts}
+                expenses={expenses} sources={sources} accounts={accounts}
                 openingBalances={openingBalances}
-                bills={bills}
-                billPayments={billPayments}
-                inventoryItems={inventoryItems}
-                inventoryMovements={inventoryMovements}
-                invoices={invoices}
-                invoicePayments={invoicePayments}
+                bills={bills} billPayments={billPayments}
+                inventoryItems={inventoryItems} inventoryMovements={inventoryMovements}
+                invoices={invoices} invoicePayments={invoicePayments}
               />
-            </div>
-          </Tab>
+            )}
 
-          {/* ── Accounts Payable ── */}
-          <Tab key="ap" title={tabTitle(t("tabs.ap"), Wallet)}>
-            <div className="pt-4">
+            {acctModule === "ap" && (
               <APTab
-                vendors={vendors}
-                bills={bills}
-                billPayments={billPayments}
-                accounts={accounts}
-                onAddVendor={addVendor}
-                onUpdateVendor={updateVendor}
-                onDeleteVendor={deleteVendor}
-                onAddBill={addBill}
-                onUpdateBill={updateBill}
-                onDeleteBill={deleteBill}
-                onAddPayment={addPayment}
-                paidAmount={paidAmount}
-                outstanding={outstanding}
+                vendors={vendors} bills={bills} billPayments={billPayments}
+                accounts={accounts} company={companyProfile}
+                onAddVendor={addVendor} onUpdateVendor={updateVendor} onDeleteVendor={deleteVendor}
+                onAddBill={addBill} onUpdateBill={updateBill} onDeleteBill={deleteBill}
+                onAddPayment={addPayment} paidAmount={paidAmount} outstanding={outstanding}
               />
-            </div>
-          </Tab>
+            )}
 
-          {/* ── Inventory ── */}
-          <Tab key="inventory" title={tabTitle(t("tabs.inventory"), Package)}>
-            <div className="pt-4">
+            {acctModule === "inventory" && (
               <InventoryTab
                 accounts={accounts}
-                items={inventoryItems}
-                movements={inventoryMovements}
-                qtyOnHand={qtyOnHand}
-                inventoryValue={inventoryValue}
+                items={inventoryItems} movements={inventoryMovements}
+                qtyOnHand={qtyOnHand} inventoryValue={inventoryValue}
                 totalInventoryValue={totalInventoryValue}
-                onAddItem={addItem}
-                onUpdateItem={updateItem}
-                onDeleteItem={deleteItem}
-                onAddMovement={addMovement}
-                onDeleteMovement={deleteMovement}
+                onAddItem={addItem} onUpdateItem={updateItem} onDeleteItem={deleteItem}
+                onAddMovement={addMovement} onDeleteMovement={deleteMovement}
               />
-            </div>
-          </Tab>
+            )}
 
-          {/* ── Finance Calculator ── */}
-          <Tab key="finCalc" title={tabTitle(t("tabs.finCalc"), Calculator)}>
-            <div className="pt-4">
-              <FinCalcTab />
-            </div>
-          </Tab>
-
-          {/* ── Accounts Receivable ── */}
-          <Tab key="ar" title={tabTitle(t("tabs.ar"), BadgeDollarSign)}>
-            <div className="pt-4">
+            {acctModule === "ar" && (
               <ARTab
-                customers={customers}
-                invoices={invoices}
-                invoicePayments={invoicePayments}
-                accounts={accounts}
-                company={companyProfile}
+                customers={customers} invoices={invoices} invoicePayments={invoicePayments}
+                accounts={accounts} company={companyProfile}
                 onUpdateCompany={updateCompanyProfile}
-                onAddCustomer={addCustomer}
-                onUpdateCustomer={updateCustomer}
-                onDeleteCustomer={deleteCustomer}
-                onAddInvoice={addInvoice}
-                onUpdateInvoice={updateInvoice}
-                onDeleteInvoice={deleteInvoice}
+                onAddCustomer={addCustomer} onUpdateCustomer={updateCustomer} onDeleteCustomer={deleteCustomer}
+                onAddInvoice={addInvoice} onUpdateInvoice={updateInvoice} onDeleteInvoice={deleteInvoice}
                 onAddPayment={addInvoicePayment}
-                collectedAmount={collectedAmount}
-                outstanding={invoiceOutstanding}
+                collectedAmount={collectedAmount} outstanding={invoiceOutstanding}
               />
-            </div>
-          </Tab>
-        </Tabs>
+            )}
+
+            {acctModule === "po" && (
+              <POTab
+                vendors={vendors}
+                inventoryItems={inventoryItems}
+                accounts={accounts}
+                orders={purchaseOrders}
+                onAddOrder={addOrder}
+                onUpdateOrder={updateOrder}
+                onDeleteOrder={deleteOrder}
+                poTotal={poTotal}
+                onAddMovement={addMovement}
+                onAddBill={addBill}
+              />
+            )}
+          </div>
+        )}
       </main>
 
       {/* Modals */}

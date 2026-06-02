@@ -214,6 +214,7 @@ export interface Bill {
   amount: number;
   description: string;
   expenseAccountId: string;
+  fromPOId?: string;        // set when auto-created by PO receipt — skips bill GL entry
 }
 
 export interface BillPayment {
@@ -260,6 +261,29 @@ export interface InvoicePayment {
   date: string;             // YYYY-MM-DD
   amount: number;
   note?: string;
+}
+
+// ── Purchase Orders ───────────────────────────────────────────────────────────
+
+export type POStatus = "draft" | "sent" | "received" | "cancelled";
+
+export interface POLine {
+  id: string;
+  inventoryItemId: string;
+  qty: number;
+  unitCost: number;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  poNumber: string;
+  vendorId: string;
+  date: string;           // YYYY-MM-DD
+  expectedDate?: string;
+  lines: POLine[];
+  status: POStatus;
+  notes?: string;
+  billId?: string;        // AP bill created on receive (tracking only, no GL)
 }
 
 // ── Cloud Export ──────────────────────────────────────────────────────────────

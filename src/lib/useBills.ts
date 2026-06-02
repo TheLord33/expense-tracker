@@ -30,8 +30,10 @@ export function useBills() {
 
   // ── Bills ────────────────────────────────────────────────────────────────────
 
-  const addBill = useCallback((bill: Omit<Bill, "id">) => {
-    setBills((prev) => [...prev, { ...bill, id: crypto.randomUUID() }]);
+  const addBill = useCallback((bill: Omit<Bill, "id">): string => {
+    const id = crypto.randomUUID();
+    setBills((prev) => [...prev, { ...bill, id }]);
+    return id;
   }, []);
 
   const updateBill = useCallback((id: string, data: Partial<Omit<Bill, "id">>) => {
