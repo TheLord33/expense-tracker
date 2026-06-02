@@ -7,7 +7,7 @@ import {
   Card, CardBody, CardHeader, Divider,
   Tabs, Tab,
 } from "@nextui-org/react";
-import { Receipt, PiggyBank, RefreshCw, TrendingUp, BookOpen, BarChart2, Scale, ClipboardList, Wallet, Package, BadgeDollarSign } from "lucide-react";
+import { Receipt, PiggyBank, RefreshCw, TrendingUp, BookOpen, BarChart2, Scale, ClipboardList, Wallet, Package, BadgeDollarSign, Banknote, Calculator } from "lucide-react";
 
 import { useExpenses } from "@/lib/useExpenses";
 import { useCategories } from "@/lib/useCategories";
@@ -44,6 +44,8 @@ import { TrialBalanceTab } from "@/components/TrialBalanceTab";
 import { APTab } from "@/components/APTab";
 import { InventoryTab } from "@/components/InventoryTab";
 import { ARTab } from "@/components/ARTab";
+import { CashFlowTab } from "@/components/CashFlowTab";
+import { FinCalcTab } from "@/components/FinCalcTab";
 
 import type { Expense, ChipColor } from "@/lib/types";
 import { useLanguage, useToast, useCurrency } from "@/app/providers";
@@ -212,9 +214,9 @@ export default function HomePage() {
           color="primary"
           variant="underlined"
           classNames={{
-            tabList: "gap-6 w-full border-b border-default-200 pb-0 bg-transparent",
+            tabList: "gap-4 w-full border-b border-default-200 pb-0 bg-transparent overflow-x-auto scrollbar-hide flex-nowrap",
             cursor: "w-full bg-indigo-600",
-            tab: "max-w-fit px-0 h-11",
+            tab: "max-w-fit px-0 h-11 shrink-0",
             tabContent: "group-data-[selected=true]:text-indigo-600 font-medium",
           }}
         >
@@ -378,6 +380,24 @@ export default function HomePage() {
             </div>
           </Tab>
 
+          {/* ── Cash Flow ── */}
+          <Tab key="cashFlow" title={tabTitle(t("tabs.cashFlow"), Banknote)}>
+            <div className="pt-4">
+              <CashFlowTab
+                expenses={expenses}
+                sources={sources}
+                accounts={accounts}
+                openingBalances={openingBalances}
+                bills={bills}
+                billPayments={billPayments}
+                inventoryItems={inventoryItems}
+                inventoryMovements={inventoryMovements}
+                invoices={invoices}
+                invoicePayments={invoicePayments}
+              />
+            </div>
+          </Tab>
+
           {/* ── Accounts Payable ── */}
           <Tab key="ap" title={tabTitle(t("tabs.ap"), Wallet)}>
             <div className="pt-4">
@@ -415,6 +435,13 @@ export default function HomePage() {
                 onAddMovement={addMovement}
                 onDeleteMovement={deleteMovement}
               />
+            </div>
+          </Tab>
+
+          {/* ── Finance Calculator ── */}
+          <Tab key="finCalc" title={tabTitle(t("tabs.finCalc"), Calculator)}>
+            <div className="pt-4">
+              <FinCalcTab />
             </div>
           </Tab>
 

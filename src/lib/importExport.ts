@@ -1,5 +1,5 @@
 import type { Account, Expense } from "./types";
-import type { PnLReport, BalanceSheetReport, TrialBalanceRow } from "./ledger";
+import type { PnLReport, BalanceSheetReport, TrialBalanceRow, CashFlowReport } from "./ledger";
 
 // ── Export ────────────────────────────────────────────────────────────────────
 
@@ -350,6 +350,30 @@ export function balanceSheetToCSV(report: BalanceSheetReport, dateLabel: string)
   lines.push([q("Total Equity"), "", "", "", "", report.totalEquity.toFixed(2)].join(","));
   lines.push("");
   lines.push([q("Total Liabilities + Equity"), "", "", "", "", (report.totalLiabilities + report.totalEquity).toFixed(2)].join(","));
+  return lines.join("\n");
+}
+
+export function cashFlowToCSV(report: CashFlowReport, periodLabel: string): string {
+  const q = (s: string) => `"${String(s).replace(/"/g, '""')}"`;
+  const lines = [
+    q("Cash Flow Statement (Indirect Method)"),
+    q(`Period: ${periodLabel}`),
+    "",
+    [q("Section"), q("Item"), q("Amount")].join(","),
+    [q("Operating Activities"), q("Net Income"), report.netIncome.toFixed(2)].join(","),
+    [q("Operating Activities"), q("Change in Accounts Receivable"), report.changeInAR.toFixed(2)].join(","),
+    [q("Operating Activities"), q("Change in Accounts Payable"), report.changeInAP.toFixed(2)].join(","),
+    [q("Operating Activities"), q("Change in Inventory"), report.changeInInventory.toFixed(2)].join(","),
+    [q("Operating Activities"), q("Net Cash from Operating Activities"), report.netOperating.toFixed(2)].join(","),
+    "",
+  ];
+  for (const ec of report.equityChanges)
+    lines.push([q("Financing Activities"), q(ec.account.name), ec.amount.toFixed(2)].join(","));
+  lines.push([q("Financing Activities"), q("Net Cash from Financing Activities"), report.netFinancing.toFixed(2)].join(","));
+  lines.push("");
+  lines.push([q("Summary"), q("Net Change in Cash"), report.netChange.toFixed(2)].join(","));
+  lines.push([q("Summary"), q("Beginning Cash Balance"), report.beginCash.toFixed(2)].join(","));
+  lines.push([q("Summary"), q("Ending Cash Balance"), report.endCash.toFixed(2)].join(","));
   return lines.join("\n");
 }
 

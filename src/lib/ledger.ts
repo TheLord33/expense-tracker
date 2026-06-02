@@ -386,6 +386,86 @@ export function computeBalanceSheet(
   };
 }
 
+// ── Cash Flow Statement (Indirect Method) ────────────────────────────────────
+
+export interface CashFlowReport {
+  netIncome: number;
+  changeInAR: number;        // positive = source of cash (AR decreased)
+  changeInAP: number;        // positive = source of cash (AP increased = deferred payment)
+  changeInInventory: number; // positive = source of cash (inventory decreased)
+  netOperating: number;
+  equityChanges: { account: Account; amount: number }[];
+  netFinancing: number;
+  netChange: number;
+  beginCash: number;
+  endCash: number;
+}
+
+function periodNetMovement(accountId: string, entries: JournalEntry[], normalDebit: boolean): number {
+  let debit = 0, credit = 0;
+  for (const entry of entries) {
+    for (const line of entry.lines) {
+      if (line.accountId !== accountId) continue;
+      debit += line.debit;
+      credit += line.credit;
+    }
+  }
+  return normalDebit ? debit - credit : credit - debit;
+}
+
+export function computeCashFlow(
+  accounts: Account[],
+  allEntries: JournalEntry[],
+  openingBalances: Record<string, number>,
+  dateFrom: string,
+  dateTo: string
+): CashFlowReport {
+  const periodEntries = allEntries.filter((e) => {
+    if (dateFrom && e.date < dateFrom) return false;
+    if (dateTo && e.date > dateTo) return false;
+    return true;
+  });
+  const prePeriodEntries = dateFrom ? allEntries.filter((e) => e.date < dateFrom) : [];
+
+  const { netIncome } = computePnL(accounts, allEntries, dateFrom, dateTo);
+
+  const arAcc   = accounts.find((a) => a.id === AR_ACCOUNT_ID);
+  const apAcc   = accounts.find((a) => a.id === AP_ACCOUNT_ID);
+  const invAcc  = accounts.find((a) => a.code === "1200");
+  const cashAcc = accounts.find((a) => a.code === CASH_CODE);
+
+  const deltaAR        = arAcc   ? periodNetMovement(arAcc.id,   periodEntries, true)  : 0;
+  const deltaAP        = apAcc   ? periodNetMovement(apAcc.id,   periodEntries, false) : 0;
+  const deltaInventory = invAcc  ? periodNetMovement(invAcc.id,  periodEntries, true)  : 0;
+
+  const changeInAR        = -deltaAR;
+  const changeInAP        =  deltaAP;
+  const changeInInventory = -deltaInventory;
+
+  const netOperating = netIncome + changeInAR + changeInAP + changeInInventory;
+
+  const equityChanges = accounts
+    .filter((a) => a.type === "equity")
+    .map((account) => ({ account, amount: periodNetMovement(account.id, periodEntries, false) }))
+    .filter((ec) => Math.abs(ec.amount) >= 0.005);
+  const netFinancing = equityChanges.reduce((s, ec) => s + ec.amount, 0);
+
+  const netChange = netOperating + netFinancing;
+
+  const cashOpening   = cashAcc ? (openingBalances[cashAcc.id] ?? 0) : 0;
+  const cashPrePeriod = cashAcc ? periodNetMovement(cashAcc.id, prePeriodEntries, true) : 0;
+  const beginCash     = cashOpening + cashPrePeriod;
+  const endCash       = beginCash + netChange;
+
+  return {
+    netIncome, changeInAR, changeInAP, changeInInventory,
+    netOperating, equityChanges, netFinancing,
+    netChange, beginCash, endCash,
+  };
+}
+
+// ── Trial Balance ─────────────────────────────────────────────────────────────
+
 export interface TrialBalanceRow {
   account: Account;
   totalDebit: number;
