@@ -31,6 +31,7 @@ const es: Translations = {
     finCalc: "Calc",
     accounting: "Contabilidad",
     po: "O/C",
+    checkRec: "Conc. Cheques",
   },
 
   summary: {
@@ -487,6 +488,8 @@ const es: Translations = {
     startingCheck: "Cheque inicial #",
     printDownload: "Imprimir / Descargar PDF",
     memo: "Concepto",
+    totalSelected: "Total: {total}",
+    maxCheckWarning: "El total {total} supera el límite de cheque de {max}",
   },
 
   po: {
@@ -525,6 +528,7 @@ const es: Translations = {
     errorQty: "Ingrese una cantidad válida",
     errorCost: "Ingrese un costo válido",
     selectItem: "Seleccionar artículo…",
+    maxAmountWarning: "El total supera el límite de cheque de {max}",
   },
 
   inventory: {
@@ -657,6 +661,27 @@ const es: Translations = {
     errorAccount: "Seleccione una cuenta de ingresos",
     errorPayAmount: "Ingrese un monto válido",
     errorPayExceeds: "El monto supera el saldo pendiente",
+    lineItems: "Líneas",
+    addLine: "Agregar Línea",
+    lineDescription: "Descripción",
+    lineQty: "Cant.",
+    lineUnitPrice: "Precio Unitario",
+    lineTotal: "Total",
+    grandTotal: "Total General",
+    linkInventory: "Vincular artículo de inventario (opcional)",
+    errorNoLines: "Agregue al menos una línea",
+    errorLineDesc: "La descripción es obligatoria",
+    errorLineQty: "Ingrese una cantidad válida",
+    errorLinePrice: "Ingrese un precio unitario válido",
+    statement: "Estado de Cuenta",
+    statementTitle: "Estado de Cuenta",
+    statementPeriod: "Período",
+    allTime: "Todo el tiempo",
+    openingBalance: "Saldo Inicial",
+    charges: "Cargos",
+    credits: "Abonos",
+    balance: "Saldo",
+    totalDue: "Total a Pagar",
   },
 
   finCalc: {
@@ -731,6 +756,33 @@ const es: Translations = {
     beginCash: "Saldo Inicial de Efectivo",
     endCash: "Saldo Final de Efectivo",
     noData: "Sin transacciones en el período seleccionado",
+  },
+  companies: {
+    label: "Empresa",
+    add: "Agregar Empresa",
+    edit: "Editar Perfil",
+    delete: "Eliminar",
+    maxCheckAmount: "Monto máximo de cheque (opcional)",
+    maxCheckAmountHint: "Limita cheques y O/C a este máximo (dejar en blanco para sin límite)",
+    cannotDelete: "No se puede eliminar la última empresa",
+  },
+
+  checkRec: {
+    title: "Conciliación de Cheques",
+    bankBalance: "Saldo Bancario",
+    outstandingTotal: "Cheques Pendientes",
+    adjustedBalance: "Saldo Ajustado",
+    outstanding: "Pendiente",
+    cleared: "Liquidado",
+    voided: "Anulado",
+    checkNo: "Cheque #",
+    payee: "Beneficiario",
+    date: "Fecha",
+    amount: "Monto",
+    markCleared: "Marcar como Liquidado",
+    clearedDateLabel: "Fecha de Liquidación",
+    noChecks: "Sin cheques aún",
+    noChecksSub: "Los cheques aparecerán aquí cuando imprima cheques desde Cuentas por Pagar",
   },
 };
 

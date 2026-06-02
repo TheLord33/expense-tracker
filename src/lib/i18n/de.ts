@@ -31,6 +31,7 @@ const de: Translations = {
     finCalc: "Kalk.",
     accounting: "Buchhaltung",
     po: "B/O",
+    checkRec: "Scheckabst.",
   },
 
   summary: {
@@ -487,6 +488,8 @@ const de: Translations = {
     startingCheck: "Erste Scheck-Nr.",
     printDownload: "Drucken / PDF herunterladen",
     memo: "Verwendungszweck",
+    totalSelected: "Gesamt: {total}",
+    maxCheckWarning: "Gesamt {total} überschreitet das Schecklimit von {max}",
   },
 
   po: {
@@ -525,6 +528,7 @@ const de: Translations = {
     errorQty: "Gültige Menge eingeben",
     errorCost: "Gültigen Preis eingeben",
     selectItem: "Artikel auswählen…",
+    maxAmountWarning: "Gesamt überschreitet das Schecklimit von {max}",
   },
 
   inventory: {
@@ -657,6 +661,27 @@ const de: Translations = {
     errorAccount: "Wählen Sie ein Ertragskonto aus",
     errorPayAmount: "Geben Sie einen gültigen Betrag ein",
     errorPayExceeds: "Betrag überschreitet den offenen Saldo",
+    lineItems: "Positionen",
+    addLine: "Position hinzufügen",
+    lineDescription: "Beschreibung",
+    lineQty: "Menge",
+    lineUnitPrice: "Einzelpreis",
+    lineTotal: "Gesamt",
+    grandTotal: "Gesamtbetrag",
+    linkInventory: "Lagerartikel verknüpfen (optional)",
+    errorNoLines: "Fügen Sie mindestens eine Position hinzu",
+    errorLineDesc: "Beschreibung ist erforderlich",
+    errorLineQty: "Geben Sie eine gültige Menge ein",
+    errorLinePrice: "Geben Sie einen gültigen Einzelpreis ein",
+    statement: "Kontoauszug",
+    statementTitle: "Kontoauszug",
+    statementPeriod: "Zeitraum",
+    allTime: "Gesamter Zeitraum",
+    openingBalance: "Eröffnungssaldo",
+    charges: "Belastungen",
+    credits: "Gutschriften",
+    balance: "Saldo",
+    totalDue: "Fälliger Betrag",
   },
 
   finCalc: {
@@ -731,6 +756,33 @@ const de: Translations = {
     beginCash: "Anfangsbestand Zahlungsmittel",
     endCash: "Endbestand Zahlungsmittel",
     noData: "Keine Transaktionen im gewählten Zeitraum",
+  },
+  companies: {
+    label: "Unternehmen",
+    add: "Unternehmen hinzufügen",
+    edit: "Profil bearbeiten",
+    delete: "Löschen",
+    maxCheckAmount: "Max. Scheckbetrag (optional)",
+    maxCheckAmountHint: "Begrenzt Schecks und B/O auf dieses Maximum (leer lassen für kein Limit)",
+    cannotDelete: "Das letzte Unternehmen kann nicht gelöscht werden",
+  },
+
+  checkRec: {
+    title: "Scheckabstimmung",
+    bankBalance: "Kontostand",
+    outstandingTotal: "Ausstehende Schecks",
+    adjustedBalance: "Angepasster Saldo",
+    outstanding: "Ausstehend",
+    cleared: "Eingelöst",
+    voided: "Storniert",
+    checkNo: "Scheck #",
+    payee: "Zahlungsempfänger",
+    date: "Datum",
+    amount: "Betrag",
+    markCleared: "Als eingelöst markieren",
+    clearedDateLabel: "Einlösungsdatum",
+    noChecks: "Noch keine Schecks",
+    noChecksSub: "Schecks erscheinen hier, wenn Sie Schecks aus der Kreditorenbuchhaltung drucken",
   },
 };
 

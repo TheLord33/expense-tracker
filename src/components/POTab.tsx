@@ -37,11 +37,11 @@ interface Props {
   inventoryItems: InventoryItem[];
   accounts: Account[];
   orders: PurchaseOrder[];
+  maxCheckAmount?: number;
   onAddOrder: (po: Omit<PurchaseOrder, "id">) => void;
   onUpdateOrder: (id: string, data: Partial<Omit<PurchaseOrder, "id">>) => void;
   onDeleteOrder: (id: string) => void;
   poTotal: (po: PurchaseOrder) => number;
-  // Callbacks for the receive flow
   onAddMovement: (m: Omit<StockMovement, "id">) => void;
   onAddBill: (b: Omit<Bill, "id">) => string;
 }
@@ -66,7 +66,7 @@ function statusColor(s: POStatus): StatusColor {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function POTab({
-  vendors, inventoryItems, accounts, orders,
+  vendors, inventoryItems, accounts, orders, maxCheckAmount,
   onAddOrder, onUpdateOrder, onDeleteOrder, poTotal,
   onAddMovement, onAddBill,
 }: Props) {
@@ -232,7 +232,8 @@ export function POTab({
 
   // ── Grand total for form ──────────────────────────────────────────────────
 
-  const formTotal = lines.reduce((s, l) => s + (Number(l.qty) || 0) * (Number(l.unitCost) || 0), 0);
+  const formTotal  = lines.reduce((s, l) => s + (Number(l.qty) || 0) * (Number(l.unitCost) || 0), 0);
+  const exceedsMax = maxCheckAmount != null && maxCheckAmount > 0 && formTotal > maxCheckAmount;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -406,9 +407,16 @@ export function POTab({
                 </div>
 
                 {/* Grand total */}
-                <div className="flex justify-end mt-3 pt-3 border-t border-default-100">
-                  <span className="text-sm font-semibold text-default-700 mr-2">{t("po.grandTotal")}:</span>
-                  <span className="text-sm font-bold text-indigo-600">{fmt(formTotal)}</span>
+                <div className="flex flex-col items-end mt-3 pt-3 border-t border-default-100 gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-default-700">{t("po.grandTotal")}:</span>
+                    <span className={`text-sm font-bold ${exceedsMax ? "text-danger-600" : "text-indigo-600"}`}>{fmt(formTotal)}</span>
+                  </div>
+                  {exceedsMax && maxCheckAmount != null && (
+                    <p className="text-xs text-danger-600">
+                      {t("po.maxAmountWarning").replace("{max}", fmt(maxCheckAmount))}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -417,7 +425,7 @@ export function POTab({
             </ModalBody>
             <ModalFooter>
               <Button variant="flat" onPress={poModal.onClose}>{t("cancel")}</Button>
-              <Button color="primary" type="submit">{editingPO ? t("save") : t("add")}</Button>
+              <Button color="primary" type="submit" isDisabled={exceedsMax}>{editingPO ? t("save") : t("add")}</Button>
             </ModalFooter>
           </form>
         </ModalContent>

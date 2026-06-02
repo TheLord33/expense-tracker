@@ -234,6 +234,23 @@ export interface CompanyProfile {
   phone?: string;
   website?: string;
   taxId?: string;
+  maxCheckAmount?: number;
+}
+
+export interface Company extends CompanyProfile {
+  id: string;
+}
+
+export interface CheckRecord {
+  id: string;
+  checkNumber: string;
+  date: string;
+  payee: string;
+  amount: number;
+  billId?: string;
+  status: "outstanding" | "cleared" | "voided";
+  clearedDate?: string;
+  memo?: string;
 }
 
 export interface Customer {
@@ -244,15 +261,25 @@ export interface Customer {
   phone?: string;
 }
 
+export interface InvoiceLine {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  inventoryItemId?: string; // links to InventoryItem for COGS
+}
+
 export interface Invoice {
   id: string;
   customerId: string;
   invoiceNumber: string;
   date: string;             // YYYY-MM-DD issued
   dueDate: string;          // YYYY-MM-DD
-  amount: number;
-  description: string;
+  lines: InvoiceLine[];
   revenueAccountId: string; // credit side (default: acc-4000)
+  // Legacy fields kept for migration only — do not use in new code
+  amount?: number;
+  description?: string;
 }
 
 export interface InvoicePayment {

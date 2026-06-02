@@ -9,7 +9,7 @@ import {
   useDisclosure,
 } from "@nextui-org/react";
 import { Plus, Pencil, Trash2, Wallet, CheckCircle, Printer } from "lucide-react";
-import type { Account, Bill, BillPayment, CompanyProfile, Vendor } from "@/lib/types";
+import type { Account, Bill, BillPayment, CheckRecord, CompanyProfile, Vendor } from "@/lib/types";
 import { printChecksPDF } from "@/lib/exportPDF";
 import { useLanguage, useCurrency } from "@/app/providers";
 
@@ -53,6 +53,7 @@ interface Props {
   billPayments: BillPayment[];
   accounts: Account[];
   company?: CompanyProfile | null;
+  maxCheckAmount?: number;
   onAddVendor: (v: Omit<Vendor, "id">) => void;
   onUpdateVendor: (id: string, data: Partial<Omit<Vendor, "id">>) => void;
   onDeleteVendor: (id: string) => void;
@@ -60,6 +61,7 @@ interface Props {
   onUpdateBill: (id: string, data: Partial<Omit<Bill, "id">>) => void;
   onDeleteBill: (id: string) => void;
   onAddPayment: (p: Omit<BillPayment, "id">) => void;
+  onAddChecks: (checks: Omit<CheckRecord, "id">[]) => void;
   paidAmount: (billId: string) => number;
   outstanding: (bill: Bill) => number;
 }
@@ -67,10 +69,10 @@ interface Props {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function APTab({
-  vendors, bills, billPayments, accounts, company,
+  vendors, bills, billPayments, accounts, company, maxCheckAmount,
   onAddVendor, onUpdateVendor, onDeleteVendor,
   onAddBill, onUpdateBill, onDeleteBill,
-  onAddPayment, paidAmount, outstanding,
+  onAddPayment, onAddChecks, paidAmount, outstanding,
 }: Props) {
   const { t, locale } = useLanguage();
   const { fmt } = useCurrency();
@@ -100,6 +102,7 @@ export function APTab({
   }
 
   async function handlePrintChecks() {
+    if (exceedsMax) return;
     setPrinting(true);
     try {
       const selected = sortedBills.filter((b) => selectedBills.has(b.id));
@@ -115,6 +118,13 @@ export function APTab({
       const a    = document.createElement("a");
       a.href = url; a.download = `checks-${checkDate}.pdf`; a.click();
       URL.revokeObjectURL(url);
+      onAddChecks(
+        checks.map((c, idx) => ({
+          ...c,
+          billId: selected[idx].id,
+          status: "outstanding" as const,
+        }))
+      );
       setSelectedBills(new Set());
       checkModal.onClose();
     } finally {
@@ -316,6 +326,13 @@ export function APTab({
     }),
     [bills, paidAmount, today] // eslint-disable-line react-hooks/exhaustive-deps
   );
+
+  const selectedTotal = useMemo(
+    () => sortedBills.filter((b) => selectedBills.has(b.id)).reduce((s, b) => s + outstanding(b), 0),
+    [sortedBills, selectedBills, outstanding] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  const exceedsMax = maxCheckAmount != null && maxCheckAmount > 0 && selectedTotal > maxCheckAmount;
 
   return (
     <div className="space-y-4">
@@ -528,10 +545,22 @@ export function APTab({
             <Printer size={16} />{t("ap.printChecks")}
           </ModalHeader>
           <ModalBody className="gap-3">
-            <div className="bg-default-50 rounded-xl px-4 py-3 text-sm text-default-600">
-              {selectedBills.size === 1
-                ? t("ap.checksSelected").replace("{count}", "1")
-                : t("ap.checksSelectedPlural").replace("{count}", String(selectedBills.size))}
+            <div className="bg-default-50 rounded-xl px-4 py-3 text-sm space-y-1">
+              <p className="text-default-600">
+                {selectedBills.size === 1
+                  ? t("ap.checksSelected").replace("{count}", "1")
+                  : t("ap.checksSelectedPlural").replace("{count}", String(selectedBills.size))}
+              </p>
+              <p className={`font-semibold ${exceedsMax ? "text-danger-600" : "text-default-800"}`}>
+                {t("ap.totalSelected").replace("{total}", fmt(selectedTotal))}
+              </p>
+              {exceedsMax && maxCheckAmount != null && (
+                <p className="text-xs text-danger-600">
+                  {t("ap.maxCheckWarning")
+                    .replace("{total}", fmt(selectedTotal))
+                    .replace("{max}", fmt(maxCheckAmount))}
+                </p>
+              )}
             </div>
             <Input type="date" label={t("ap.checkDate")} value={checkDate} onValueChange={setCheckDate} />
             <Input label={t("ap.startingCheck")} value={startingCheck}
@@ -539,8 +568,8 @@ export function APTab({
           </ModalBody>
           <ModalFooter>
             <Button variant="flat" onPress={checkModal.onClose}>{t("cancel")}</Button>
-            <Button color="primary" isLoading={printing} startContent={<Printer size={14} />}
-              onPress={handlePrintChecks}>
+            <Button color="primary" isLoading={printing} isDisabled={exceedsMax}
+              startContent={<Printer size={14} />} onPress={handlePrintChecks}>
               {t("ap.printDownload")}
             </Button>
           </ModalFooter>

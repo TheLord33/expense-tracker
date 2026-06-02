@@ -31,6 +31,7 @@ const it: Translations = {
     finCalc: "Calc",
     accounting: "Contabilità",
     po: "O/A",
+    checkRec: "Ric. Assegni",
   },
 
   summary: {
@@ -487,6 +488,8 @@ const it: Translations = {
     startingCheck: "Numero assegno iniziale",
     printDownload: "Stampa / Scarica PDF",
     memo: "Causale",
+    totalSelected: "Totale: {total}",
+    maxCheckWarning: "Il totale {total} supera il limite dell'assegno di {max}",
   },
 
   po: {
@@ -525,6 +528,7 @@ const it: Translations = {
     errorQty: "Inserisci una quantità valida",
     errorCost: "Inserisci un costo valido",
     selectItem: "Seleziona articolo…",
+    maxAmountWarning: "Il totale supera il limite dell'assegno di {max}",
   },
 
   inventory: {
@@ -657,6 +661,27 @@ const it: Translations = {
     errorAccount: "Selezionare un conto ricavi",
     errorPayAmount: "Inserire un importo valido",
     errorPayExceeds: "L'importo supera il saldo da incassare",
+    lineItems: "Voci",
+    addLine: "Aggiungi Voce",
+    lineDescription: "Descrizione",
+    lineQty: "Qtà",
+    lineUnitPrice: "Prezzo Unitario",
+    lineTotal: "Totale",
+    grandTotal: "Totale Generale",
+    linkInventory: "Collega articolo di magazzino (opzionale)",
+    errorNoLines: "Aggiungi almeno una voce",
+    errorLineDesc: "La descrizione è obbligatoria",
+    errorLineQty: "Inserire una quantità valida",
+    errorLinePrice: "Inserire un prezzo unitario valido",
+    statement: "Estratto Conto",
+    statementTitle: "Estratto Conto",
+    statementPeriod: "Periodo",
+    allTime: "Tutto il periodo",
+    openingBalance: "Saldo Iniziale",
+    charges: "Addebiti",
+    credits: "Accrediti",
+    balance: "Saldo",
+    totalDue: "Totale Dovuto",
   },
 
   finCalc: {
@@ -731,6 +756,33 @@ const it: Translations = {
     beginCash: "Saldo Iniziale di Cassa",
     endCash: "Saldo Finale di Cassa",
     noData: "Nessuna transazione nel periodo selezionato",
+  },
+  companies: {
+    label: "Azienda",
+    add: "Aggiungi Azienda",
+    edit: "Modifica Profilo",
+    delete: "Elimina",
+    maxCheckAmount: "Importo max assegno (opzionale)",
+    maxCheckAmountHint: "Limita assegni e O/A a questo massimo (lasciare vuoto per nessun limite)",
+    cannotDelete: "Impossibile eliminare l'ultima azienda",
+  },
+
+  checkRec: {
+    title: "Riconciliazione Assegni",
+    bankBalance: "Saldo Bancario",
+    outstandingTotal: "Assegni in Sospeso",
+    adjustedBalance: "Saldo Rettificato",
+    outstanding: "In sospeso",
+    cleared: "Compensato",
+    voided: "Annullato",
+    checkNo: "Assegno #",
+    payee: "Beneficiario",
+    date: "Data",
+    amount: "Importo",
+    markCleared: "Segna come Compensato",
+    clearedDateLabel: "Data di Compensazione",
+    noChecks: "Nessun assegno ancora",
+    noChecksSub: "Gli assegni appariranno qui quando si stampano assegni dalla Contabilità Fornitori",
   },
 };
 

@@ -180,7 +180,8 @@ const AR_ACCOUNT_ID = "acc-1100"; // Accounts Receivable (builtin)
 export function deriveAREntries(
   invoices: Invoice[],
   payments: InvoicePayment[],
-  accounts: Account[]
+  accounts: Account[],
+  inventoryItems: InventoryItem[] = []
 ): JournalEntry[] {
   const arAccount   = accounts.find((a) => a.id === AR_ACCOUNT_ID);
   const cashAccount = accounts.find((a) => a.code === CASH_CODE);
@@ -191,17 +192,43 @@ export function deriveAREntries(
   for (const inv of invoices) {
     const revAccount = accounts.find((a) => a.id === inv.revenueAccountId);
     if (!revAccount) continue;
+    const total = inv.lines?.length
+      ? inv.lines.reduce((s, l) => s + l.quantity * l.unitPrice, 0)
+      : (inv.amount ?? 0);
+    if (total < 0.005) continue;
+
+    const firstDesc = inv.lines?.[0]?.description ?? (inv.description ?? "");
     entries.push({
       id:          `inv-${inv.id}`,
       date:        inv.date,
-      description: `Invoice #${inv.invoiceNumber}: ${inv.description}`,
+      description: `Invoice #${inv.invoiceNumber}: ${firstDesc}`,
       sourceId:    inv.id,
       sourceType:  "invoice",
       lines: [
-        { accountId: arAccount.id,   debit: inv.amount, credit: 0          },
-        { accountId: revAccount.id,  debit: 0,          credit: inv.amount },
+        { accountId: arAccount.id,  debit: total, credit: 0     },
+        { accountId: revAccount.id, debit: 0,     credit: total },
       ],
     });
+
+    // COGS entries for inventory-linked line items
+    for (const line of inv.lines ?? []) {
+      if (!line.inventoryItemId) continue;
+      const item = inventoryItems.find((i) => i.id === line.inventoryItemId);
+      if (!item) continue;
+      const cogsAmt = line.quantity * item.costPerUnit;
+      if (cogsAmt < 0.005) continue;
+      entries.push({
+        id:          `inv-cogs-${inv.id}-${line.id}`,
+        date:        inv.date,
+        description: `COGS — Invoice #${inv.invoiceNumber}: ${line.description}`,
+        sourceId:    inv.id,
+        sourceType:  "invoice",
+        lines: [
+          { accountId: item.cogsAccountId,        debit: cogsAmt, credit: 0       },
+          { accountId: item.inventoryAccountId,   debit: 0,       credit: cogsAmt },
+        ],
+      });
+    }
   }
 
   for (const payment of payments) {
@@ -239,7 +266,7 @@ export function deriveAllEntries(
   const incEntries = deriveIncomeEntries(sources, accounts);
   const billEntries  = deriveBillEntries(bills, billPayments, accounts);
   const invEntries   = deriveInventoryEntries(inventoryItems, inventoryMovements);
-  const arEntries    = deriveAREntries(invoices, invoicePayments, accounts);
+  const arEntries    = deriveAREntries(invoices, invoicePayments, accounts, inventoryItems);
   return [...expEntries, ...incEntries, ...billEntries, ...invEntries, ...arEntries].sort((a, b) => a.date.localeCompare(b.date));
 }
 

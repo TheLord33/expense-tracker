@@ -1,37 +1,62 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { Customer, Invoice, InvoicePayment } from "./types";
+import type { Customer, Invoice, InvoicePayment, InvoiceLine } from "./types";
 
-const CUSTOMERS_KEY = "folio-customers";
-const INVOICES_KEY  = "folio-invoices";
-const PAYMENTS_KEY  = "folio-invoice-payments";
+/** Computed invoice total from line items (falls back to legacy .amount for old data). */
+export function invoiceTotal(inv: Invoice): number {
+  if (inv.lines?.length) return inv.lines.reduce((s, l) => s + l.quantity * l.unitPrice, 0);
+  return inv.amount ?? 0;
+}
 
-export function useAR() {
-  const [customers, setCustomers]   = useState<Customer[]>([]);
-  const [invoices,  setInvoices]    = useState<Invoice[]>([]);
-  const [payments,  setPayments]    = useState<InvoicePayment[]>([]);
-  const [loaded,    setLoaded]      = useState(false);
+/** Migrate a legacy flat-amount invoice to the line-items format. */
+function migrateInvoice(raw: Record<string, unknown>): Invoice {
+  const lines = raw.lines as InvoiceLine[] | undefined;
+  if (!lines?.length && raw.amount != null) {
+    return {
+      id:               String(raw.id),
+      customerId:       String(raw.customerId),
+      invoiceNumber:    String(raw.invoiceNumber ?? ""),
+      date:             String(raw.date),
+      dueDate:          String(raw.dueDate),
+      revenueAccountId: String(raw.revenueAccountId ?? "acc-4000"),
+      lines: [{
+        id:          crypto.randomUUID(),
+        description: String(raw.description ?? ""),
+        quantity:    1,
+        unitPrice:   Number(raw.amount),
+      }],
+    };
+  }
+  return raw as unknown as Invoice;
+}
+
+export function useAR(companyId: string) {
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [invoices,  setInvoices]  = useState<Invoice[]>([]);
+  const [payments,  setPayments]  = useState<InvoicePayment[]>([]);
+  const [loaded,    setLoaded]    = useState(false);
 
   useEffect(() => {
+    setLoaded(false);
     try {
-      const c = localStorage.getItem(CUSTOMERS_KEY);
-      const i = localStorage.getItem(INVOICES_KEY);
-      const p = localStorage.getItem(PAYMENTS_KEY);
-      if (c) setCustomers(JSON.parse(c));
-      if (i) setInvoices(JSON.parse(i));
-      if (p) setPayments(JSON.parse(p));
+      const c = localStorage.getItem(`folio-${companyId}-customers`);
+      const i = localStorage.getItem(`folio-${companyId}-invoices`);
+      const p = localStorage.getItem(`folio-${companyId}-invoice-payments`);
+      setCustomers(c ? JSON.parse(c) : []);
+      setInvoices(i ? (JSON.parse(i) as Record<string, unknown>[]).map(migrateInvoice) : []);
+      setPayments(p ? JSON.parse(p) : []);
     } catch { /* ignore */ }
     setLoaded(true);
-  }, []);
+  }, [companyId]);
 
   useEffect(() => {
     if (loaded) {
-      localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
-      localStorage.setItem(INVOICES_KEY,  JSON.stringify(invoices));
-      localStorage.setItem(PAYMENTS_KEY,  JSON.stringify(payments));
+      localStorage.setItem(`folio-${companyId}-customers`,        JSON.stringify(customers));
+      localStorage.setItem(`folio-${companyId}-invoices`,         JSON.stringify(invoices));
+      localStorage.setItem(`folio-${companyId}-invoice-payments`, JSON.stringify(payments));
     }
-  }, [customers, invoices, payments, loaded]);
+  }, [customers, invoices, payments, loaded, companyId]);
 
   // ── Customers ────────────────────────────────────────────────────────────────
 
@@ -59,7 +84,7 @@ export function useAR() {
 
   // ── Payments ─────────────────────────────────────────────────────────────────
 
-  const addPayment    = useCallback((p: Omit<InvoicePayment, "id">) =>
+  const addPayment  = useCallback((p: Omit<InvoicePayment, "id">) =>
     setPayments((prev) => [...prev, { ...p, id: crypto.randomUUID() }]), []);
 
   const deletePayment = useCallback((id: string) =>
@@ -72,14 +97,14 @@ export function useAR() {
   [payments]);
 
   const outstanding = useCallback((inv: Invoice): number =>
-    Math.max(0, inv.amount - collectedAmount(inv.id)),
+    Math.max(0, invoiceTotal(inv) - collectedAmount(inv.id)),
   [collectedAmount]);
 
   // ── Bulk restore ─────────────────────────────────────────────────────────────
 
-  const replaceCustomers = useCallback((c: Customer[]) => setCustomers(c), []);
-  const replaceInvoices  = useCallback((i: Invoice[]) => setInvoices(i), []);
-  const replacePayments  = useCallback((p: InvoicePayment[]) => setPayments(p), []);
+  const replaceCustomers = useCallback((c: Customer[])      => setCustomers(c), []);
+  const replaceInvoices  = useCallback((i: Invoice[])       => setInvoices(i),  []);
+  const replacePayments  = useCallback((p: InvoicePayment[]) => setPayments(p),  []);
 
   return {
     customers, invoices, payments, loaded,

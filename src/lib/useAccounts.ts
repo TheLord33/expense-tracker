@@ -3,23 +3,24 @@
 import { useState, useEffect, useCallback } from "react";
 import { type Account, BUILTIN_ACCOUNTS } from "./types";
 
-const STORAGE_KEY = "expense-tracker-accounts";
-
-export function useAccounts() {
+export function useAccounts(companyId: string) {
   const [customAccounts, setCustomAccounts] = useState<Account[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const [loaded,         setLoaded]         = useState(false);
 
   useEffect(() => {
+    setLoaded(false);
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) setCustomAccounts(JSON.parse(stored));
+      const stored = localStorage.getItem(`folio-${companyId}-accounts`);
+      setCustomAccounts(stored ? JSON.parse(stored) : []);
     } catch { /* ignore */ }
     setLoaded(true);
-  }, []);
+  }, [companyId]);
 
   useEffect(() => {
-    if (loaded) localStorage.setItem(STORAGE_KEY, JSON.stringify(customAccounts));
-  }, [customAccounts, loaded]);
+    if (loaded) {
+      localStorage.setItem(`folio-${companyId}-accounts`, JSON.stringify(customAccounts));
+    }
+  }, [customAccounts, loaded, companyId]);
 
   const accounts: Account[] = [...BUILTIN_ACCOUNTS, ...customAccounts].sort((a, b) =>
     a.code.localeCompare(b.code)

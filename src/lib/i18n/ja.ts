@@ -31,6 +31,7 @@ const ja: Translations = {
     finCalc: "計算",
     accounting: "会計",
     po: "発注",
+    checkRec: "小切手照合",
   },
 
   summary: {
@@ -487,6 +488,8 @@ const ja: Translations = {
     startingCheck: "開始小切手番号",
     printDownload: "印刷 / PDFダウンロード",
     memo: "摘要",
+    totalSelected: "合計: {total}",
+    maxCheckWarning: "合計 {total} は小切手限度額 {max} を超えています",
   },
 
   po: {
@@ -525,6 +528,7 @@ const ja: Translations = {
     errorQty: "有効な数量を入力してください",
     errorCost: "有効な単価を入力してください",
     selectItem: "品目を選択…",
+    maxAmountWarning: "合計は小切手限度額 {max} を超えています",
   },
 
   inventory: {
@@ -657,6 +661,27 @@ const ja: Translations = {
     errorAccount: "収益勘定を選択してください",
     errorPayAmount: "有効な金額を入力してください",
     errorPayExceeds: "入金額が未回収残高を超えています",
+    lineItems: "明細",
+    addLine: "明細を追加",
+    lineDescription: "内容",
+    lineQty: "数量",
+    lineUnitPrice: "単価",
+    lineTotal: "小計",
+    grandTotal: "合計",
+    linkInventory: "在庫品目をリンク（任意）",
+    errorNoLines: "明細を1件以上追加してください",
+    errorLineDesc: "内容は必須です",
+    errorLineQty: "有効な数量を入力してください",
+    errorLinePrice: "有効な単価を入力してください",
+    statement: "取引明細書",
+    statementTitle: "取引明細書",
+    statementPeriod: "期間",
+    allTime: "全期間",
+    openingBalance: "期首残高",
+    charges: "請求",
+    credits: "入金",
+    balance: "残高",
+    totalDue: "合計残高",
   },
 
   finCalc: {
@@ -731,6 +756,33 @@ const ja: Translations = {
     beginCash: "期首現金残高",
     endCash: "期末現金残高",
     noData: "選択期間に取引がありません",
+  },
+  companies: {
+    label: "会社",
+    add: "会社を追加",
+    edit: "プロフィール編集",
+    delete: "削除",
+    maxCheckAmount: "小切手上限額（任意）",
+    maxCheckAmountHint: "小切手と発注書をこの金額以下に制限します（制限なしは空白）",
+    cannotDelete: "最後の会社は削除できません",
+  },
+
+  checkRec: {
+    title: "小切手照合",
+    bankBalance: "銀行残高",
+    outstandingTotal: "未決済小切手",
+    adjustedBalance: "調整後残高",
+    outstanding: "未決済",
+    cleared: "決済済",
+    voided: "無効",
+    checkNo: "小切手 #",
+    payee: "受取人",
+    date: "日付",
+    amount: "金額",
+    markCleared: "決済済みとしてマーク",
+    clearedDateLabel: "決済日",
+    noChecks: "小切手はまだありません",
+    noChecksSub: "買掛金から小切手を印刷するとここに表示されます",
   },
 };
 

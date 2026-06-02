@@ -31,6 +31,7 @@ const fr: Translations = {
     finCalc: "Calc",
     accounting: "Comptabilité",
     po: "B/C",
+    checkRec: "Rappr. Chèques",
   },
 
   summary: {
@@ -487,6 +488,8 @@ const fr: Translations = {
     startingCheck: "N° du premier chèque",
     printDownload: "Imprimer / Télécharger PDF",
     memo: "Objet",
+    totalSelected: "Total : {total}",
+    maxCheckWarning: "Le total {total} dépasse la limite de chèque de {max}",
   },
 
   po: {
@@ -525,6 +528,7 @@ const fr: Translations = {
     errorQty: "Entrez une quantité valide",
     errorCost: "Entrez un prix valide",
     selectItem: "Sélectionner un article…",
+    maxAmountWarning: "Le total dépasse la limite de chèque de {max}",
   },
 
   inventory: {
@@ -657,6 +661,27 @@ const fr: Translations = {
     errorAccount: "Sélectionnez un compte de produits",
     errorPayAmount: "Saisissez un montant valide",
     errorPayExceeds: "Le montant dépasse le solde dû",
+    lineItems: "Lignes",
+    addLine: "Ajouter une Ligne",
+    lineDescription: "Description",
+    lineQty: "Qté",
+    lineUnitPrice: "Prix Unitaire",
+    lineTotal: "Total",
+    grandTotal: "Total Général",
+    linkInventory: "Lier un article de stock (optionnel)",
+    errorNoLines: "Ajoutez au moins une ligne",
+    errorLineDesc: "La description est obligatoire",
+    errorLineQty: "Saisissez une quantité valide",
+    errorLinePrice: "Saisissez un prix unitaire valide",
+    statement: "Relevé",
+    statementTitle: "Relevé de Compte",
+    statementPeriod: "Période",
+    allTime: "Toute la période",
+    openingBalance: "Solde Initial",
+    charges: "Débits",
+    credits: "Crédits",
+    balance: "Solde",
+    totalDue: "Total Dû",
   },
 
   finCalc: {
@@ -731,6 +756,33 @@ const fr: Translations = {
     beginCash: "Solde Initial de Trésorerie",
     endCash: "Solde Final de Trésorerie",
     noData: "Aucune transaction sur la période sélectionnée",
+  },
+  companies: {
+    label: "Entreprise",
+    add: "Ajouter une Entreprise",
+    edit: "Modifier le Profil",
+    delete: "Supprimer",
+    maxCheckAmount: "Montant max. de chèque (optionnel)",
+    maxCheckAmountHint: "Limite les chèques et B/C à ce maximum (laisser vide pour aucune limite)",
+    cannotDelete: "Impossible de supprimer la dernière entreprise",
+  },
+
+  checkRec: {
+    title: "Rapprochement des Chèques",
+    bankBalance: "Solde Bancaire",
+    outstandingTotal: "Chèques en Cours",
+    adjustedBalance: "Solde Ajusté",
+    outstanding: "En cours",
+    cleared: "Compensé",
+    voided: "Annulé",
+    checkNo: "Chèque #",
+    payee: "Bénéficiaire",
+    date: "Date",
+    amount: "Montant",
+    markCleared: "Marquer comme Compensé",
+    clearedDateLabel: "Date de Compensation",
+    noChecks: "Aucun chèque pour l'instant",
+    noChecksSub: "Les chèques apparaîtront ici lorsque vous imprimez des chèques depuis les Comptes Fournisseurs",
   },
 };
 

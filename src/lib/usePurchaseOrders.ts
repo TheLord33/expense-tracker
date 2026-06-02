@@ -3,23 +3,24 @@
 import { useState, useEffect, useCallback } from "react";
 import type { PurchaseOrder } from "./types";
 
-const PO_KEY = "folio-purchase-orders";
-
-export function usePurchaseOrders() {
+export function usePurchaseOrders(companyId: string) {
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    setLoaded(false);
     try {
-      const raw = localStorage.getItem(PO_KEY);
-      if (raw) setOrders(JSON.parse(raw));
+      const raw = localStorage.getItem(`folio-${companyId}-purchase-orders`);
+      setOrders(raw ? JSON.parse(raw) : []);
     } catch { /* ignore */ }
     setLoaded(true);
-  }, []);
+  }, [companyId]);
 
   useEffect(() => {
-    if (loaded) localStorage.setItem(PO_KEY, JSON.stringify(orders));
-  }, [orders, loaded]);
+    if (loaded) {
+      localStorage.setItem(`folio-${companyId}-purchase-orders`, JSON.stringify(orders));
+    }
+  }, [orders, loaded, companyId]);
 
   const addOrder = useCallback((po: Omit<PurchaseOrder, "id">) => {
     setOrders((prev) => [...prev, { ...po, id: crypto.randomUUID() }]);
@@ -33,9 +34,7 @@ export function usePurchaseOrders() {
     setOrders((prev) => prev.filter((po) => po.id !== id));
   }, []);
 
-  const replaceOrders = useCallback((incoming: PurchaseOrder[]) => {
-    setOrders(incoming);
-  }, []);
+  const replaceOrders = useCallback((incoming: PurchaseOrder[]) => setOrders(incoming), []);
 
   const poTotal = useCallback(
     (po: PurchaseOrder) => po.lines.reduce((s, l) => s + l.qty * l.unitCost, 0),

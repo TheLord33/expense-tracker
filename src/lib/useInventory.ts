@@ -3,30 +3,28 @@
 import { useState, useEffect, useCallback } from "react";
 import type { InventoryItem, StockMovement } from "./types";
 
-const ITEMS_KEY     = "folio-inventory-items";
-const MOVEMENTS_KEY = "folio-inventory-movements";
-
-export function useInventory() {
+export function useInventory(companyId: string) {
   const [items,     setItems]     = useState<InventoryItem[]>([]);
   const [movements, setMovements] = useState<StockMovement[]>([]);
   const [loaded,    setLoaded]    = useState(false);
 
   useEffect(() => {
+    setLoaded(false);
     try {
-      const i = localStorage.getItem(ITEMS_KEY);
-      const m = localStorage.getItem(MOVEMENTS_KEY);
-      if (i) setItems(JSON.parse(i));
-      if (m) setMovements(JSON.parse(m));
+      const i = localStorage.getItem(`folio-${companyId}-inventory-items`);
+      const m = localStorage.getItem(`folio-${companyId}-inventory-movements`);
+      setItems(i ? JSON.parse(i) : []);
+      setMovements(m ? JSON.parse(m) : []);
     } catch { /* ignore */ }
     setLoaded(true);
-  }, []);
+  }, [companyId]);
 
   useEffect(() => {
     if (loaded) {
-      localStorage.setItem(ITEMS_KEY,     JSON.stringify(items));
-      localStorage.setItem(MOVEMENTS_KEY, JSON.stringify(movements));
+      localStorage.setItem(`folio-${companyId}-inventory-items`,     JSON.stringify(items));
+      localStorage.setItem(`folio-${companyId}-inventory-movements`, JSON.stringify(movements));
     }
-  }, [items, movements, loaded]);
+  }, [items, movements, loaded, companyId]);
 
   // ── Items ────────────────────────────────────────────────────────────────────
 
@@ -65,7 +63,7 @@ export function useInventory() {
       .reduce((sum, m) => {
         if (m.type === "purchase")    return sum + m.quantity;
         if (m.type === "consumption") return sum - m.quantity;
-        return sum + m.quantity; // adjustment: signed
+        return sum + m.quantity;
       }, 0);
   }, [movements]);
 

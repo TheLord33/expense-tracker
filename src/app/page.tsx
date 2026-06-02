@@ -6,12 +6,13 @@ import {
   useDisclosure,
   Card, CardBody, CardHeader, Divider,
   Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection,
-  Button,
+  Button, Input,
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
 } from "@nextui-org/react";
 import {
   Receipt, PiggyBank, RefreshCw, TrendingUp,
   BookOpen, BarChart2, Scale, ClipboardList, Wallet, Package, BadgeDollarSign,
-  Banknote, Calculator, Building2, ChevronDown, ShoppingCart,
+  Banknote, Calculator, Building2, ChevronDown, ShoppingCart, ListChecks, Pencil, Trash2,
 } from "lucide-react";
 
 import { useExpenses } from "@/lib/useExpenses";
@@ -26,7 +27,8 @@ import { useVendors } from "@/lib/useVendors";
 import { useBills } from "@/lib/useBills";
 import { useInventory } from "@/lib/useInventory";
 import { useAR } from "@/lib/useAR";
-import { useCompanyProfile } from "@/lib/useCompanyProfile";
+import { useCompanies } from "@/lib/useCompanies";
+import { useChecks } from "@/lib/useChecks";
 import { usePurchaseOrders } from "@/lib/usePurchaseOrders";
 import type { Budget, RecurringExpense, IncomeSource } from "@/lib/types";
 
@@ -53,6 +55,7 @@ import { ARTab } from "@/components/ARTab";
 import { CashFlowTab } from "@/components/CashFlowTab";
 import { FinCalcTab } from "@/components/FinCalcTab";
 import { POTab } from "@/components/POTab";
+import { CheckRecTab } from "@/components/CheckRecTab";
 
 import type { Expense, ChipColor } from "@/lib/types";
 import { useLanguage, useToast, useCurrency } from "@/app/providers";
@@ -60,7 +63,7 @@ import { useLanguage, useToast, useCurrency } from "@/app/providers";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type PersonalTab      = "expenses" | "budgets" | "recurring" | "income" | "finCalc";
-type AccountingModule = "ledger" | "pnl" | "balanceSheet" | "trialBalance" | "cashFlow" | "ap" | "inventory" | "ar" | "po";
+type AccountingModule = "ledger" | "pnl" | "balanceSheet" | "trialBalance" | "cashFlow" | "ap" | "inventory" | "ar" | "po" | "checkRec";
 type ActiveTab        = PersonalTab | "accounting";
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -102,14 +105,71 @@ export default function HomePage() {
 
   const { sources, monthlyIncome, addSource, updateSource, deleteSource, restoreSource } = useIncome();
 
-  const { accounts, addAccount, updateAccount, deleteAccount, replaceCustomAccounts } = useAccounts();
-  const { balances: openingBalances, setBalance: setOpeningBalance, setAllBalances } = useOpeningBalances();
-  const { vendors, addVendor, updateVendor, deleteVendor } = useVendors();
-  const { bills, billPayments, addBill, updateBill, deleteBill, addPayment, paidAmount, outstanding } = useBills();
-  const { items: inventoryItems, movements: inventoryMovements, addItem, updateItem, deleteItem, addMovement, deleteMovement, qtyOnHand, inventoryValue, totalInventoryValue } = useInventory();
-  const { customers, invoices, payments: invoicePayments, addCustomer, updateCustomer, deleteCustomer, addInvoice, updateInvoice, deleteInvoice, addPayment: addInvoicePayment, collectedAmount, outstanding: invoiceOutstanding } = useAR();
-  const { profile: companyProfile, updateProfile: updateCompanyProfile } = useCompanyProfile();
-  const { orders: purchaseOrders, addOrder, updateOrder, deleteOrder, poTotal } = usePurchaseOrders();
+  const {
+    companies, activeId, activeCompany, loaded: companiesLoaded,
+    addCompany, updateCompany, deleteCompany, setActiveCompany,
+  } = useCompanies();
+
+  const { accounts, addAccount, updateAccount, deleteAccount, replaceCustomAccounts } = useAccounts(activeId);
+  const { balances: openingBalances, setBalance: setOpeningBalance, setAllBalances } = useOpeningBalances(activeId);
+  const { vendors, addVendor, updateVendor, deleteVendor } = useVendors(activeId);
+  const { bills, billPayments, addBill, updateBill, deleteBill, addPayment, paidAmount, outstanding } = useBills(activeId);
+  const { items: inventoryItems, movements: inventoryMovements, addItem, updateItem, deleteItem, addMovement, deleteMovement, qtyOnHand, inventoryValue, totalInventoryValue } = useInventory(activeId);
+  const { customers, invoices, payments: invoicePayments, addCustomer, updateCustomer, deleteCustomer, addInvoice, updateInvoice, deleteInvoice, addPayment: addInvoicePayment, collectedAmount, outstanding: invoiceOutstanding } = useAR(activeId);
+  const { checks, addChecks, updateCheck } = useChecks(activeId);
+  const { orders: purchaseOrders, addOrder, updateOrder, deleteOrder, poTotal } = usePurchaseOrders(activeId);
+
+  // ── Company modal state ───────────────────────────────────────────────────────
+  const companyModal = useDisclosure();
+  const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null);
+  const [cName,     setCName]     = useState("");
+  const [cAddr,     setCAddr]     = useState("");
+  const [cEmail,    setCEmail]    = useState("");
+  const [cPhone,    setCPhone]    = useState("");
+  const [cWebsite,  setCWebsite]  = useState("");
+  const [cTaxId,    setCTaxId]    = useState("");
+  const [cMaxCheck, setCMaxCheck] = useState("");
+
+  function openAddCompany() {
+    setEditingCompanyId(null);
+    setCName(""); setCAddr(""); setCEmail(""); setCPhone(""); setCWebsite(""); setCTaxId(""); setCMaxCheck("");
+    companyModal.onOpen();
+  }
+
+  function openEditCompany(id: string) {
+    const c = companies.find((x) => x.id === id);
+    if (!c) return;
+    setEditingCompanyId(id);
+    setCName(c.name); setCAddr(c.address ?? ""); setCEmail(c.email ?? "");
+    setCPhone(c.phone ?? ""); setCWebsite(c.website ?? ""); setCTaxId(c.taxId ?? "");
+    setCMaxCheck(c.maxCheckAmount != null ? String(c.maxCheckAmount) : "");
+    companyModal.onOpen();
+  }
+
+  function handleCompanySubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const data = {
+      name: cName.trim(),
+      address: cAddr.trim() || undefined,
+      email: cEmail.trim() || undefined,
+      phone: cPhone.trim() || undefined,
+      website: cWebsite.trim() || undefined,
+      taxId: cTaxId.trim() || undefined,
+      maxCheckAmount: cMaxCheck ? parseFloat(cMaxCheck) : undefined,
+    };
+    if (editingCompanyId) {
+      updateCompany(editingCompanyId, data);
+    } else {
+      const newId = addCompany(data);
+      setActiveCompany(newId);
+    }
+    companyModal.onClose();
+  }
+
+  function handleDeleteCompany(id: string) {
+    if (companies.length <= 1) return;
+    deleteCompany(id);
+  }
 
   // ── Edit expense state ───────────────────────────────────────────────────────
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -220,6 +280,7 @@ export default function HomePage() {
     { key: "inventory", label: t("tabs.inventory"), icon: Package         },
     { key: "ar",        label: t("tabs.ar"),        icon: BadgeDollarSign },
     { key: "po",        label: t("tabs.po"),        icon: ShoppingCart    },
+    { key: "checkRec",  label: t("tabs.checkRec"),  icon: ListChecks      },
   ];
 
   const ALL_ACCT = [...REPORTS, ...MODULES];
@@ -426,8 +487,45 @@ export default function HomePage() {
         {/* ── Accounting area ── */}
         {activeTab === "accounting" && (
           <div className="space-y-4">
+            {/* Company switcher */}
+            {companiesLoaded && (
+              <div className="flex items-center gap-2 pt-3">
+                <Dropdown>
+                  <DropdownTrigger>
+                    <Button
+                      variant="flat" size="sm"
+                      startContent={<Building2 size={13} />}
+                      endContent={<ChevronDown size={11} />}
+                      className="h-8 text-xs font-medium"
+                    >
+                      {activeCompany?.name ?? "—"}
+                    </Button>
+                  </DropdownTrigger>
+                  <DropdownMenu aria-label={t("companies.label")} onAction={(key) => {
+                    if (key === "__add__") { openAddCompany(); return; }
+                    setActiveCompany(String(key));
+                  }}>
+                    {[
+                      ...companies.map((c) => (
+                        <DropdownItem key={c.id} className={c.id === activeId ? "text-indigo-600" : ""}>{c.name}</DropdownItem>
+                      )),
+                      <DropdownItem key="__add__" startContent={<Building2 size={13} />}>{t("companies.add")}</DropdownItem>,
+                    ]}
+                  </DropdownMenu>
+                </Dropdown>
+                <Button size="sm" variant="light" isIconOnly className="h-8 w-8" onPress={() => openEditCompany(activeId)}>
+                  <Pencil size={13} />
+                </Button>
+                {companies.length > 1 && (
+                  <Button size="sm" variant="light" isIconOnly className="h-8 w-8 text-danger-400" onPress={() => handleDeleteCompany(activeId)}>
+                    <Trash2 size={13} />
+                  </Button>
+                )}
+              </div>
+            )}
+
             {/* Sub-nav */}
-            <div className="pt-3 space-y-2">
+            <div className="space-y-2">
               <div className="flex gap-2 flex-wrap">
                 {REPORTS.map(({ key, label, icon: Icon }) => (
                   <button key={key} className={pillCls(acctModule === key)} onClick={() => setAcctModule(key)}>
@@ -497,10 +595,12 @@ export default function HomePage() {
             {acctModule === "ap" && (
               <APTab
                 vendors={vendors} bills={bills} billPayments={billPayments}
-                accounts={accounts} company={companyProfile}
+                accounts={accounts} company={activeCompany}
+                maxCheckAmount={activeCompany?.maxCheckAmount}
                 onAddVendor={addVendor} onUpdateVendor={updateVendor} onDeleteVendor={deleteVendor}
                 onAddBill={addBill} onUpdateBill={updateBill} onDeleteBill={deleteBill}
-                onAddPayment={addPayment} paidAmount={paidAmount} outstanding={outstanding}
+                onAddPayment={addPayment} onAddChecks={addChecks}
+                paidAmount={paidAmount} outstanding={outstanding}
               />
             )}
 
@@ -518,8 +618,8 @@ export default function HomePage() {
             {acctModule === "ar" && (
               <ARTab
                 customers={customers} invoices={invoices} invoicePayments={invoicePayments}
-                accounts={accounts} company={companyProfile}
-                onUpdateCompany={updateCompanyProfile}
+                accounts={accounts} inventoryItems={inventoryItems} company={activeCompany}
+                onUpdateCompany={(data) => updateCompany(activeId, data)}
                 onAddCustomer={addCustomer} onUpdateCustomer={updateCustomer} onDeleteCustomer={deleteCustomer}
                 onAddInvoice={addInvoice} onUpdateInvoice={updateInvoice} onDeleteInvoice={deleteInvoice}
                 onAddPayment={addInvoicePayment}
@@ -533,6 +633,7 @@ export default function HomePage() {
                 inventoryItems={inventoryItems}
                 accounts={accounts}
                 orders={purchaseOrders}
+                maxCheckAmount={activeCompany?.maxCheckAmount}
                 onAddOrder={addOrder}
                 onUpdateOrder={updateOrder}
                 onDeleteOrder={deleteOrder}
@@ -540,6 +641,10 @@ export default function HomePage() {
                 onAddMovement={addMovement}
                 onAddBill={addBill}
               />
+            )}
+
+            {acctModule === "checkRec" && (
+              <CheckRecTab checks={checks} onUpdateCheck={updateCheck} />
             )}
           </div>
         )}
@@ -562,6 +667,48 @@ export default function HomePage() {
         onUpdate={handleUpdateCategory}
         onDelete={deleteCategory}
       />
+
+      {/* Company add/edit modal */}
+      <Modal isOpen={companyModal.isOpen} onClose={companyModal.onClose} placement="center">
+        <ModalContent>
+          <form onSubmit={handleCompanySubmit}>
+            <ModalHeader>
+              {editingCompanyId ? t("companies.edit") : t("companies.add")}
+            </ModalHeader>
+            <ModalBody className="gap-3">
+              <Input
+                label={t("ar.businessName")}
+                value={cName}
+                onValueChange={setCName}
+                isRequired
+                autoFocus
+              />
+              <textarea
+                className="w-full rounded-xl border border-default-200 bg-default-100 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                rows={2}
+                placeholder={t("ar.businessAddress")}
+                value={cAddr}
+                onChange={(e) => setCAddr(e.target.value)}
+              />
+              <Input label={t("ar.businessEmail")}   value={cEmail}   onValueChange={setCEmail}   />
+              <Input label={t("ar.businessPhone")}   value={cPhone}   onValueChange={setCPhone}   />
+              <Input label={t("ar.businessWebsite")} value={cWebsite} onValueChange={setCWebsite} />
+              <Input label={t("ar.businessTaxId")}   value={cTaxId}   onValueChange={setCTaxId}   />
+              <Input
+                type="number" min="0" step="0.01"
+                label={t("companies.maxCheckAmount")}
+                description={t("companies.maxCheckAmountHint")}
+                value={cMaxCheck}
+                onValueChange={setCMaxCheck}
+              />
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="flat" onPress={companyModal.onClose}>{t("cancel")}</Button>
+              <Button color="primary" type="submit">{t("save")}</Button>
+            </ModalFooter>
+          </form>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

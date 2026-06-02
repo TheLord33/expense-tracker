@@ -3,30 +3,28 @@
 import { useState, useEffect, useCallback } from "react";
 import type { Bill, BillPayment } from "./types";
 
-const BILLS_KEY    = "folio-bills";
-const PAYMENTS_KEY = "folio-bill-payments";
-
-export function useBills() {
-  const [bills, setBills]             = useState<Bill[]>([]);
+export function useBills(companyId: string) {
+  const [bills,        setBills]        = useState<Bill[]>([]);
   const [billPayments, setBillPayments] = useState<BillPayment[]>([]);
-  const [loaded, setLoaded]           = useState(false);
+  const [loaded,       setLoaded]       = useState(false);
 
   useEffect(() => {
+    setLoaded(false);
     try {
-      const b = localStorage.getItem(BILLS_KEY);
-      const p = localStorage.getItem(PAYMENTS_KEY);
-      if (b) setBills(JSON.parse(b));
-      if (p) setBillPayments(JSON.parse(p));
+      const b = localStorage.getItem(`folio-${companyId}-bills`);
+      const p = localStorage.getItem(`folio-${companyId}-bill-payments`);
+      setBills(b ? JSON.parse(b) : []);
+      setBillPayments(p ? JSON.parse(p) : []);
     } catch { /* ignore */ }
     setLoaded(true);
-  }, []);
+  }, [companyId]);
 
   useEffect(() => {
     if (loaded) {
-      localStorage.setItem(BILLS_KEY,    JSON.stringify(bills));
-      localStorage.setItem(PAYMENTS_KEY, JSON.stringify(billPayments));
+      localStorage.setItem(`folio-${companyId}-bills`,         JSON.stringify(bills));
+      localStorage.setItem(`folio-${companyId}-bill-payments`, JSON.stringify(billPayments));
     }
-  }, [bills, billPayments, loaded]);
+  }, [bills, billPayments, loaded, companyId]);
 
   // ── Bills ────────────────────────────────────────────────────────────────────
 
@@ -71,15 +69,10 @@ export function useBills() {
     [paidAmount]
   );
 
-  // ── Bulk restore (for backup import) ─────────────────────────────────────────
+  // ── Bulk restore ─────────────────────────────────────────────────────────────
 
-  const replaceBills = useCallback((incoming: Bill[]) => {
-    setBills(incoming);
-  }, []);
-
-  const replaceBillPayments = useCallback((incoming: BillPayment[]) => {
-    setBillPayments(incoming);
-  }, []);
+  const replaceBills        = useCallback((incoming: Bill[])        => setBills(incoming), []);
+  const replaceBillPayments = useCallback((incoming: BillPayment[]) => setBillPayments(incoming), []);
 
   return {
     bills, billPayments, loaded,
