@@ -157,8 +157,16 @@ export function ARTab({
     return `${prefix}${String(max + 1).padStart(6, "0")}`;
   }
 
-  // Returns the best available tax rate ID: explicit default if valid, else first rate, else "exempt".
-  function resolvedDefaultTaxId() {
+  // Returns the best available tax rate ID for a given customer state:
+  // 1. Rate whose state matches the customer's state
+  // 2. Explicitly configured company default (if valid)
+  // 3. First available rate (if only one configured)
+  // 4. "exempt"
+  function resolvedDefaultTaxId(customerState?: string) {
+    if (customerState) {
+      const stateMatch = taxRates.find((r) => r.state?.toUpperCase() === customerState.toUpperCase());
+      if (stateMatch) return stateMatch.id;
+    }
     if (defaultTaxRateId && taxRates.some((r) => r.id === defaultTaxRateId)) {
       return defaultTaxRateId;
     }
@@ -851,7 +859,7 @@ export function ARTab({
                     if (cust?.taxId) {
                       setFTaxRateId("exempt");
                     } else {
-                      setFTaxRateId(resolvedDefaultTaxId());
+                      setFTaxRateId(resolvedDefaultTaxId(cust?.state));
                     }
                     setFInvErr("");
                   }}
