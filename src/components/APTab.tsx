@@ -102,6 +102,13 @@ export function APTab({
     checkModal.onOpen();
   }
 
+  function parseTermsDiscount(terms?: string): { rate: number; withinDays: number } | null {
+    if (!terms) return null;
+    const m = terms.match(/^(\d+(?:\.\d+)?)\/(\d+)/);
+    if (!m) return null;
+    return { rate: Number(m[1]) / 100, withinDays: Number(m[2]) };
+  }
+
   async function handlePrintChecks() {
     if (exceedsMax) return;
     setPrinting(true);
@@ -114,25 +121,77 @@ export function APTab({
         byVendor.set(bill.vendorId, [...(byVendor.get(bill.vendorId) ?? []), bill]);
       }
 
+      const payDateMs = new Date(checkDate + "T00:00:00").getTime();
+
       const groups = Array.from(byVendor.entries());
-      const checks = groups.map(([vendorId, vBills], idx) => {
-        const billNums = vBills.map((b) => b.billNumber).filter(Boolean).map((n) => `#${n}`).join(", ");
+      const grouped = groups.map(([vendorId, vBills], idx) => {
+        const vendor = vendors.find((v) => v.id === vendorId);
+        const discInfo = parseTermsDiscount(vendor?.terms);
+
+        const lineItems = vBills.map((b) => {
+          const orig = outstanding(b);
+          let discount = 0;
+          if (discInfo) {
+            const billDateMs = new Date(b.date + "T00:00:00").getTime();
+            const days = Math.floor((payDateMs - billDateMs) / 86_400_000);
+            if (days <= discInfo.withinDays) discount = Math.round(orig * discInfo.rate * 100) / 100;
+          }
+          return {
+            billNumber: b.billNumber,
+            vendorInvoiceNumber: b.vendorInvoiceNumber,
+            description: b.description,
+            dueDate: b.dueDate,
+            originalAmount: orig,
+            discount,
+            netAmount: Math.round((orig - discount) * 100) / 100,
+          };
+        });
+
+        const totalNet = Math.round(lineItems.reduce((s, li) => s + li.netAmount, 0) * 100) / 100;
+        // Prefer vendor invoice numbers in memo; fall back to internal bill numbers
+        const memoNums = vBills
+          .map((b) => b.vendorInvoiceNumber || b.billNumber)
+          .filter(Boolean)
+          .map((n) => `Inv #${n}`)
+          .join(", ");
+
+        const checkNum = String(Number(startingCheck) + idx);
         return {
-          checkNumber: String(Number(startingCheck) + idx),
-          date: checkDate,
-          payee: vendors.find((v) => v.id === vendorId)?.name ?? "Unknown",
-          amount: vBills.reduce((s, b) => s + outstanding(b), 0),
-          memo: billNums || vBills.map((b) => b.description).join("; "),
-          billId: vBills[0].id,
+          check: {
+            checkNumber: checkNum,
+            date: checkDate,
+            payee: vendor?.name ?? "Unknown",
+            amount: totalNet,
+            memo: memoNums || vBills.map((b) => b.description).join("; "),
+            lineItems,
+            billIds: vBills.map((b) => b.id),
+            billId: vBills[0].id,
+          },
+          vBills,
+          lineItems,
+          checkNum,
         };
       });
 
-      const blob = await printChecksPDF(checks, company ?? null, fmt);
+      const blob = await printChecksPDF(grouped.map((g) => g.check), company ?? null, fmt);
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement("a");
       a.href = url; a.download = `checks-${checkDate}.pdf`; a.click();
       URL.revokeObjectURL(url);
-      onAddChecks(checks.map((c) => ({ ...c, status: "outstanding" as const })));
+
+      // Mark each bill paid with its net amount (after any early-payment discount)
+      for (const { vBills, lineItems, checkNum } of grouped) {
+        for (let i = 0; i < vBills.length; i++) {
+          onAddPayment({
+            billId: vBills[i].id,
+            date: checkDate,
+            amount: lineItems[i].netAmount,
+            note: `Check #${checkNum}`,
+          });
+        }
+      }
+
+      onAddChecks(grouped.map((g) => ({ ...g.check, status: "outstanding" as const })));
       setSelectedBills(new Set());
       checkModal.onClose();
     } finally {
@@ -150,7 +209,7 @@ export function APTab({
   const billModal = useDisclosure();
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
   const BLANK_BILL = {
-    vendorId: "", billNumber: "", date: today, dueDate: "",
+    vendorId: "", billNumber: "", vendorInvoiceNumber: "", date: today, dueDate: "",
     amount: "", description: "", expenseAccountId: "",
   };
   const [bf, setBf] = useState(BLANK_BILL);
@@ -167,6 +226,7 @@ export function APTab({
     setEditingBill(bill);
     setBf({
       vendorId: bill.vendorId, billNumber: bill.billNumber,
+      vendorInvoiceNumber: bill.vendorInvoiceNumber ?? "",
       date: bill.date, dueDate: bill.dueDate,
       amount: String(bill.amount), description: bill.description,
       expenseAccountId: bill.expenseAccountId,
@@ -193,6 +253,7 @@ export function APTab({
     if (!validateBill()) return;
     const data = {
       vendorId: bf.vendorId, billNumber: bf.billNumber,
+      vendorInvoiceNumber: bf.vendorInvoiceNumber.trim() || undefined,
       date: bf.date, dueDate: bf.dueDate,
       amount: parseFloat(parseFloat(bf.amount).toFixed(2)),
       description: bf.description.trim(),
@@ -606,8 +667,12 @@ export function APTab({
               >
                 {vendors.map((v) => <SelectItem key={v.id} textValue={v.name}>{v.name}</SelectItem>)}
               </Select>
-              <Input label={t("ap.billNumber")} value={bf.billNumber}
-                onValueChange={(v) => setBf((p) => ({ ...p, billNumber: v }))} />
+              <div className="flex gap-3">
+                <Input label={t("ap.billNumber")} value={bf.billNumber}
+                  onValueChange={(v) => setBf((p) => ({ ...p, billNumber: v }))} />
+                <Input label={t("po.vendorInvoiceNumber")} value={bf.vendorInvoiceNumber}
+                  onValueChange={(v) => setBf((p) => ({ ...p, vendorInvoiceNumber: v }))} />
+              </div>
               <div className="flex gap-3">
                 <Input type="date" label={t("ap.billDate")} value={bf.date}
                   onValueChange={(v) => setBf((p) => ({ ...p, date: v }))}
