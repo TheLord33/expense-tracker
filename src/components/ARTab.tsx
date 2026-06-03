@@ -9,8 +9,8 @@ import {
   useDisclosure,
 } from "@nextui-org/react";
 import { Plus, Pencil, Trash2, BadgeDollarSign, CheckCircle, Download, Settings, X, FileText } from "lucide-react";
-import type { Account, CompanyProfile, Customer, InventoryItem, Invoice, InvoiceLine, InvoicePayment } from "@/lib/types";
-import { invoiceTotal } from "@/lib/useAR";
+import type { Account, CompanyProfile, Customer, InventoryItem, Invoice, InvoiceLine, InvoicePayment, TaxRate } from "@/lib/types";
+import { invoiceTotal, invoiceSubtotal } from "@/lib/useAR";
 import { generateInvoicePDF, generateStatementPDF } from "@/lib/exportPDF";
 import { downloadBlob } from "@/lib/importExport";
 import { useLanguage, useCurrency } from "@/app/providers";
@@ -61,6 +61,8 @@ interface Props {
   accounts: Account[];
   inventoryItems?: InventoryItem[];
   company: CompanyProfile;
+  taxRates?: TaxRate[];
+  defaultTaxRateId?: string;
   onUpdateCompany: (data: Partial<CompanyProfile>) => void;
   onAddCustomer: (c: Omit<Customer, "id">) => void;
   onUpdateCustomer: (id: string, data: Partial<Omit<Customer, "id">>) => void;
@@ -78,7 +80,8 @@ interface Props {
 export function ARTab({
   customers, invoices, invoicePayments, accounts,
   inventoryItems = [],
-  company, onUpdateCompany,
+  company, taxRates = [], defaultTaxRateId,
+  onUpdateCompany,
   onAddCustomer, onUpdateCustomer, onDeleteCustomer,
   onAddInvoice, onUpdateInvoice, onDeleteInvoice,
   onAddPayment, collectedAmount, outstanding,
@@ -99,13 +102,14 @@ export function ARTab({
   // ── Invoice form ─────────────────────────────────────────────────────────────
   const invModal = useDisclosure();
   const [editingInv, setEditingInv] = useState<Invoice | null>(null);
-  const [fCustomer,  setFCustomer]  = useState("");
-  const [fInvNum,    setFInvNum]    = useState("");
-  const [fDate,      setFDate]      = useState(today);
-  const [fDue,       setFDue]       = useState(today);
-  const [fRevAcct,   setFRevAcct]   = useState("acc-4000");
-  const [fLines,     setFLines]     = useState<FormLine[]>([blankLine()]);
-  const [fInvErr,    setFInvErr]    = useState("");
+  const [fCustomer,   setFCustomer]  = useState("");
+  const [fInvNum,     setFInvNum]    = useState("");
+  const [fDate,       setFDate]      = useState(today);
+  const [fDue,        setFDue]       = useState(today);
+  const [fRevAcct,    setFRevAcct]   = useState("acc-4000");
+  const [fLines,      setFLines]     = useState<FormLine[]>([blankLine()]);
+  const [fTaxRateId,  setFTaxRateId] = useState<string>("exempt");
+  const [fInvErr,     setFInvErr]    = useState("");
 
   function addFormLine() { setFLines((p) => [...p, blankLine()]); }
   function removeFormLine(id: string) { setFLines((p) => p.filter((l) => l.id !== id)); }
@@ -121,7 +125,10 @@ export function ARTab({
     }));
   }
 
-  const formTotal = fLines.reduce((s, l) => s + (Number(l.qty) || 0) * (Number(l.unitPrice) || 0), 0);
+  const formSubtotal = fLines.reduce((s, l) => s + (Number(l.qty) || 0) * (Number(l.unitPrice) || 0), 0);
+  const formTaxRate  = taxRates.find((r) => r.id === fTaxRateId);
+  const formTax      = formTaxRate ? Math.round(formSubtotal * formTaxRate.rate * 100) / 100 : 0;
+  const formTotal    = formSubtotal + formTax;
 
   function nextInvNumber(prefix: "I" | "C"): string {
     const max = invoices
@@ -138,6 +145,7 @@ export function ARTab({
     setFInvNum(nextInvNumber("I"));
     setFCustomer(""); setFDate(today); setFDue(today);
     setFRevAcct("acc-4000"); setFLines([blankLine()]); setFInvErr("");
+    setFTaxRateId(defaultTaxRateId ?? "exempt");
     invModal.onOpen();
   }
 
@@ -146,6 +154,7 @@ export function ARTab({
     setFInvNum(nextInvNumber("C"));
     setFCustomer(""); setFDate(today); setFDue(today);
     setFRevAcct("acc-4000"); setFLines([blankLine()]); setFInvErr("");
+    setFTaxRateId("exempt"); // credits are never taxed
     invModal.onOpen();
   }
 
@@ -154,6 +163,7 @@ export function ARTab({
     setFCustomer(inv.customerId); setFInvNum(inv.invoiceNumber);
     setFDate(inv.date); setFDue(inv.dueDate);
     setFRevAcct(inv.revenueAccountId); setFInvErr("");
+    setFTaxRateId(inv.taxRateId ?? "exempt");
     setFLines(
       inv.lines?.length
         ? inv.lines.map((l) => ({
@@ -188,6 +198,9 @@ export function ARTab({
       unitPrice:       Number(l.unitPrice),
       inventoryItemId: l.inventoryItemId || undefined,
     }));
+    const subtotal = lines.reduce((s, l) => s + l.quantity * l.unitPrice, 0);
+    const selectedRate = taxRates.find((r) => r.id === fTaxRateId);
+    const taxAmount = selectedRate ? Math.round(subtotal * selectedRate.rate * 100) / 100 : 0;
     const num = fInvNum.trim() || nextInvNumber("I");
     const data: Omit<Invoice, "id"> = {
       customerId:       fCustomer,
@@ -197,6 +210,9 @@ export function ARTab({
       dueDate:          fDue,
       lines,
       revenueAccountId: fRevAcct,
+      taxRateId:        fTaxRateId || undefined,
+      taxRate:          selectedRate?.rate,
+      taxAmount:        taxAmount || undefined,
     };
     if (editingInv) onUpdateInvoice(editingInv.id, data);
     else            onAddInvoice(data);
@@ -235,18 +251,21 @@ export function ARTab({
   const [fCustEmail,   setFCustEmail]   = useState("");
   const [fCustPhone,   setFCustPhone]   = useState("");
   const [fCustTerms,   setFCustTerms]   = useState("");
+  const [fCustTaxId,   setFCustTaxId]   = useState("");
   const [fCustErr,     setFCustErr]     = useState("");
 
   function openAddCustomer() {
     setEditingCust(null);
-    setFCustName(""); setFCustAddress(""); setFCustEmail(""); setFCustPhone(""); setFCustTerms(""); setFCustErr("");
+    setFCustName(""); setFCustAddress(""); setFCustEmail(""); setFCustPhone("");
+    setFCustTerms(""); setFCustTaxId(""); setFCustErr("");
     custModal.onOpen();
   }
 
   function openEditCustomer(c: Customer) {
     setEditingCust(c);
     setFCustName(c.name); setFCustAddress(c.address ?? "");
-    setFCustEmail(c.email ?? ""); setFCustPhone(c.phone ?? ""); setFCustTerms(c.terms ?? ""); setFCustErr("");
+    setFCustEmail(c.email ?? ""); setFCustPhone(c.phone ?? "");
+    setFCustTerms(c.terms ?? ""); setFCustTaxId(c.taxId ?? ""); setFCustErr("");
     custModal.onOpen();
   }
 
@@ -259,6 +278,7 @@ export function ARTab({
       email: fCustEmail.trim() || undefined,
       phone: fCustPhone.trim() || undefined,
       terms: fCustTerms.trim() || undefined,
+      taxId: fCustTaxId.trim() || undefined,
     };
     if (editingCust) onUpdateCustomer(editingCust.id, data);
     else             onAddCustomer(data);
@@ -476,6 +496,16 @@ export function ARTab({
                           </p>
                         </div>
                         <div className="text-right shrink-0">
+                          {inv.taxAmount && inv.taxAmount > 0 ? (
+                            <>
+                              <p className="text-xs text-default-400 tabular-nums">
+                                Sub: {fmt(invoiceSubtotal(inv))}
+                              </p>
+                              <p className="text-xs text-default-400 tabular-nums">
+                                Tax: {fmt(inv.taxAmount)}
+                              </p>
+                            </>
+                          ) : null}
                           <p className={`text-sm font-bold ${isCredit ? "text-success-700" : "text-default-900"}`}>
                             {isCredit ? `(${fmt(absTotal)})` : fmt(total)}
                           </p>
@@ -645,7 +675,14 @@ export function ARTab({
                   label={t("ar.customer")}
                   placeholder={t("ar.selectCustomer")}
                   selectedKeys={fCustomer ? [fCustomer] : []}
-                  onSelectionChange={(keys) => { setFCustomer([...keys][0] as string); setFInvErr(""); }}
+                  onSelectionChange={(keys) => {
+                    const id = [...keys][0] as string;
+                    setFCustomer(id);
+                    const cust = customers.find((c) => c.id === id);
+                    if (cust?.taxId) setFTaxRateId("exempt");
+                    else if (!editingInv) setFTaxRateId(defaultTaxRateId ?? "exempt");
+                    setFInvErr("");
+                  }}
                   size="sm"
                   className="flex-1"
                 >
@@ -674,6 +711,19 @@ export function ARTab({
                   ))}
                 </Select>
               </div>
+
+              {/* Tax rate (hidden for credit memos) */}
+              {!fInvNum.startsWith("C") && (
+                <Select
+                  label="Sales Tax"
+                  selectedKeys={fTaxRateId ? [fTaxRateId] : ["exempt"]}
+                  onSelectionChange={(keys) => setFTaxRateId([...keys][0] as string ?? "exempt")}
+                  size="sm"
+                  items={[{ id: "exempt", name: "Tax Exempt (0%)", rate: 0 }, ...taxRates.map((r) => ({ id: r.id, name: `${r.name} — ${(r.rate * 100).toFixed(2)}%`, rate: r.rate }))]}
+                >
+                  {(item) => <SelectItem key={item.id} textValue={item.name}>{item.name}</SelectItem>}
+                </Select>
+              )}
 
               {/* Line items */}
               <div>
@@ -739,10 +789,24 @@ export function ARTab({
                     </div>
                   ))}
 
-                  {/* Grand total row */}
-                  <div className="flex justify-end items-center gap-3 px-3 py-2 bg-default-50 border-t border-default-200">
-                    <span className="text-xs font-semibold text-default-600">{t("ar.grandTotal")}:</span>
-                    <span className="text-sm font-bold text-indigo-600 tabular-nums">{fmt(formTotal)}</span>
+                  {/* Totals */}
+                  <div className="flex flex-col items-end gap-0.5 px-3 py-2 bg-default-50 border-t border-default-200 text-xs">
+                    <div className="flex items-center gap-4">
+                      <span className="text-default-500">Subtotal:</span>
+                      <span className="tabular-nums text-default-700 w-24 text-right">{fmt(formSubtotal)}</span>
+                    </div>
+                    {formTax > 0 && (
+                      <div className="flex items-center gap-4">
+                        <span className="text-default-500">
+                          Tax {formTaxRate ? `(${(formTaxRate.rate * 100).toFixed(2)}%)` : ""}:
+                        </span>
+                        <span className="tabular-nums text-default-700 w-24 text-right">{fmt(formTax)}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-4 pt-0.5 border-t border-default-200 mt-0.5 w-full justify-end">
+                      <span className="font-semibold text-default-600">{t("ar.grandTotal")}:</span>
+                      <span className="text-sm font-bold text-indigo-600 tabular-nums w-24 text-right">{fmt(formTotal)}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -842,6 +906,14 @@ export function ARTab({
               >
                 {PAYMENT_TERMS.map((term) => <SelectItem key={term}>{term}</SelectItem>)}
               </Select>
+              <Input
+                label="Tax ID / Resale Certificate"
+                placeholder="Leave blank if taxable"
+                value={fCustTaxId}
+                onValueChange={setFCustTaxId}
+                size="sm"
+                description="If set, this customer will be marked tax-exempt on invoices."
+              />
             </ModalBody>
             <ModalFooter>
               <Button variant="flat" onPress={custModal.onClose}>{t("cancel")}</Button>

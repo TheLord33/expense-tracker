@@ -1,6 +1,6 @@
 import { Expense } from "./types";
 import type { Bill, BillPayment, CompanyProfile, Customer, Invoice, InvoicePayment, Vendor } from "./types";
-import { invoiceTotal } from "./useAR";
+import { invoiceTotal, invoiceSubtotal } from "./useAR";
 import type { PnLReport, BalanceSheetReport, TrialBalanceRow } from "./ledger";
 
 const APP_NAME = "Folio";
@@ -415,7 +415,14 @@ export async function generateInvoicePDF(
   }
 
   // ── Totals block ──────────────────────────────────────────────────────────────
-  const totalsBody: [string, string][] = [["Subtotal", fmtFn(total)]];
+  const subtotal = invoiceSubtotal(invoice);
+  const taxAmt   = invoice.taxAmount ?? 0;
+  const totalsBody: [string, string][] = [["Subtotal", fmtFn(subtotal)]];
+  if (taxAmt > 0) {
+    const pct = invoice.taxRate ? ` (${(invoice.taxRate * 100).toFixed(2)}%)` : "";
+    totalsBody.push([`Tax${pct}`, fmtFn(taxAmt)]);
+    totalsBody.push(["Total", fmtFn(total)]);
+  }
   if (collected > 0) totalsBody.push(["Collected", fmtFn(collected)]);
 
   autoTable(doc, {
