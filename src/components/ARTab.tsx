@@ -635,11 +635,11 @@ export function ARTab({
               <div className="flex gap-3">
                 <Input
                   label={fInvNum.startsWith("C") ? "Credit Memo #" : t("ar.invoiceNumber")}
-                  placeholder="I000001"
                   value={fInvNum}
-                  onValueChange={(v) => { setFInvNum(v); setFInvErr(""); }}
+                  isReadOnly
                   size="sm"
                   className="w-36"
+                  classNames={{ input: "text-default-500 cursor-default" }}
                 />
                 <Select
                   label={t("ar.customer")}
