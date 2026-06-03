@@ -125,7 +125,14 @@ export function ARTab({
 
   function openAddInvoice() {
     setEditingInv(null);
-    setFCustomer(""); setFInvNum(""); setFDate(today); setFDue(today);
+    // Auto-generate next invoice number from highest existing numeric suffix
+    const maxNum = invoices.reduce((max, inv) => {
+      const m = inv.invoiceNumber?.match(/(\d+)$/);
+      const n = m ? parseInt(m[1], 10) : 0;
+      return Math.max(max, n);
+    }, 0);
+    setFInvNum(`INV-${String(maxNum + 1).padStart(4, "0")}`);
+    setFCustomer(""); setFDate(today); setFDue(today);
     setFRevAcct("acc-4000"); setFLines([blankLine()]); setFInvErr("");
     invModal.onOpen();
   }
