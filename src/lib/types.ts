@@ -278,6 +278,7 @@ export interface Invoice {
   id: string;
   customerId: string;
   invoiceNumber: string;
+  type?: "invoice" | "credit";  // "invoice" (default) or credit memo
   date: string;             // YYYY-MM-DD issued
   dueDate: string;          // YYYY-MM-DD
   lines: InvoiceLine[];

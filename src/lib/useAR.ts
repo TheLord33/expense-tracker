@@ -3,10 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import type { Customer, Invoice, InvoicePayment, InvoiceLine } from "./types";
 
-/** Computed invoice total from line items (falls back to legacy .amount for old data). */
+/** Computed invoice total from line items (falls back to legacy .amount for old data).
+ *  Returns a NEGATIVE value for credit memos so they naturally net against invoices. */
 export function invoiceTotal(inv: Invoice): number {
-  if (inv.lines?.length) return inv.lines.reduce((s, l) => s + l.quantity * l.unitPrice, 0);
-  return inv.amount ?? 0;
+  const raw = inv.lines?.length
+    ? inv.lines.reduce((s, l) => s + l.quantity * l.unitPrice, 0)
+    : (inv.amount ?? 0);
+  return inv.type === "credit" ? -raw : raw;
 }
 
 /** Migrate a legacy flat-amount invoice to the line-items format. */
@@ -96,9 +99,14 @@ export function useAR(companyId: string) {
     payments.filter((p) => p.invoiceId === invoiceId).reduce((s, p) => s + p.amount, 0),
   [payments]);
 
-  const outstanding = useCallback((inv: Invoice): number =>
-    Math.max(0, invoiceTotal(inv) - collectedAmount(inv.id)),
-  [collectedAmount]);
+  const outstanding = useCallback((inv: Invoice): number => {
+    const total = invoiceTotal(inv); // negative for credits
+    const applied = collectedAmount(inv.id);
+    // Credits return negative outstanding (unapplied credit balance)
+    return inv.type === "credit"
+      ? Math.min(0, total + applied)
+      : Math.max(0, total - applied);
+  }, [collectedAmount]);
 
   // ── Bulk restore ─────────────────────────────────────────────────────────────
 

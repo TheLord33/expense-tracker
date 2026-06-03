@@ -30,7 +30,7 @@ function invoiceStatus(
   collected: number,
   today: string
 ): "paid" | "overdue" | "due-soon" | "unpaid" {
-  const total = invoiceTotal(inv);
+  const total = Math.abs(invoiceTotal(inv)); // use absolute value so credits work the same way
   if (collected >= total - 0.01) return "paid";
   if (inv.dueDate < today) return "overdue";
   const days = Math.round((new Date(inv.dueDate).getTime() - new Date(today).getTime()) / 86400000);
@@ -123,15 +123,27 @@ export function ARTab({
 
   const formTotal = fLines.reduce((s, l) => s + (Number(l.qty) || 0) * (Number(l.unitPrice) || 0), 0);
 
+  function nextInvNumber(prefix: "I" | "C"): string {
+    const max = invoices
+      .filter((inv) => inv.invoiceNumber?.startsWith(prefix))
+      .reduce((m, inv) => {
+        const n = parseInt(inv.invoiceNumber.slice(1), 10);
+        return isNaN(n) ? m : Math.max(m, n);
+      }, 0);
+    return `${prefix}${String(max + 1).padStart(6, "0")}`;
+  }
+
   function openAddInvoice() {
     setEditingInv(null);
-    // Auto-generate next invoice number from highest existing numeric suffix
-    const maxNum = invoices.reduce((max, inv) => {
-      const m = inv.invoiceNumber?.match(/(\d+)$/);
-      const n = m ? parseInt(m[1], 10) : 0;
-      return Math.max(max, n);
-    }, 0);
-    setFInvNum(`INV-${String(maxNum + 1).padStart(4, "0")}`);
+    setFInvNum(nextInvNumber("I"));
+    setFCustomer(""); setFDate(today); setFDue(today);
+    setFRevAcct("acc-4000"); setFLines([blankLine()]); setFInvErr("");
+    invModal.onOpen();
+  }
+
+  function openAddCredit() {
+    setEditingInv(null);
+    setFInvNum(nextInvNumber("C"));
     setFCustomer(""); setFDate(today); setFDue(today);
     setFRevAcct("acc-4000"); setFLines([blankLine()]); setFInvErr("");
     invModal.onOpen();
@@ -176,9 +188,11 @@ export function ARTab({
       unitPrice:       Number(l.unitPrice),
       inventoryItemId: l.inventoryItemId || undefined,
     }));
+    const num = fInvNum.trim() || nextInvNumber("I");
     const data: Omit<Invoice, "id"> = {
       customerId:       fCustomer,
-      invoiceNumber:    fInvNum.trim() || `INV-${Date.now()}`,
+      invoiceNumber:    num,
+      type:             num.startsWith("C") ? "credit" : "invoice",
       date:             fDate,
       dueDate:          fDue,
       lines,
@@ -400,9 +414,14 @@ export function ARTab({
             <Settings size={14} />
           </Button>
           {view === "invoices" && (
-            <Button size="sm" color="primary" startContent={<Plus size={14} />} onPress={openAddInvoice}>
-              {t("ar.addInvoice")}
-            </Button>
+            <>
+              <Button size="sm" color="primary" startContent={<Plus size={14} />} onPress={openAddInvoice}>
+                {t("ar.addInvoice")}
+              </Button>
+              <Button size="sm" variant="flat" color="success" startContent={<Plus size={14} />} onPress={openAddCredit}>
+                Credit Memo
+              </Button>
+            </>
           )}
           {view === "customers" && (
             <Button size="sm" color="primary" startContent={<Plus size={14} />} onPress={openAddCustomer}>
@@ -433,12 +452,19 @@ export function ARTab({
                 const lineDesc = firstLine
                   ? (inv.lines.length > 1 ? `${firstLine.description} +${inv.lines.length - 1}` : firstLine.description)
                   : (inv.description ?? "");
+                const isCredit = inv.type === "credit";
+                const absTotal = Math.abs(total);
+                const absOwed  = Math.abs(owed);
                 return (
-                  <Card key={inv.id} shadow="sm">
+                  <Card key={inv.id} shadow="sm"
+                    className={isCredit ? "border border-success-200 bg-success-50/30" : ""}>
                     <CardBody className="px-5 py-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
+                            {isCredit && (
+                              <span className="text-xs font-bold text-success-700 uppercase tracking-wide">Credit Memo</span>
+                            )}
                             <span className="font-semibold text-default-900 text-sm">
                               {t("ar.invoiceNumber")}{inv.invoiceNumber}
                             </span>
@@ -450,15 +476,17 @@ export function ARTab({
                           </p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="text-sm font-bold text-default-900">{fmt(total)}</p>
-                          {owed > 0.01 && (
-                            <p className="text-xs text-danger-600 font-medium">
-                              {t("ar.outstanding")}: {fmt(owed)}
+                          <p className={`text-sm font-bold ${isCredit ? "text-success-700" : "text-default-900"}`}>
+                            {isCredit ? `(${fmt(absTotal)})` : fmt(total)}
+                          </p>
+                          {absOwed > 0.01 && (
+                            <p className={`text-xs font-medium ${isCredit ? "text-success-600" : "text-danger-600"}`}>
+                              {isCredit ? "Unapplied" : t("ar.outstanding")}: {isCredit ? `(${fmt(absOwed)})` : fmt(absOwed)}
                             </p>
                           )}
                           {status === "paid" && (
                             <p className="text-xs text-success-600 flex items-center justify-end gap-0.5">
-                              <CheckCircle size={11} />{t("ar.statusPaid")}
+                              <CheckCircle size={11} />{isCredit ? "Applied" : t("ar.statusPaid")}
                             </p>
                           )}
                         </div>
@@ -466,7 +494,7 @@ export function ARTab({
                       <div className="flex gap-1.5 mt-3 justify-end">
                         {status !== "paid" && (
                           <Button size="sm" color="success" variant="flat" onPress={() => openPayment(inv)}>
-                            {t("ar.recordPayment")}
+                            {isCredit ? "Apply Credit" : t("ar.recordPayment")}
                           </Button>
                         )}
                         <Button isIconOnly size="sm" variant="light" title="Download PDF" onPress={() => handleDownloadPDF(inv)}>
@@ -597,13 +625,17 @@ export function ARTab({
       <Modal isOpen={invModal.isOpen} onClose={invModal.onClose} placement="center" size="2xl" scrollBehavior="inside">
         <ModalContent>
           <form onSubmit={handleInvSubmit}>
-            <ModalHeader>{editingInv ? t("ar.editInvoice") : t("ar.addInvoice")}</ModalHeader>
+            <ModalHeader>
+              {editingInv
+                ? (editingInv.type === "credit" ? "Edit Credit Memo" : t("ar.editInvoice"))
+                : (fInvNum.startsWith("C") ? "New Credit Memo" : t("ar.addInvoice"))}
+            </ModalHeader>
             <ModalBody className="gap-3">
               {/* Customer + Invoice # */}
               <div className="flex gap-3">
                 <Input
-                  label={t("ar.invoiceNumber")}
-                  placeholder="INV-001"
+                  label={fInvNum.startsWith("C") ? "Credit Memo #" : t("ar.invoiceNumber")}
+                  placeholder="I000001"
                   value={fInvNum}
                   onValueChange={(v) => { setFInvNum(v); setFInvErr(""); }}
                   size="sm"
