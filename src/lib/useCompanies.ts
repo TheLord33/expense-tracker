@@ -101,7 +101,10 @@ export function useCompanies() {
   }, []);
 
   const updateCompany = useCallback((id: string, data: Partial<Omit<Company, "id">>) => {
-    setCompanies((prev) => prev.map((c) => (c.id === id ? { ...c, ...data } : c)));
+    const defined = Object.fromEntries(
+      Object.entries(data).filter(([, v]) => v !== undefined)
+    ) as Partial<Omit<Company, "id">>;
+    setCompanies((prev) => prev.map((c) => (c.id === id ? { ...c, ...defined } : c)));
   }, []);
 
   const deleteCompany = useCallback((id: string) => {
