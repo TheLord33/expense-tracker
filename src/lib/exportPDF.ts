@@ -1,6 +1,18 @@
 import { Expense } from "./types";
 import type { Bill, BillPayment, CompanyProfile, Customer, Invoice, InvoicePayment, Vendor } from "./types";
 import { invoiceTotal, invoiceSubtotal } from "./useAR";
+
+function custAddrLines(c: Customer): string[] {
+  if (c.street || c.city || c.state || c.zip) {
+    const lines: string[] = [];
+    if (c.street) lines.push(c.street);
+    const mid = [c.city, c.state, c.zip].filter(Boolean).join(", ");
+    if (mid) lines.push(mid);
+    if (c.country) lines.push(c.country);
+    return lines;
+  }
+  return c.address ? c.address.split("\n").map((l) => l.trim()).filter(Boolean) : [];
+}
 import type { PnLReport, BalanceSheetReport, TrialBalanceRow } from "./ledger";
 
 const APP_NAME = "Folio";
@@ -358,9 +370,8 @@ export async function generateInvoicePDF(
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...GRAY);
-  if (customer?.address) {
-    const addrLines = customer.address.split("\n").map((l) => l.trim()).filter(Boolean);
-    for (const line of addrLines) { doc.text(line, 14, billY); billY += 4.5; }
+  if (customer) {
+    for (const line of custAddrLines(customer)) { doc.text(line, 14, billY); billY += 4.5; }
   }
   if (customer?.email) { doc.text(customer.email, 14, billY); billY += 4.5; }
   if (customer?.phone) { doc.text(customer.phone, 14, billY); billY += 4.5; }
@@ -563,11 +574,7 @@ export async function generateStatementPDF(
   doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.setTextColor(17, 24, 39);
   doc.text(customer.name, 14, custY); custY += 6;
   doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(...GRAY);
-  if (customer.address) {
-    for (const line of customer.address.split("\n").map((l) => l.trim()).filter(Boolean)) {
-      doc.text(line, 14, custY); custY += 4.5;
-    }
-  }
+  for (const line of custAddrLines(customer)) { doc.text(line, 14, custY); custY += 4.5; }
   if (customer.email) { doc.text(customer.email, 14, custY); custY += 4.5; }
   if (customer.phone) { doc.text(customer.phone, 14, custY); custY += 4.5; }
 
