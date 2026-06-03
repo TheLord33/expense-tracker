@@ -124,7 +124,7 @@ export function APTab({
       const payDateMs = new Date(checkDate + "T00:00:00").getTime();
 
       const groups = Array.from(byVendor.entries());
-      const checks = groups.map(([vendorId, vBills], idx) => {
+      const grouped = groups.map(([vendorId, vBills], idx) => {
         const vendor = vendors.find((v) => v.id === vendorId);
         const discInfo = parseTermsDiscount(vendor?.terms);
 
@@ -148,26 +148,50 @@ export function APTab({
         });
 
         const totalNet = Math.round(lineItems.reduce((s, li) => s + li.netAmount, 0) * 100) / 100;
-        const billNums = vBills.map((b) => b.billNumber).filter(Boolean).map((n) => `#${n}`).join(", ");
+        // Prefer vendor invoice numbers in memo; fall back to internal bill numbers
+        const memoNums = vBills
+          .map((b) => b.vendorInvoiceNumber || b.billNumber)
+          .filter(Boolean)
+          .map((n) => `Inv #${n}`)
+          .join(", ");
 
+        const checkNum = String(Number(startingCheck) + idx);
         return {
-          checkNumber: String(Number(startingCheck) + idx),
-          date: checkDate,
-          payee: vendor?.name ?? "Unknown",
-          amount: totalNet,
-          memo: billNums || vBills.map((b) => b.description).join("; "),
+          check: {
+            checkNumber: checkNum,
+            date: checkDate,
+            payee: vendor?.name ?? "Unknown",
+            amount: totalNet,
+            memo: memoNums || vBills.map((b) => b.description).join("; "),
+            lineItems,
+            billIds: vBills.map((b) => b.id),
+            billId: vBills[0].id,
+          },
+          vBills,
           lineItems,
-          billIds: vBills.map((b) => b.id),
-          billId: vBills[0].id,
+          checkNum,
         };
       });
 
-      const blob = await printChecksPDF(checks, company ?? null, fmt);
+      const blob = await printChecksPDF(grouped.map((g) => g.check), company ?? null, fmt);
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement("a");
       a.href = url; a.download = `checks-${checkDate}.pdf`; a.click();
       URL.revokeObjectURL(url);
-      onAddChecks(checks.map((c) => ({ ...c, status: "outstanding" as const })));
+
+      // Mark each bill paid with its net amount (after any early-payment discount)
+      for (const { vBills, lineItems, checkNum } of grouped) {
+        for (let i = 0; i < vBills.length; i++) {
+          onAddPayment({
+            billId: vBills[i].id,
+            date: checkDate,
+            amount: lineItems[i].netAmount,
+            note: `Check #${checkNum}`,
+          });
+        }
+      }
+
+      onAddChecks(grouped.map((g) => ({ ...g.check, status: "outstanding" as const })));
       setSelectedBills(new Set());
       checkModal.onClose();
     } finally {
