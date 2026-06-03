@@ -148,11 +148,12 @@ export default function HomePage() {
   const [cDefaultTaxId,  setCDefaultTaxId]  = useState("");
   const [cNewTaxName,    setCNewTaxName]    = useState("");
   const [cNewTaxRate,    setCNewTaxRate]    = useState("");
+  const [cNewTaxState,   setCNewTaxState]   = useState("");
 
   function openAddCompany() {
     setEditingCompanyId(null);
     setCCode(""); setCName(""); setCAddr(""); setCEmail(""); setCPhone(""); setCWebsite(""); setCTaxId(""); setCMaxCheck("");
-    setCTaxRates([]); setCDefaultTaxId(""); setCNewTaxName(""); setCNewTaxRate("");
+    setCTaxRates([]); setCDefaultTaxId(""); setCNewTaxName(""); setCNewTaxRate(""); setCNewTaxState("");
     companyModal.onOpen();
   }
 
@@ -168,7 +169,7 @@ export default function HomePage() {
       ? (c.defaultTaxRateId ?? "")
       : (storedRates[0]?.id ?? "");
     setCTaxRates(storedRates); setCDefaultTaxId(storedDefault);
-    setCNewTaxName(""); setCNewTaxRate("");
+    setCNewTaxName(""); setCNewTaxRate(""); setCNewTaxState("");
     companyModal.onOpen();
   }
 
@@ -841,6 +842,7 @@ export default function HomePage() {
                     {cTaxRates.map((tr) => (
                       <div key={tr.id} className="flex items-center gap-2">
                         <span className="flex-1 text-sm text-default-800">{tr.name}</span>
+                        {tr.state && <span className="text-xs font-mono bg-default-100 px-1.5 py-0.5 rounded text-default-500">{tr.state}</span>}
                         <span className="text-sm text-default-500 w-16 text-right">{(tr.rate * 100).toFixed(3).replace(/\.?0+$/, "")}%</span>
                         <Button size="sm" isIconOnly variant="light" color="danger"
                           onPress={() => {
@@ -870,6 +872,8 @@ export default function HomePage() {
                 <div className="flex gap-2 items-end">
                   <Input size="sm" placeholder="Name (e.g. CA Combined)" value={cNewTaxName}
                     onValueChange={setCNewTaxName} className="flex-1" />
+                  <Input size="sm" placeholder="State" value={cNewTaxState}
+                    onValueChange={(v) => setCNewTaxState(v.toUpperCase())} className="w-16" maxLength={2} />
                   <Input size="sm" placeholder="Rate %" type="number" min="0" max="100" step="0.001"
                     value={cNewTaxRate} onValueChange={setCNewTaxRate} className="w-24" />
                   <Button size="sm" variant="flat" color="primary"
@@ -877,12 +881,12 @@ export default function HomePage() {
                     onPress={() => {
                       const rate = parseFloat(cNewTaxRate) / 100;
                       if (isNaN(rate) || rate <= 0) return;
-                      const newRate: TaxRate = { id: crypto.randomUUID(), name: cNewTaxName.trim(), rate };
+                      const newRate: TaxRate = { id: crypto.randomUUID(), name: cNewTaxName.trim(), rate, state: cNewTaxState.trim().toUpperCase() || undefined };
                       const next = [...cTaxRates, newRate];
                       setCTaxRates(next);
                       const defaultStillValid = next.some((r) => r.id === cDefaultTaxId);
                       if (!defaultStillValid) setCDefaultTaxId(newRate.id);
-                      setCNewTaxName(""); setCNewTaxRate("");
+                      setCNewTaxName(""); setCNewTaxRate(""); setCNewTaxState("");
                     }}>
                     Add
                   </Button>

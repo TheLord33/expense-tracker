@@ -231,8 +231,9 @@ export interface BillPayment {
 
 export interface TaxRate {
   id: string;
-  name: string;   // e.g. "CA Combined"
-  rate: number;   // decimal, e.g. 0.0825 for 8.25%
+  name: string;    // e.g. "CA Combined"
+  rate: number;    // decimal, e.g. 0.0825 for 8.25%
+  state?: string;  // 2-letter state code; used to auto-match customer's state
 }
 
 export interface CompanyProfile {
