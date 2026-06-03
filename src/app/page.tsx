@@ -30,7 +30,7 @@ import { useAR } from "@/lib/useAR";
 import { useCompanies } from "@/lib/useCompanies";
 import { useChecks } from "@/lib/useChecks";
 import { usePurchaseOrders } from "@/lib/usePurchaseOrders";
-import type { Budget, RecurringExpense, IncomeSource } from "@/lib/types";
+import type { Budget, RecurringExpense, IncomeSource, TaxRate } from "@/lib/types";
 
 import { AppHeader } from "@/components/AppHeader";
 import { AddExpenseModal } from "@/components/AddExpenseModal";
@@ -136,18 +136,23 @@ export default function HomePage() {
   // ── Company modal state ───────────────────────────────────────────────────────
   const companyModal = useDisclosure();
   const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null);
-  const [cCode,     setCCode]     = useState("");
-  const [cName,     setCName]     = useState("");
-  const [cAddr,     setCAddr]     = useState("");
-  const [cEmail,    setCEmail]    = useState("");
-  const [cPhone,    setCPhone]    = useState("");
-  const [cWebsite,  setCWebsite]  = useState("");
-  const [cTaxId,    setCTaxId]    = useState("");
-  const [cMaxCheck, setCMaxCheck] = useState("");
+  const [cCode,          setCCode]          = useState("");
+  const [cName,          setCName]          = useState("");
+  const [cAddr,          setCAddr]          = useState("");
+  const [cEmail,         setCEmail]         = useState("");
+  const [cPhone,         setCPhone]         = useState("");
+  const [cWebsite,       setCWebsite]       = useState("");
+  const [cTaxId,         setCTaxId]         = useState("");
+  const [cMaxCheck,      setCMaxCheck]      = useState("");
+  const [cTaxRates,      setCTaxRates]      = useState<TaxRate[]>([]);
+  const [cDefaultTaxId,  setCDefaultTaxId]  = useState("");
+  const [cNewTaxName,    setCNewTaxName]    = useState("");
+  const [cNewTaxRate,    setCNewTaxRate]    = useState("");
 
   function openAddCompany() {
     setEditingCompanyId(null);
     setCCode(""); setCName(""); setCAddr(""); setCEmail(""); setCPhone(""); setCWebsite(""); setCTaxId(""); setCMaxCheck("");
+    setCTaxRates([]); setCDefaultTaxId(""); setCNewTaxName(""); setCNewTaxRate("");
     companyModal.onOpen();
   }
 
@@ -158,6 +163,8 @@ export default function HomePage() {
     setCCode(c.code ?? ""); setCName(c.name); setCAddr(c.address ?? ""); setCEmail(c.email ?? "");
     setCPhone(c.phone ?? ""); setCWebsite(c.website ?? ""); setCTaxId(c.taxId ?? "");
     setCMaxCheck(c.maxCheckAmount != null ? String(c.maxCheckAmount) : "");
+    setCTaxRates(c.taxRates ?? []); setCDefaultTaxId(c.defaultTaxRateId ?? "");
+    setCNewTaxName(""); setCNewTaxRate("");
     companyModal.onOpen();
   }
 
@@ -172,6 +179,8 @@ export default function HomePage() {
       website: cWebsite.trim() || undefined,
       taxId: cTaxId.trim() || undefined,
       maxCheckAmount: cMaxCheck ? parseFloat(cMaxCheck) : undefined,
+      taxRates: cTaxRates.length ? cTaxRates : undefined,
+      defaultTaxRateId: cDefaultTaxId || undefined,
     };
     if (editingCompanyId) {
       updateCompany(editingCompanyId, data);
@@ -722,6 +731,8 @@ export default function HomePage() {
               <ARTab
                 customers={customers} invoices={invoices} invoicePayments={invoicePayments}
                 accounts={accounts} inventoryItems={inventoryItems} company={activeCompany}
+                taxRates={activeCompany?.taxRates ?? []}
+                defaultTaxRateId={activeCompany?.defaultTaxRateId}
                 onUpdateCompany={(data) => updateCompany(activeId, data)}
                 onAddCustomer={addCustomer} onUpdateCustomer={updateCustomer} onDeleteCustomer={deleteCustomer}
                 onAddInvoice={addInvoice} onUpdateInvoice={updateInvoice} onDeleteInvoice={deleteInvoice}
@@ -817,6 +828,61 @@ export default function HomePage() {
                 value={cMaxCheck}
                 onValueChange={setCMaxCheck}
               />
+
+              {/* ── Sales Tax Rates ── */}
+              <div className="space-y-2 pt-1">
+                <p className="text-sm font-semibold text-default-700">Sales Tax Rates</p>
+                {cTaxRates.length > 0 && (
+                  <div className="space-y-1.5">
+                    {cTaxRates.map((tr) => (
+                      <div key={tr.id} className="flex items-center gap-2">
+                        <span className="flex-1 text-sm text-default-800">{tr.name}</span>
+                        <span className="text-sm text-default-500 w-16 text-right">{(tr.rate * 100).toFixed(3).replace(/\.?0+$/, "")}%</span>
+                        <Button size="sm" isIconOnly variant="light" color="danger"
+                          onPress={() => {
+                            const next = cTaxRates.filter((r) => r.id !== tr.id);
+                            setCTaxRates(next);
+                            if (cDefaultTaxId === tr.id) setCDefaultTaxId(next[0]?.id ?? "");
+                          }}>
+                          ×
+                        </Button>
+                      </div>
+                    ))}
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className="text-xs text-default-500">Default:</span>
+                      <select
+                        className="flex-1 rounded-lg border border-default-200 bg-default-100 px-2 py-1 text-sm"
+                        value={cDefaultTaxId}
+                        onChange={(e) => setCDefaultTaxId(e.target.value)}
+                      >
+                        <option value="">None</option>
+                        {cTaxRates.map((tr) => (
+                          <option key={tr.id} value={tr.id}>{tr.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+                <div className="flex gap-2 items-end">
+                  <Input size="sm" placeholder="Name (e.g. CA Combined)" value={cNewTaxName}
+                    onValueChange={setCNewTaxName} className="flex-1" />
+                  <Input size="sm" placeholder="Rate %" type="number" min="0" max="100" step="0.001"
+                    value={cNewTaxRate} onValueChange={setCNewTaxRate} className="w-24" />
+                  <Button size="sm" variant="flat" color="primary"
+                    isDisabled={!cNewTaxName.trim() || !cNewTaxRate}
+                    onPress={() => {
+                      const rate = parseFloat(cNewTaxRate) / 100;
+                      if (isNaN(rate) || rate <= 0) return;
+                      const newRate: TaxRate = { id: crypto.randomUUID(), name: cNewTaxName.trim(), rate };
+                      const next = [...cTaxRates, newRate];
+                      setCTaxRates(next);
+                      if (!cDefaultTaxId) setCDefaultTaxId(newRate.id);
+                      setCNewTaxName(""); setCNewTaxRate("");
+                    }}>
+                    Add
+                  </Button>
+                </div>
+              </div>
             </ModalBody>
             <ModalFooter>
               <Button variant="flat" onPress={companyModal.onClose}>{t("cancel")}</Button>

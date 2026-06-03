@@ -3,13 +3,16 @@
 import { useState, useEffect, useCallback } from "react";
 import type { Customer, Invoice, InvoicePayment, InvoiceLine } from "./types";
 
-/** Computed invoice total from line items (falls back to legacy .amount for old data).
- *  Returns a NEGATIVE value for credit memos so they naturally net against invoices. */
+/** Pre-tax subtotal from line items (falls back to legacy .amount). */
+export function invoiceSubtotal(inv: Invoice): number {
+  if (inv.lines?.length) return inv.lines.reduce((s, l) => s + l.quantity * l.unitPrice, 0);
+  return inv.amount ?? 0;
+}
+
+/** Grand total (subtotal + tax). Returns negative for credit memos. */
 export function invoiceTotal(inv: Invoice): number {
-  const raw = inv.lines?.length
-    ? inv.lines.reduce((s, l) => s + l.quantity * l.unitPrice, 0)
-    : (inv.amount ?? 0);
-  return inv.type === "credit" ? -raw : raw;
+  const total = invoiceSubtotal(inv) + (inv.taxAmount ?? 0);
+  return inv.type === "credit" ? -total : total;
 }
 
 /** Migrate a legacy flat-amount invoice to the line-items format. */
