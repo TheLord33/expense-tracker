@@ -33,9 +33,13 @@ export function useChecks(companyId: string) {
     setChecks((prev) => prev.map((c) => (c.id === id ? { ...c, ...data } : c)));
   }, []);
 
+  const deleteCheck = useCallback((id: string) => {
+    setChecks((prev) => prev.filter((c) => c.id !== id));
+  }, []);
+
   const replaceChecks = useCallback((incoming: CheckRecord[]) => {
     setChecks(incoming);
   }, []);
 
-  return { checks, loaded, addChecks, updateCheck, replaceChecks };
+  return { checks, loaded, addChecks, updateCheck, deleteCheck, replaceChecks };
 }

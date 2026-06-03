@@ -130,7 +130,7 @@ export default function HomePage() {
   const { bills, billPayments, addBill, updateBill, deleteBill, addPayment, paidAmount, outstanding } = useBills(activeId);
   const { items: inventoryItems, movements: inventoryMovements, addItem, updateItem, deleteItem, addMovement, deleteMovement, qtyOnHand, inventoryValue, totalInventoryValue } = useInventory(activeId);
   const { customers, invoices, payments: invoicePayments, addCustomer, updateCustomer, deleteCustomer, addInvoice, updateInvoice, deleteInvoice, addPayment: addInvoicePayment, collectedAmount, outstanding: invoiceOutstanding } = useAR(activeId);
-  const { checks, addChecks, updateCheck } = useChecks(activeId);
+  const { checks, addChecks, updateCheck, deleteCheck } = useChecks(activeId);
   const { orders: purchaseOrders, addOrder, updateOrder, deleteOrder, poTotal } = usePurchaseOrders(activeId);
 
   // ── Company modal state ───────────────────────────────────────────────────────
@@ -697,7 +697,7 @@ export default function HomePage() {
             {acctModule === "ap" && (isPro ? (
               <APTab
                 vendors={vendors} bills={bills} billPayments={billPayments}
-                accounts={accounts} company={activeCompany}
+                accounts={accounts} checks={checks} company={activeCompany}
                 maxCheckAmount={activeCompany?.maxCheckAmount}
                 onAddVendor={addVendor} onUpdateVendor={updateVendor} onDeleteVendor={deleteVendor}
                 onAddBill={addBill} onUpdateBill={updateBill} onDeleteBill={deleteBill}
@@ -747,7 +747,7 @@ export default function HomePage() {
             ) : upgradePrompt)}
 
             {acctModule === "checkRec" && (isPro ? (
-              <CheckRecTab checks={checks} onUpdateCheck={updateCheck} />
+              <CheckRecTab checks={checks} onUpdateCheck={updateCheck} onDeleteCheck={deleteCheck} />
             ) : upgradePrompt)}
             </div>
           </div>

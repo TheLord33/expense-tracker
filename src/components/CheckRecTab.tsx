@@ -7,7 +7,7 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   useDisclosure,
 } from "@nextui-org/react";
-import { ListChecks, RotateCcw, XCircle } from "lucide-react";
+import { ListChecks, RotateCcw, Trash2, XCircle } from "lucide-react";
 import type { CheckRecord } from "@/lib/types";
 import { useLanguage, useCurrency } from "@/app/providers";
 
@@ -27,11 +27,12 @@ const todayISO = () => new Date().toISOString().split("T")[0];
 interface Props {
   checks: CheckRecord[];
   onUpdateCheck: (id: string, data: Partial<Omit<CheckRecord, "id">>) => void;
+  onDeleteCheck: (id: string) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function CheckRecTab({ checks, onUpdateCheck }: Props) {
+export function CheckRecTab({ checks, onUpdateCheck, onDeleteCheck }: Props) {
   const { t, locale } = useLanguage();
   const { fmt } = useCurrency();
 
@@ -211,6 +212,11 @@ export function CheckRecTab({ checks, onUpdateCheck }: Props) {
                       <RotateCcw size={13} />
                     </Button>
                   )}
+                  <Button size="sm" variant="flat" color="danger" isIconOnly
+                    title="Delete check record"
+                    onPress={() => onDeleteCheck(c.id)}>
+                    <Trash2 size={13} />
+                  </Button>
                 </div>
               </div>
             ))}

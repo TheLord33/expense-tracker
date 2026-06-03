@@ -53,6 +53,7 @@ interface Props {
   bills: Bill[];
   billPayments: BillPayment[];
   accounts: Account[];
+  checks?: CheckRecord[];
   company?: CompanyProfile | null;
   maxCheckAmount?: number;
   onAddVendor: (v: Omit<Vendor, "id">) => void;
@@ -70,7 +71,7 @@ interface Props {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function APTab({
-  vendors, bills, billPayments, accounts, company, maxCheckAmount,
+  vendors, bills, billPayments, accounts, checks = [], company, maxCheckAmount,
   onAddVendor, onUpdateVendor, onDeleteVendor,
   onAddBill, onUpdateBill, onDeleteBill,
   onAddPayment, onAddChecks, paidAmount, outstanding,
@@ -99,6 +100,12 @@ export function APTab({
 
   function openPrintModal() {
     setCheckDate(today);
+    // Auto-set next check number from highest existing check number
+    const maxNum = checks.reduce((max, c) => {
+      const n = parseInt(c.checkNumber, 10);
+      return isNaN(n) ? max : Math.max(max, n);
+    }, 1000);
+    setStartingCheck(String(maxNum + 1));
     checkModal.onOpen();
   }
 
