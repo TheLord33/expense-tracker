@@ -833,8 +833,11 @@ export function ARTab({
                     const id = [...keys][0] as string;
                     setFCustomer(id);
                     const cust = customers.find((c) => c.id === id);
-                    if (cust?.taxId) setFTaxRateId("exempt");
-                    else if (!editingInv) setFTaxRateId(defaultTaxRateId ?? "exempt");
+                    if (cust?.taxId) {
+                      setFTaxRateId("exempt");
+                    } else if (defaultTaxRateId) {
+                      setFTaxRateId(defaultTaxRateId);
+                    }
                     setFInvErr("");
                   }}
                   size="sm"
@@ -868,15 +871,21 @@ export function ARTab({
 
               {/* Tax rate (hidden for credit memos) */}
               {!fInvNum.startsWith("C") && (
-                <Select
-                  label="Sales Tax"
-                  selectedKeys={fTaxRateId ? [fTaxRateId] : ["exempt"]}
-                  onSelectionChange={(keys) => setFTaxRateId([...keys][0] as string ?? "exempt")}
-                  size="sm"
-                  items={[{ id: "exempt", name: "Tax Exempt (0%)", rate: 0 }, ...taxRates.map((r) => ({ id: r.id, name: `${r.name} — ${(r.rate * 100).toFixed(2)}%`, rate: r.rate }))]}
-                >
-                  {(item) => <SelectItem key={item.id} textValue={item.name}>{item.name}</SelectItem>}
-                </Select>
+                <div>
+                  <p className="text-xs text-default-500 mb-1 ml-1">Sales Tax</p>
+                  <select
+                    className="w-full text-sm bg-default-100 border border-default-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary text-default-800"
+                    value={fTaxRateId || "exempt"}
+                    onChange={(e) => setFTaxRateId(e.target.value)}
+                  >
+                    <option value="exempt">Tax Exempt (0%)</option>
+                    {taxRates.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name} — {(r.rate * 100).toFixed(2)}%
+                      </option>
+                    ))}
+                  </select>
+                </div>
               )}
 
               {/* Line items */}
