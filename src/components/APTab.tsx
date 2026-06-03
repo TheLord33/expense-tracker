@@ -102,6 +102,13 @@ export function APTab({
     checkModal.onOpen();
   }
 
+  function parseTermsDiscount(terms?: string): { rate: number; withinDays: number } | null {
+    if (!terms) return null;
+    const m = terms.match(/^(\d+(?:\.\d+)?)\/(\d+)/);
+    if (!m) return null;
+    return { rate: Number(m[1]) / 100, withinDays: Number(m[2]) };
+  }
+
   async function handlePrintChecks() {
     if (exceedsMax) return;
     setPrinting(true);
@@ -114,15 +121,43 @@ export function APTab({
         byVendor.set(bill.vendorId, [...(byVendor.get(bill.vendorId) ?? []), bill]);
       }
 
+      const payDateMs = new Date(checkDate + "T00:00:00").getTime();
+
       const groups = Array.from(byVendor.entries());
       const checks = groups.map(([vendorId, vBills], idx) => {
+        const vendor = vendors.find((v) => v.id === vendorId);
+        const discInfo = parseTermsDiscount(vendor?.terms);
+
+        const lineItems = vBills.map((b) => {
+          const orig = outstanding(b);
+          let discount = 0;
+          if (discInfo) {
+            const billDateMs = new Date(b.date + "T00:00:00").getTime();
+            const days = Math.floor((payDateMs - billDateMs) / 86_400_000);
+            if (days <= discInfo.withinDays) discount = Math.round(orig * discInfo.rate * 100) / 100;
+          }
+          return {
+            billNumber: b.billNumber,
+            vendorInvoiceNumber: b.vendorInvoiceNumber,
+            description: b.description,
+            dueDate: b.dueDate,
+            originalAmount: orig,
+            discount,
+            netAmount: Math.round((orig - discount) * 100) / 100,
+          };
+        });
+
+        const totalNet = Math.round(lineItems.reduce((s, li) => s + li.netAmount, 0) * 100) / 100;
         const billNums = vBills.map((b) => b.billNumber).filter(Boolean).map((n) => `#${n}`).join(", ");
+
         return {
           checkNumber: String(Number(startingCheck) + idx),
           date: checkDate,
-          payee: vendors.find((v) => v.id === vendorId)?.name ?? "Unknown",
-          amount: vBills.reduce((s, b) => s + outstanding(b), 0),
+          payee: vendor?.name ?? "Unknown",
+          amount: totalNet,
           memo: billNums || vBills.map((b) => b.description).join("; "),
+          lineItems,
+          billIds: vBills.map((b) => b.id),
           billId: vBills[0].id,
         };
       });

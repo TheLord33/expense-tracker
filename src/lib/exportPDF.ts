@@ -748,12 +748,24 @@ function amountToWords(amount: number): string {
   return words.toUpperCase() + ` AND ${String(cents).padStart(2, "0")}/100`;
 }
 
+export interface CheckLineItem {
+  billNumber?: string;
+  vendorInvoiceNumber?: string;
+  description?: string;
+  dueDate?: string;
+  originalAmount: number;
+  discount: number;
+  netAmount: number;
+}
+
 export interface CheckData {
   checkNumber: string;
   date: string;
   payee: string;
   amount: number;
   memo?: string;
+  lineItems?: CheckLineItem[];
+  billIds?: string[];
 }
 
 export async function printChecksPDF(
@@ -763,91 +775,208 @@ export async function printChecksPDF(
 ): Promise<Blob> {
   const { default: jsPDF } = await import("jspdf");
 
-  // Each check: 8.5" wide × 3.67" tall (standard top-of-page voucher format)
-  const W = 8.5, H = 3.67;
-  const doc = new jsPDF({ orientation: "landscape", unit: "in", format: [H, W] });
+  // Standard 8.5" × 11" voucher check: top third = remittance stub, middle third = check
+  const W = 8.5, H = 11;
+  const doc = new jsPDF({ orientation: "portrait", unit: "in", format: "letter" });
 
   checks.forEach((chk, idx) => {
-    if (idx > 0) doc.addPage([H, W], "landscape");
+    if (idx > 0) doc.addPage("letter", "portrait");
 
-    doc.setDrawColor(180, 180, 180);
+    const dateStr = new Date(chk.date + "T00:00:00").toLocaleDateString("en-US", {
+      month: "long", day: "numeric", year: "numeric",
+    });
+
+    // ─── REMITTANCE STUB (top third: 0.2" → 3.6") ──────────────────────────
+    const sT = 0.2, sH = 3.4;
+    doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.008);
-    doc.rect(0.15, 0.1, W - 0.3, H - 0.2);
+    doc.rect(0.3, sT, W - 0.6, sH);
 
-    // Company name + address
+    // Stub header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(55, 65, 81);
+    doc.text(company?.name ?? "Your Company", 0.5, sT + 0.35);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text("REMITTANCE ADVICE", W - 0.5, sT + 0.35, { align: "right" });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(107, 114, 128);
+    if (company?.address) doc.text(company.address, 0.5, sT + 0.55);
+    doc.text(`Check #: ${chk.checkNumber}`, W - 0.5, sT + 0.55, { align: "right" });
+    doc.text(`Date: ${dateStr}`, W - 0.5, sT + 0.72, { align: "right" });
+    doc.text(`Pay to: ${chk.payee}`, 0.5, sT + 0.72);
+
+    // Column header row
+    const hdrY = sT + 1.05;
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.005);
+    doc.line(0.3, hdrY - 0.18, W - 0.3, hdrY - 0.18);
+
+    const cols = {
+      bill:    { label: "Bill #",        x: 0.5,        align: "left"  as const },
+      vinv:    { label: "Vendor Inv #",  x: 1.35,       align: "left"  as const },
+      desc:    { label: "Description",   x: 2.45,       align: "left"  as const },
+      due:     { label: "Due Date",      x: 5.15,       align: "left"  as const },
+      orig:    { label: "Amount",        x: 6.35,       align: "right" as const },
+      disc:    { label: "Discount",      x: 7.2,        align: "right" as const },
+      net:     { label: "Net",           x: 8.1,        align: "right" as const },
+    };
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(80, 80, 80);
+    for (const col of Object.values(cols)) {
+      doc.text(col.label, col.x, hdrY, { align: col.align });
+    }
+    doc.line(0.3, hdrY + 0.1, W - 0.3, hdrY + 0.1);
+
+    // Line items
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    let lineY = hdrY + 0.28;
+    const items = chk.lineItems ?? [];
+    const hasDiscount = items.some((li) => li.discount > 0);
+
+    for (const item of items) {
+      const desc = (item.description ?? "").length > 35
+        ? (item.description ?? "").slice(0, 33) + "…"
+        : (item.description ?? "");
+      const dueStr = item.dueDate
+        ? new Date(item.dueDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" })
+        : "";
+
+      doc.setTextColor(30, 30, 30);
+      doc.text(item.billNumber ?? "", cols.bill.x, lineY, { align: "left" });
+      doc.text(item.vendorInvoiceNumber ?? "", cols.vinv.x, lineY, { align: "left" });
+      doc.text(desc, cols.desc.x, lineY, { align: "left" });
+      doc.text(dueStr, cols.due.x, lineY, { align: "left" });
+      doc.text(fmtFn(item.originalAmount), cols.orig.x, lineY, { align: "right" });
+      if (item.discount > 0) {
+        doc.setTextColor(22, 163, 74);
+        doc.text(`(${fmtFn(item.discount)})`, cols.disc.x, lineY, { align: "right" });
+        doc.setTextColor(30, 30, 30);
+      }
+      doc.text(fmtFn(item.netAmount), cols.net.x, lineY, { align: "right" });
+      lineY += 0.22;
+    }
+
+    // Totals row
+    doc.setDrawColor(200, 200, 200);
+    doc.line(0.3, lineY + 0.02, W - 0.3, lineY + 0.02);
+    lineY += 0.22;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(55, 65, 81);
+    if (hasDiscount) {
+      const totalDisc = items.reduce((s, li) => s + li.discount, 0);
+      doc.text(`(${fmtFn(totalDisc)})`, cols.disc.x, lineY, { align: "right" });
+    }
+    doc.text("Total:", cols.orig.x, lineY, { align: "right" });
+    doc.setTextColor(30, 30, 30);
+    doc.setFontSize(8.5);
+    doc.text(fmtFn(chk.amount), cols.net.x, lineY, { align: "right" });
+
+    // ─── DASHED CUT LINE ────────────────────────────────────────────────────
+    const cutY = sT + sH + 0.1;
+    doc.setLineDashPattern([0.08, 0.08], 0);
+    doc.setDrawColor(160, 160, 160);
+    doc.setLineWidth(0.005);
+    doc.line(0.3, cutY, W - 0.3, cutY);
+    doc.setLineDashPattern([], 0);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(5.5);
+    doc.setTextColor(180, 180, 180);
+    doc.text("✂  DETACH AND RETAIN THIS STUB FOR YOUR RECORDS", W / 2, cutY - 0.06, { align: "center" });
+
+    // ─── CHECK (middle third: ~3.8" → 7.15") ────────────────────────────────
+    const cT = cutY + 0.15;
+    const cH = 3.35;
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.008);
+    doc.rect(0.3, cT, W - 0.6, cH);
+
+    // Company block
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(55, 65, 81);
-    doc.text(company?.name ?? "Your Company", 0.3, 0.45);
+    doc.text(company?.name ?? "Your Company", 0.5, cT + 0.38);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(107, 114, 128);
-    if (company?.address) doc.text(company.address, 0.3, 0.65);
+    if (company?.address) doc.text(company.address, 0.5, cT + 0.58);
 
-    // Date + check number (top right)
-    const dateStr = new Date(chk.date + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    // Date + check number (top right of check)
     doc.setFontSize(8.5);
     doc.setTextColor(55, 65, 81);
-    doc.text("Date:", W - 2.5, 0.45);
+    doc.text("Date:", W - 2.9, cT + 0.38);
     doc.setFont("helvetica", "bold");
-    doc.text(dateStr, W - 2.0, 0.45);
+    doc.text(dateStr, W - 2.35, cT + 0.38);
     doc.setFont("helvetica", "normal");
-    doc.text("Check #:", W - 2.5, 0.65);
+    doc.text("Check #:", W - 2.9, cT + 0.58);
     doc.setFont("helvetica", "bold");
-    doc.text(chk.checkNumber, W - 1.8, 0.65);
+    doc.text(chk.checkNumber, W - 2.2, cT + 0.58);
 
     // Pay to the order of
+    const payY = cT + 1.05;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(80, 80, 80);
-    doc.text("Pay to the order of:", 0.3, 1.1);
+    doc.text("Pay to the order of:", 0.5, payY);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
-    doc.setTextColor(30, 30, 30);
-    doc.text(chk.payee, 1.95, 1.1);
+    doc.setTextColor(20, 20, 20);
+    doc.text(chk.payee, 2.25, payY);
     doc.setDrawColor(100, 100, 100);
     doc.setLineWidth(0.007);
-    doc.line(1.92, 1.15, W - 1.5, 1.15);
+    doc.line(2.22, payY + 0.07, W - 1.7, payY + 0.07);
 
     // Amount box
     doc.setLineWidth(0.012);
-    doc.rect(W - 1.35, 0.9, 1.1, 0.35);
+    doc.rect(W - 1.55, payY - 0.27, 1.2, 0.4);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(30, 30, 30);
-    doc.text("$" + fmtFn(chk.amount).replace(/[^0-9.,]/g, ""), W - 1.28, 1.17);
+    doc.setFontSize(11);
+    doc.setTextColor(20, 20, 20);
+    doc.text("$" + fmtFn(chk.amount).replace(/[^0-9.,]/g, ""), W - 1.45, payY + 0.02);
 
     // Amount in words
+    const wordsY = payY + 0.5;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(55, 65, 81);
-    doc.text(amountToWords(chk.amount) + " DOLLARS", 0.3, 1.55);
+    const wordsText = amountToWords(chk.amount) + " DOLLARS";
+    doc.text(wordsText, 0.5, wordsY);
     doc.setDrawColor(150, 150, 150);
     doc.setLineWidth(0.006);
-    doc.line(0.3, 1.62, W - 0.3, 1.62);
+    doc.line(0.5, wordsY + 0.09, W - 0.4, wordsY + 0.09);
 
-    // Memo
+    // Memo + signature
+    const memoY = wordsY + 0.58;
     doc.setFontSize(8.5);
     doc.setTextColor(107, 114, 128);
-    doc.text("Memo:", 0.3, 1.95);
+    doc.text("Memo:", 0.5, memoY);
     doc.setTextColor(55, 65, 81);
-    if (chk.memo) doc.text(chk.memo, 0.85, 1.95);
+    if (chk.memo) doc.text(chk.memo, 1.15, memoY);
     doc.setDrawColor(180, 180, 180);
-    doc.line(0.82, 2.01, W / 2 - 0.5, 2.01);
+    doc.line(1.12, memoY + 0.09, W / 2 + 0.5, memoY + 0.09);
 
-    // Signature line
     doc.setDrawColor(100, 100, 100);
     doc.setLineWidth(0.008);
-    doc.line(W - 2.4, 2.01, W - 0.3, 2.01);
-    doc.setFontSize(7.5);
+    doc.line(W - 2.7, memoY + 0.09, W - 0.4, memoY + 0.09);
+    doc.setFontSize(7);
     doc.setTextColor(150, 150, 150);
-    doc.text("Authorized Signature", W - 2.05, 2.12);
+    doc.text("Authorized Signature", W - 2.35, memoY + 0.23);
 
-    // Decorative MICR-style footer
+    // MICR-style footer
     doc.setFont("courier", "normal");
     doc.setFontSize(8);
     doc.setTextColor(190, 190, 190);
-    doc.text(`⑆ ${chk.checkNumber.padStart(6, "0")} ⑆  ⑉ 000000000 ⑉  ⑈ 0000000000 ⑈`, 0.3, H - 0.22);
+    doc.text(
+      `⑆ ${chk.checkNumber.padStart(6, "0")} ⑆  ⑉ 000000000 ⑉  ⑈ 0000000000 ⑈`,
+      0.5, cT + cH - 0.2
+    );
   });
 
   return doc.output("blob");

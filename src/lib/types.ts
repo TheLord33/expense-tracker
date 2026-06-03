@@ -251,6 +251,7 @@ export interface CheckRecord {
   payee: string;
   amount: number;
   billId?: string;
+  billIds?: string[];
   status: "outstanding" | "cleared" | "voided";
   clearedDate?: string;
   memo?: string;
