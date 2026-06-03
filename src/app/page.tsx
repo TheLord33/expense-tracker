@@ -60,6 +60,7 @@ import { LoginGate } from "@/components/LoginGate";
 import { HelpModal } from "@/components/HelpModal";
 import { useAuth } from "@/lib/useAuth";
 import { usePlan } from "@/lib/usePlan";
+import { formatPhone } from "@/lib/formatPhone";
 import Link from "next/link";
 
 import type { Expense, ChipColor } from "@/lib/types";
@@ -135,6 +136,7 @@ export default function HomePage() {
   // ── Company modal state ───────────────────────────────────────────────────────
   const companyModal = useDisclosure();
   const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null);
+  const [cCode,     setCCode]     = useState("");
   const [cName,     setCName]     = useState("");
   const [cAddr,     setCAddr]     = useState("");
   const [cEmail,    setCEmail]    = useState("");
@@ -145,7 +147,7 @@ export default function HomePage() {
 
   function openAddCompany() {
     setEditingCompanyId(null);
-    setCName(""); setCAddr(""); setCEmail(""); setCPhone(""); setCWebsite(""); setCTaxId(""); setCMaxCheck("");
+    setCCode(""); setCName(""); setCAddr(""); setCEmail(""); setCPhone(""); setCWebsite(""); setCTaxId(""); setCMaxCheck("");
     companyModal.onOpen();
   }
 
@@ -153,7 +155,7 @@ export default function HomePage() {
     const c = companies.find((x) => x.id === id);
     if (!c) return;
     setEditingCompanyId(id);
-    setCName(c.name); setCAddr(c.address ?? ""); setCEmail(c.email ?? "");
+    setCCode(c.code ?? ""); setCName(c.name); setCAddr(c.address ?? ""); setCEmail(c.email ?? "");
     setCPhone(c.phone ?? ""); setCWebsite(c.website ?? ""); setCTaxId(c.taxId ?? "");
     setCMaxCheck(c.maxCheckAmount != null ? String(c.maxCheckAmount) : "");
     companyModal.onOpen();
@@ -162,6 +164,7 @@ export default function HomePage() {
   function handleCompanySubmit(e: React.FormEvent) {
     e.preventDefault();
     const data = {
+      code: cCode.trim() || undefined,
       name: cName.trim(),
       address: cAddr.trim() || undefined,
       email: cEmail.trim() || undefined,
@@ -333,6 +336,16 @@ export default function HomePage() {
     [
       "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer whitespace-nowrap",
       active ? "bg-indigo-600 text-white" : "bg-default-100 text-default-600 hover:bg-default-200",
+    ].join(" ");
+
+  const sidebarCls = (active: boolean, locked = false) =>
+    [
+      "flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-left transition-colors",
+      active
+        ? "bg-indigo-50 text-indigo-700 font-semibold"
+        : locked
+        ? "text-default-400 hover:bg-default-50"
+        : "text-default-600 hover:bg-default-100",
     ].join(" ");
 
   const upgradePrompt = (
@@ -559,61 +572,77 @@ export default function HomePage() {
 
         {/* ── Accounting area ── */}
         {activeTab === "accounting" && (
-          <div className="space-y-4">
-            {/* Company switcher */}
-            {companiesLoaded && (
-              <div className="flex items-center gap-2 pt-3">
-                <Dropdown>
-                  <DropdownTrigger>
-                    <Button
-                      variant="flat" size="sm"
-                      startContent={<Building2 size={13} />}
-                      endContent={<ChevronDown size={11} />}
-                      className="h-8 text-xs font-medium"
-                    >
-                      {activeCompany?.name ?? "—"}
-                    </Button>
-                  </DropdownTrigger>
-                  <DropdownMenu aria-label={t("companies.label")} onAction={(key) => {
-                    if (key === "__add__") { openAddCompany(); return; }
-                    setActiveCompany(String(key));
-                  }}>
-                    {[
-                      ...companies.map((c) => (
-                        <DropdownItem key={c.id} className={c.id === activeId ? "text-indigo-600" : ""}>{c.name}</DropdownItem>
-                      )),
-                      <DropdownItem key="__add__" startContent={<Building2 size={13} />}>{t("companies.add")}</DropdownItem>,
-                    ]}
-                  </DropdownMenu>
-                </Dropdown>
-                <Button size="sm" variant="light" isIconOnly className="h-8 w-8" onPress={() => openEditCompany(activeId)}>
-                  <Pencil size={13} />
-                </Button>
-                {companies.length > 1 && (
-                  <Button size="sm" variant="light" isIconOnly className="h-8 w-8 text-danger-400" onPress={() => handleDeleteCompany(activeId)}>
-                    <Trash2 size={13} />
-                  </Button>
-                )}
-              </div>
-            )}
+          <div className="flex gap-5 items-start pt-2">
 
-            {/* Sub-nav */}
-            <div className="space-y-2">
-              <div className="flex gap-2 flex-wrap">
-                {REPORTS.map(({ key, label, icon: Icon }) => (
-                  <button key={key} className={pillCls(acctModule === key)} onClick={() => setAcctModule(key)}>
-                    <Icon size={13} />{label}
-                  </button>
-                ))}
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                {MODULES.map(({ key, label, icon: Icon }) => (
-                  <button key={key} className={pillCls(acctModule === key)} onClick={() => setAcctModule(key)}>
-                    <Icon size={13} />{label}
-                  </button>
-                ))}
-              </div>
+            {/* ── Sidebar ── */}
+            <div className="w-44 shrink-0 sticky top-20 space-y-0.5">
+              {/* Company switcher */}
+              {companiesLoaded && (
+                <div className="mb-4 pb-3 border-b border-default-100 space-y-1">
+                  <Dropdown>
+                    <DropdownTrigger>
+                      <Button
+                        variant="flat" size="sm"
+                        endContent={<ChevronDown size={11} />}
+                        className="w-full h-8 text-xs justify-between font-medium"
+                      >
+                        <span className="flex items-center gap-1.5 min-w-0">
+                          {activeCompany?.code && (
+                            <span className="font-mono text-default-400 shrink-0">{activeCompany.code}</span>
+                          )}
+                          <span className="truncate">{activeCompany?.name ?? "—"}</span>
+                        </span>
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu aria-label={t("companies.label")} onAction={(key) => {
+                      if (key === "__add__") { openAddCompany(); return; }
+                      setActiveCompany(String(key));
+                    }}>
+                      {[
+                        ...companies.map((c) => (
+                          <DropdownItem key={c.id} className={c.id === activeId ? "text-indigo-600" : ""}>
+                            {c.code && <span className="font-mono text-default-400 mr-1.5">{c.code}</span>}
+                            {c.name}
+                          </DropdownItem>
+                        )),
+                        <DropdownItem key="__add__" startContent={<Building2 size={13} />}>{t("companies.add")}</DropdownItem>,
+                      ]}
+                    </DropdownMenu>
+                  </Dropdown>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="light" className="flex-1 h-7 text-xs gap-1" onPress={() => openEditCompany(activeId)}>
+                      <Pencil size={11} /> Edit
+                    </Button>
+                    {companies.length > 1 && (
+                      <Button size="sm" variant="light" isIconOnly className="h-7 w-7 text-danger-400" onPress={() => handleDeleteCompany(activeId)}>
+                        <Trash2 size={11} />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Reports nav */}
+              <p className="text-[10px] font-semibold text-default-400 uppercase tracking-wider px-3 pb-1">Reports</p>
+              {REPORTS.map(({ key, label, icon: Icon }) => (
+                <button key={key} className={sidebarCls(acctModule === key)} onClick={() => setAcctModule(key)}>
+                  <Icon size={14} className="shrink-0" />{label}
+                </button>
+              ))}
+
+              {/* Modules nav */}
+              <p className="text-[10px] font-semibold text-default-400 uppercase tracking-wider px-3 pt-3 pb-1">Modules</p>
+              {MODULES.map(({ key, label, icon: Icon }) => (
+                <button key={key} className={sidebarCls(acctModule === key, !isPro)} onClick={() => setAcctModule(key)}>
+                  <Icon size={14} className="shrink-0" />
+                  <span className="flex-1">{label}</span>
+                  {!isPro && <Crown size={11} className="text-warning shrink-0" />}
+                </button>
+              ))}
             </div>
+
+            {/* ── Content ── */}
+            <div className="flex-1 min-w-0 space-y-4">
 
             {/* Module content */}
             {acctModule === "ledger" && (
@@ -720,6 +749,7 @@ export default function HomePage() {
             {acctModule === "checkRec" && (isPro ? (
               <CheckRecTab checks={checks} onUpdateCheck={updateCheck} />
             ) : upgradePrompt)}
+            </div>
           </div>
         )}
       </main>
@@ -750,13 +780,24 @@ export default function HomePage() {
               {editingCompanyId ? t("companies.edit") : t("companies.add")}
             </ModalHeader>
             <ModalBody className="gap-3">
-              <Input
-                label={t("ar.businessName")}
-                value={cName}
-                onValueChange={setCName}
-                isRequired
-                autoFocus
-              />
+              <div className="flex gap-3">
+                <Input
+                  label={t("companies.code")}
+                  placeholder="01"
+                  maxLength={2}
+                  value={cCode}
+                  onValueChange={(v) => setCCode(v.replace(/\D/g, "").slice(0, 2))}
+                  className="w-20 shrink-0"
+                />
+                <Input
+                  label={t("ar.businessName")}
+                  value={cName}
+                  onValueChange={setCName}
+                  isRequired
+                  autoFocus
+                  className="flex-1"
+                />
+              </div>
               <textarea
                 className="w-full rounded-xl border border-default-200 bg-default-100 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
                 rows={2}
@@ -765,7 +806,8 @@ export default function HomePage() {
                 onChange={(e) => setCAddr(e.target.value)}
               />
               <Input label={t("ar.businessEmail")}   value={cEmail}   onValueChange={setCEmail}   />
-              <Input label={t("ar.businessPhone")}   value={cPhone}   onValueChange={setCPhone}   />
+              <Input label={t("ar.businessPhone")} placeholder="(555) 000-0000"
+                value={cPhone} onValueChange={(v) => setCPhone(formatPhone(v))} />
               <Input label={t("ar.businessWebsite")} value={cWebsite} onValueChange={setCWebsite} />
               <Input label={t("ar.businessTaxId")}   value={cTaxId}   onValueChange={setCTaxId}   />
               <Input

@@ -167,9 +167,11 @@ export function POTab({
   const receiveModal = useDisclosure();
   const [receivingPO, setReceivingPO] = useState<PurchaseOrder | null>(null);
   const [receiving, setReceiving] = useState(false);
+  const [vendorInvNum, setVendorInvNum] = useState("");
 
   function openReceive(po: PurchaseOrder) {
     setReceivingPO(po);
+    setVendorInvNum("");
     receiveModal.onOpen();
   }
 
@@ -199,6 +201,7 @@ export function POTab({
     const billId = onAddBill({
       vendorId: receivingPO.vendorId,
       billNumber: receivingPO.poNumber,
+      vendorInvoiceNumber: vendorInvNum.trim() || undefined,
       date: today,
       dueDate: addDays(today, 30),
       amount: total,
@@ -436,12 +439,19 @@ export function POTab({
         <Modal isOpen={receiveModal.isOpen} onClose={receiveModal.onClose} placement="center">
           <ModalContent>
             <ModalHeader>{t("po.confirmReceiveTitle")}</ModalHeader>
-            <ModalBody>
+            <ModalBody className="gap-3">
               <div className="bg-default-50 rounded-xl px-4 py-3 space-y-1 text-sm">
                 <p className="font-semibold text-default-800">#{receivingPO.poNumber}</p>
                 <p className="text-default-500">{vendors.find((v) => v.id === receivingPO.vendorId)?.name}</p>
                 <p className="text-default-500">{receivingPO.lines.length} {receivingPO.lines.length === 1 ? t("po.item") : t("po.lineItems")}</p>
               </div>
+              <Input
+                label={t("po.vendorInvoiceNumber")}
+                placeholder="optional"
+                value={vendorInvNum}
+                onValueChange={setVendorInvNum}
+                size="sm"
+              />
               <p className="text-sm text-default-600">
                 {t("po.confirmReceiveBody").replace("{amount}", fmt(poTotal(receivingPO)))}
               </p>

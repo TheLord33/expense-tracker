@@ -14,6 +14,7 @@ import { invoiceTotal } from "@/lib/useAR";
 import { generateInvoicePDF, generateStatementPDF } from "@/lib/exportPDF";
 import { downloadBlob } from "@/lib/importExport";
 import { useLanguage, useCurrency } from "@/app/providers";
+import { formatPhone, PAYMENT_TERMS } from "@/lib/formatPhone";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -212,18 +213,19 @@ export function ARTab({
   const [fCustAddress, setFCustAddress] = useState("");
   const [fCustEmail,   setFCustEmail]   = useState("");
   const [fCustPhone,   setFCustPhone]   = useState("");
+  const [fCustTerms,   setFCustTerms]   = useState("");
   const [fCustErr,     setFCustErr]     = useState("");
 
   function openAddCustomer() {
     setEditingCust(null);
-    setFCustName(""); setFCustAddress(""); setFCustEmail(""); setFCustPhone(""); setFCustErr("");
+    setFCustName(""); setFCustAddress(""); setFCustEmail(""); setFCustPhone(""); setFCustTerms(""); setFCustErr("");
     custModal.onOpen();
   }
 
   function openEditCustomer(c: Customer) {
     setEditingCust(c);
     setFCustName(c.name); setFCustAddress(c.address ?? "");
-    setFCustEmail(c.email ?? ""); setFCustPhone(c.phone ?? ""); setFCustErr("");
+    setFCustEmail(c.email ?? ""); setFCustPhone(c.phone ?? ""); setFCustTerms(c.terms ?? ""); setFCustErr("");
     custModal.onOpen();
   }
 
@@ -235,6 +237,7 @@ export function ARTab({
       address: fCustAddress.trim() || undefined,
       email: fCustEmail.trim() || undefined,
       phone: fCustPhone.trim() || undefined,
+      terms: fCustTerms.trim() || undefined,
     };
     if (editingCust) onUpdateCustomer(editingCust.id, data);
     else             onAddCustomer(data);
@@ -501,9 +504,9 @@ export function ARTab({
                         {c.address && (
                           <p className="text-xs text-default-400 mt-0.5 whitespace-pre-line">{c.address}</p>
                         )}
-                        {(c.email || c.phone) && (
+                        {(c.email || c.phone || c.terms) && (
                           <p className="text-xs text-default-400 mt-0.5">
-                            {[c.email, c.phone].filter(Boolean).join(" · ")}
+                            {[c.email, c.phone, c.terms].filter(Boolean).join(" · ")}
                           </p>
                         )}
                         <p className="text-xs text-default-400 mt-0.5">
@@ -788,9 +791,18 @@ export function ARTab({
                 value={fCustEmail} onValueChange={setFCustEmail} size="sm"
               />
               <Input
-                label={t("ar.customerPhone")}
-                value={fCustPhone} onValueChange={setFCustPhone} size="sm"
+                label={t("ar.customerPhone")} placeholder="(555) 000-0000"
+                value={fCustPhone} onValueChange={(v) => setFCustPhone(formatPhone(v))} size="sm"
               />
+              <Select
+                label={t("ar.customerTerms")}
+                placeholder="—"
+                size="sm"
+                selectedKeys={fCustTerms ? new Set([fCustTerms]) : new Set()}
+                onSelectionChange={(keys) => setFCustTerms([...keys][0] as string ?? "")}
+              >
+                {PAYMENT_TERMS.map((term) => <SelectItem key={term}>{term}</SelectItem>)}
+              </Select>
             </ModalBody>
             <ModalFooter>
               <Button variant="flat" onPress={custModal.onClose}>{t("cancel")}</Button>
@@ -859,8 +871,8 @@ export function ARTab({
               <div className="flex gap-3">
                 <Input label={t("ar.businessEmail")} type="email"
                   value={fBizEmail} onValueChange={setFBizEmail} size="sm" className="flex-1" />
-                <Input label={t("ar.businessPhone")}
-                  value={fBizPhone} onValueChange={setFBizPhone} size="sm" className="flex-1" />
+                <Input label={t("ar.businessPhone")} placeholder="(555) 000-0000"
+                  value={fBizPhone} onValueChange={(v) => setFBizPhone(formatPhone(v))} size="sm" className="flex-1" />
               </div>
               <div className="flex gap-3">
                 <Input label={t("ar.businessWebsite")}

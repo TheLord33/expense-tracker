@@ -12,6 +12,7 @@ import { Plus, Pencil, Trash2, Wallet, CheckCircle, Printer } from "lucide-react
 import type { Account, Bill, BillPayment, CheckRecord, CompanyProfile, Vendor } from "@/lib/types";
 import { printChecksPDF } from "@/lib/exportPDF";
 import { useLanguage, useCurrency } from "@/app/providers";
+import { formatPhone, PAYMENT_TERMS } from "@/lib/formatPhone";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -106,25 +107,32 @@ export function APTab({
     setPrinting(true);
     try {
       const selected = sortedBills.filter((b) => selectedBills.has(b.id));
-      const checks = selected.map((bill, idx) => ({
-        checkNumber: String(Number(startingCheck) + idx),
-        date: checkDate,
-        payee: vendors.find((v) => v.id === bill.vendorId)?.name ?? "Unknown",
-        amount: outstanding(bill),
-        memo: bill.billNumber ? `Bill #${bill.billNumber} — ${bill.description}` : bill.description,
-      }));
+
+      // Group by vendor → one check per vendor
+      const byVendor = new Map<string, typeof selected>();
+      for (const bill of selected) {
+        byVendor.set(bill.vendorId, [...(byVendor.get(bill.vendorId) ?? []), bill]);
+      }
+
+      const groups = Array.from(byVendor.entries());
+      const checks = groups.map(([vendorId, vBills], idx) => {
+        const billNums = vBills.map((b) => b.billNumber).filter(Boolean).map((n) => `#${n}`).join(", ");
+        return {
+          checkNumber: String(Number(startingCheck) + idx),
+          date: checkDate,
+          payee: vendors.find((v) => v.id === vendorId)?.name ?? "Unknown",
+          amount: vBills.reduce((s, b) => s + outstanding(b), 0),
+          memo: billNums || vBills.map((b) => b.description).join("; "),
+          billId: vBills[0].id,
+        };
+      });
+
       const blob = await printChecksPDF(checks, company ?? null, fmt);
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement("a");
       a.href = url; a.download = `checks-${checkDate}.pdf`; a.click();
       URL.revokeObjectURL(url);
-      onAddChecks(
-        checks.map((c, idx) => ({
-          ...c,
-          billId: selected[idx].id,
-          status: "outstanding" as const,
-        }))
-      );
+      onAddChecks(checks.map((c) => ({ ...c, status: "outstanding" as const })));
       setSelectedBills(new Set());
       checkModal.onClose();
     } finally {
@@ -228,7 +236,7 @@ export function APTab({
   // ── Vendor form ──────────────────────────────────────────────────────────────
   const vendorModal = useDisclosure();
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
-  const BLANK_VENDOR = { name: "", email: "", phone: "" };
+  const BLANK_VENDOR = { name: "", email: "", phone: "", terms: "" };
   const [vf, setVf] = useState(BLANK_VENDOR);
   const [vErr, setVErr] = useState<Record<string, string>>({});
 
@@ -241,7 +249,7 @@ export function APTab({
 
   function openEditVendor(vendor: Vendor) {
     setEditingVendor(vendor);
-    setVf({ name: vendor.name, email: vendor.email ?? "", phone: vendor.phone ?? "" });
+    setVf({ name: vendor.name, email: vendor.email ?? "", phone: vendor.phone ?? "", terms: vendor.terms ?? "" });
     setVErr({});
     vendorModal.onOpen();
   }
@@ -252,7 +260,12 @@ export function APTab({
     if (!vf.name.trim()) errs.name = t("ap.errorVendor");
     setVErr(errs);
     if (Object.keys(errs).length > 0) return;
-    const data = { name: vf.name.trim(), email: vf.email.trim() || undefined, phone: vf.phone.trim() || undefined };
+    const data = {
+      name: vf.name.trim(),
+      email: vf.email.trim() || undefined,
+      phone: vf.phone.trim() || undefined,
+      terms: vf.terms.trim() || undefined,
+    };
     if (editingVendor) onUpdateVendor(editingVendor.id, data);
     else               onAddVendor(data);
     vendorModal.onClose();
@@ -481,6 +494,7 @@ export function APTab({
                       <div className="flex gap-3 text-xs text-default-400 mt-0.5">
                         {vendor.email && <span>{vendor.email}</span>}
                         {vendor.phone && <span>{vendor.phone}</span>}
+                        {vendor.terms && <span className="text-default-500">{vendor.terms}</span>}
                         <span>{vendorBillCount} {vendorBillCount === 1 ? t("ap.bill") : t("ap.bills")}</span>
                       </div>
                     </div>
@@ -667,8 +681,16 @@ export function APTab({
                 isInvalid={!!vErr.name} errorMessage={vErr.name} />
               <Input label={t("ap.vendorEmail")} type="email"
                 value={vf.email} onValueChange={(v) => setVf((p) => ({ ...p, email: v }))} />
-              <Input label={t("ap.vendorPhone")}
-                value={vf.phone} onValueChange={(v) => setVf((p) => ({ ...p, phone: v }))} />
+              <Input label={t("ap.vendorPhone")} placeholder="(555) 000-0000"
+                value={vf.phone} onValueChange={(v) => setVf((p) => ({ ...p, phone: formatPhone(v) }))} />
+              <Select
+                label={t("ap.vendorTerms")}
+                placeholder="—"
+                selectedKeys={vf.terms ? new Set([vf.terms]) : new Set()}
+                onSelectionChange={(keys) => setVf((p) => ({ ...p, terms: [...keys][0] as string ?? "" }))}
+              >
+                {PAYMENT_TERMS.map((term) => <SelectItem key={term}>{term}</SelectItem>)}
+              </Select>
             </ModalBody>
             <ModalFooter>
               <Button variant="flat" onPress={vendorModal.onClose}>{t("cancel")}</Button>
