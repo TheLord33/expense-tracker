@@ -229,6 +229,12 @@ export interface BillPayment {
 
 // ── Accounts Receivable ───────────────────────────────────────────────────────
 
+export interface TaxRate {
+  id: string;
+  name: string;   // e.g. "CA Combined"
+  rate: number;   // decimal, e.g. 0.0825 for 8.25%
+}
+
 export interface CompanyProfile {
   name: string;
   address?: string;
@@ -237,6 +243,8 @@ export interface CompanyProfile {
   website?: string;
   taxId?: string;
   maxCheckAmount?: number;
+  taxRates?: TaxRate[];
+  defaultTaxRateId?: string;
 }
 
 export interface Company extends CompanyProfile {
@@ -264,6 +272,7 @@ export interface Customer {
   email?: string;
   phone?: string;
   terms?: string;
+  taxId?: string;   // resale / exemption certificate; if set → tax-exempt
 }
 
 export interface InvoiceLine {
@@ -283,6 +292,9 @@ export interface Invoice {
   dueDate: string;          // YYYY-MM-DD
   lines: InvoiceLine[];
   revenueAccountId: string; // credit side (default: acc-4000)
+  taxRateId?: string;       // TaxRate.id or "exempt"
+  taxRate?: number;         // snapshot of rate at invoice time (e.g. 0.0825)
+  taxAmount?: number;       // computed tax (0 when exempt)
   // Legacy fields kept for migration only — do not use in new code
   amount?: number;
   description?: string;
