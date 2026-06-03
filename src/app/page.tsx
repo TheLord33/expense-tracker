@@ -179,7 +179,7 @@ export default function HomePage() {
       website: cWebsite.trim() || undefined,
       taxId: cTaxId.trim() || undefined,
       maxCheckAmount: cMaxCheck ? parseFloat(cMaxCheck) : undefined,
-      taxRates: cTaxRates.length ? cTaxRates : undefined,
+      taxRates: cTaxRates.length ? cTaxRates : [],
       defaultTaxRateId: cDefaultTaxId || undefined,
     };
     if (editingCompanyId) {
