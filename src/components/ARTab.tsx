@@ -157,12 +157,19 @@ export function ARTab({
     return `${prefix}${String(max + 1).padStart(6, "0")}`;
   }
 
+  // Returns defaultTaxRateId only if it still exists in the rates table; "exempt" otherwise.
+  function resolvedDefaultTaxId() {
+    return (defaultTaxRateId && taxRates.some((r) => r.id === defaultTaxRateId))
+      ? defaultTaxRateId
+      : "exempt";
+  }
+
   function openAddInvoice() {
     setEditingInv(null);
     setFInvNum(nextInvNumber("I"));
     setFCustomer(""); setFDate(today); setFDue(today);
     setFRevAcct("acc-4000"); setFLines([blankLine()]); setFInvErr("");
-    setFTaxRateId(defaultTaxRateId ?? "exempt");
+    setFTaxRateId(resolvedDefaultTaxId());
     invModal.onOpen();
   }
 
@@ -180,7 +187,8 @@ export function ARTab({
     setFCustomer(inv.customerId); setFInvNum(inv.invoiceNumber);
     setFDate(inv.date); setFDue(inv.dueDate);
     setFRevAcct(inv.revenueAccountId); setFInvErr("");
-    setFTaxRateId(inv.taxRateId ?? "exempt");
+    const storedRate = inv.taxRateId && taxRates.some((r) => r.id === inv.taxRateId) ? inv.taxRateId : "exempt";
+    setFTaxRateId(storedRate);
     setFLines(
       inv.lines?.length
         ? inv.lines.map((l) => ({
@@ -622,7 +630,12 @@ export function ARTab({
                   <Card key={c.id} shadow="sm">
                     <CardBody className="px-5 py-3 flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm text-default-900">{c.name}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-semibold text-sm text-default-900">{c.name}</p>
+                          {c.taxId && (
+                            <Chip size="sm" variant="flat" color="warning">Tax Exempt</Chip>
+                          )}
+                        </div>
                         {custAddrLines(c).length > 0 && (
                           <p className="text-xs text-default-400 mt-0.5 whitespace-pre-line">{custAddrLines(c).join("\n")}</p>
                         )}
@@ -835,8 +848,8 @@ export function ARTab({
                     const cust = customers.find((c) => c.id === id);
                     if (cust?.taxId) {
                       setFTaxRateId("exempt");
-                    } else if (defaultTaxRateId) {
-                      setFTaxRateId(defaultTaxRateId);
+                    } else {
+                      setFTaxRateId(resolvedDefaultTaxId());
                     }
                     setFInvErr("");
                   }}
@@ -870,23 +883,33 @@ export function ARTab({
               </div>
 
               {/* Tax rate (hidden for credit memos) */}
-              {!fInvNum.startsWith("C") && (
-                <div>
-                  <p className="text-xs text-default-500 mb-1 ml-1">Sales Tax</p>
-                  <select
-                    className="w-full text-sm bg-default-100 border border-default-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary text-default-800"
-                    value={fTaxRateId || "exempt"}
-                    onChange={(e) => setFTaxRateId(e.target.value)}
-                  >
-                    <option value="exempt">Tax Exempt (0%)</option>
-                    {taxRates.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name} — {(r.rate * 100).toFixed(2)}%
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+              {!fInvNum.startsWith("C") && (() => {
+                const selCust = customers.find((c) => c.id === fCustomer);
+                const custIsExempt = !!selCust?.taxId;
+                return (
+                  <div>
+                    <p className="text-xs text-default-500 mb-1 ml-1">Sales Tax</p>
+                    <select
+                      key={fInvNum}
+                      className="w-full text-sm bg-default-100 border border-default-200 rounded-xl px-3 py-2 focus:outline-none focus:border-primary text-default-800"
+                      value={fTaxRateId || "exempt"}
+                      onChange={(e) => setFTaxRateId(e.target.value)}
+                    >
+                      <option value="exempt">Tax Exempt (0%)</option>
+                      {taxRates.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.name} — {(r.rate * 100).toFixed(2)}%
+                        </option>
+                      ))}
+                    </select>
+                    {custIsExempt && (
+                      <p className="text-xs text-warning-600 mt-1 ml-1">
+                        ⚠ {selCust!.name} has a Tax ID on file — auto-set to exempt. Edit the customer to remove it if taxable.
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Line items */}
               <div>
