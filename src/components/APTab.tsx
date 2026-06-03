@@ -209,7 +209,7 @@ export function APTab({
   const billModal = useDisclosure();
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
   const BLANK_BILL = {
-    vendorId: "", billNumber: "", date: today, dueDate: "",
+    vendorId: "", billNumber: "", vendorInvoiceNumber: "", date: today, dueDate: "",
     amount: "", description: "", expenseAccountId: "",
   };
   const [bf, setBf] = useState(BLANK_BILL);
@@ -226,6 +226,7 @@ export function APTab({
     setEditingBill(bill);
     setBf({
       vendorId: bill.vendorId, billNumber: bill.billNumber,
+      vendorInvoiceNumber: bill.vendorInvoiceNumber ?? "",
       date: bill.date, dueDate: bill.dueDate,
       amount: String(bill.amount), description: bill.description,
       expenseAccountId: bill.expenseAccountId,
@@ -252,6 +253,7 @@ export function APTab({
     if (!validateBill()) return;
     const data = {
       vendorId: bf.vendorId, billNumber: bf.billNumber,
+      vendorInvoiceNumber: bf.vendorInvoiceNumber.trim() || undefined,
       date: bf.date, dueDate: bf.dueDate,
       amount: parseFloat(parseFloat(bf.amount).toFixed(2)),
       description: bf.description.trim(),
@@ -665,8 +667,12 @@ export function APTab({
               >
                 {vendors.map((v) => <SelectItem key={v.id} textValue={v.name}>{v.name}</SelectItem>)}
               </Select>
-              <Input label={t("ap.billNumber")} value={bf.billNumber}
-                onValueChange={(v) => setBf((p) => ({ ...p, billNumber: v }))} />
+              <div className="flex gap-3">
+                <Input label={t("ap.billNumber")} value={bf.billNumber}
+                  onValueChange={(v) => setBf((p) => ({ ...p, billNumber: v }))} />
+                <Input label={t("po.vendorInvoiceNumber")} value={bf.vendorInvoiceNumber}
+                  onValueChange={(v) => setBf((p) => ({ ...p, vendorInvoiceNumber: v }))} />
+              </div>
               <div className="flex gap-3">
                 <Input type="date" label={t("ap.billDate")} value={bf.date}
                   onValueChange={(v) => setBf((p) => ({ ...p, date: v }))}
