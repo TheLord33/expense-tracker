@@ -179,15 +179,25 @@ export function APTab({
       a.href = url; a.download = `checks-${checkDate}.pdf`; a.click();
       URL.revokeObjectURL(url);
 
-      // Mark each bill paid with its net amount (after any early-payment discount)
+      // Mark each bill fully paid. For discounted bills record two entries:
+      // the check payment + a discount credit so the total equals the invoice amount.
       for (const { vBills, lineItems, checkNum } of grouped) {
         for (let i = 0; i < vBills.length; i++) {
+          const li = lineItems[i];
           onAddPayment({
             billId: vBills[i].id,
             date: checkDate,
-            amount: lineItems[i].netAmount,
+            amount: li.netAmount,
             note: `Check #${checkNum}`,
           });
+          if (li.discount > 0) {
+            onAddPayment({
+              billId: vBills[i].id,
+              date: checkDate,
+              amount: li.discount,
+              note: `Early payment discount`,
+            });
+          }
         }
       }
 
