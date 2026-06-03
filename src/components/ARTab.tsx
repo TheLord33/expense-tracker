@@ -49,6 +49,18 @@ function agingBucket(dueDate: string, today: string): "current" | "1-30" | "31-6
 
 const todayISO = () => new Date().toISOString().split("T")[0];
 
+function custAddrLines(c: Customer): string[] {
+  if (c.street || c.city || c.state || c.zip) {
+    const lines: string[] = [];
+    if (c.street) lines.push(c.street);
+    const mid = [c.city, c.state, c.zip].filter(Boolean).join(", ");
+    if (mid) lines.push(mid);
+    if (c.country) lines.push(c.country);
+    return lines;
+  }
+  return c.address ? c.address.split("\n").map((l) => l.trim()).filter(Boolean) : [];
+}
+
 type FormLine = { id: string; inventoryItemId: string; description: string; qty: string; unitPrice: string };
 const blankLine = (): FormLine => ({ id: crypto.randomUUID(), inventoryItemId: "", description: "", qty: "1", unitPrice: "" });
 
@@ -89,7 +101,12 @@ export function ARTab({
   const { t, locale } = useLanguage();
   const { fmt } = useCurrency();
 
-  const [view, setView] = useState<"invoices" | "customers" | "aging">("invoices");
+  const [view, setView] = useState<"invoices" | "customers" | "aging" | "tax-report">("invoices");
+
+  // ── Tax report state ──────────────────────────────────────────────────────────
+  const thisYear = todayISO().slice(0, 4);
+  const [taxFrom, setTaxFrom] = useState(`${thisYear}-01-01`);
+  const [taxTo,   setTaxTo]   = useState(todayISO());
   const today = todayISO();
 
   async function handleDownloadPDF(inv: Invoice) {
@@ -247,7 +264,11 @@ export function ARTab({
   const custModal = useDisclosure();
   const [editingCust,  setEditingCust]  = useState<Customer | null>(null);
   const [fCustName,    setFCustName]    = useState("");
-  const [fCustAddress, setFCustAddress] = useState("");
+  const [fCustStreet,  setFCustStreet]  = useState("");
+  const [fCustCity,    setFCustCity]    = useState("");
+  const [fCustState,   setFCustState]   = useState("");
+  const [fCustZip,     setFCustZip]     = useState("");
+  const [fCustCountry, setFCustCountry] = useState("");
   const [fCustEmail,   setFCustEmail]   = useState("");
   const [fCustPhone,   setFCustPhone]   = useState("");
   const [fCustTerms,   setFCustTerms]   = useState("");
@@ -256,14 +277,18 @@ export function ARTab({
 
   function openAddCustomer() {
     setEditingCust(null);
-    setFCustName(""); setFCustAddress(""); setFCustEmail(""); setFCustPhone("");
+    setFCustName(""); setFCustStreet(""); setFCustCity(""); setFCustState("");
+    setFCustZip(""); setFCustCountry(""); setFCustEmail(""); setFCustPhone("");
     setFCustTerms(""); setFCustTaxId(""); setFCustErr("");
     custModal.onOpen();
   }
 
   function openEditCustomer(c: Customer) {
     setEditingCust(c);
-    setFCustName(c.name); setFCustAddress(c.address ?? "");
+    setFCustName(c.name);
+    setFCustStreet(c.street ?? ""); setFCustCity(c.city ?? "");
+    setFCustState(c.state ?? ""); setFCustZip(c.zip ?? "");
+    setFCustCountry(c.country ?? "");
     setFCustEmail(c.email ?? ""); setFCustPhone(c.phone ?? "");
     setFCustTerms(c.terms ?? ""); setFCustTaxId(c.taxId ?? ""); setFCustErr("");
     custModal.onOpen();
@@ -273,12 +298,16 @@ export function ARTab({
     e.preventDefault();
     if (!fCustName.trim()) { setFCustErr(t("ar.errorCustomer")); return; }
     const data: Omit<Customer, "id"> = {
-      name: fCustName.trim(),
-      address: fCustAddress.trim() || undefined,
-      email: fCustEmail.trim() || undefined,
-      phone: fCustPhone.trim() || undefined,
-      terms: fCustTerms.trim() || undefined,
-      taxId: fCustTaxId.trim() || undefined,
+      name:    fCustName.trim(),
+      street:  fCustStreet.trim()  || undefined,
+      city:    fCustCity.trim()    || undefined,
+      state:   fCustState.trim().toUpperCase() || undefined,
+      zip:     fCustZip.trim()     || undefined,
+      country: fCustCountry.trim() || undefined,
+      email:   fCustEmail.trim()   || undefined,
+      phone:   fCustPhone.trim()   || undefined,
+      terms:   fCustTerms.trim()   || undefined,
+      taxId:   fCustTaxId.trim()   || undefined,
     };
     if (editingCust) onUpdateCustomer(editingCust.id, data);
     else             onAddCustomer(data);
@@ -387,6 +416,31 @@ export function ARTab({
     [invoices, outstanding]
   );
 
+  const taxReport = useMemo(() => {
+    const taxedInvoices = invoices.filter(
+      (inv) => inv.type !== "credit" && (inv.taxAmount ?? 0) > 0
+        && inv.date >= taxFrom && inv.date <= taxTo
+    );
+    // group by taxRateId
+    const groups = new Map<string, { label: string; rate: number; rows: typeof taxedInvoices }>();
+    for (const inv of taxedInvoices) {
+      const key = inv.taxRateId ?? "unknown";
+      const tr  = taxRates.find((r) => r.id === inv.taxRateId);
+      const label = tr ? `${tr.name} (${(inv.taxRate! * 100).toFixed(2)}%)` : `${((inv.taxRate ?? 0) * 100).toFixed(2)}%`;
+      if (!groups.has(key)) groups.set(key, { label, rate: inv.taxRate ?? 0, rows: [] });
+      groups.get(key)!.rows.push(inv);
+    }
+    // state breakdown
+    const byState = new Map<string, number>();
+    for (const inv of taxedInvoices) {
+      const cust = customers.find((c) => c.id === inv.customerId);
+      const st = cust?.state ?? "—";
+      byState.set(st, (byState.get(st) ?? 0) + (inv.taxAmount ?? 0));
+    }
+    const totalTax = taxedInvoices.reduce((s, inv) => s + (inv.taxAmount ?? 0), 0);
+    return { groups: [...groups.values()], byState: [...byState.entries()].sort((a, b) => a[0].localeCompare(b[0])), totalTax };
+  }, [invoices, customers, taxRates, taxFrom, taxTo]);
+
   // ── Render helpers ────────────────────────────────────────────────────────────
 
   function statusChip(inv: Invoice) {
@@ -419,14 +473,17 @@ export function ARTab({
       {/* View toggle */}
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
-          <Button size="sm" variant={view === "invoices"  ? "solid" : "flat"} color={view === "invoices"  ? "primary" : "default"} onPress={() => setView("invoices")}>
+          <Button size="sm" variant={view === "invoices"    ? "solid" : "flat"} color={view === "invoices"    ? "primary" : "default"} onPress={() => setView("invoices")}>
             {t("ar.tabInvoices")}
           </Button>
-          <Button size="sm" variant={view === "customers" ? "solid" : "flat"} color={view === "customers" ? "primary" : "default"} onPress={() => setView("customers")}>
+          <Button size="sm" variant={view === "customers"   ? "solid" : "flat"} color={view === "customers"   ? "primary" : "default"} onPress={() => setView("customers")}>
             {t("ar.tabCustomers")}
           </Button>
-          <Button size="sm" variant={view === "aging"     ? "solid" : "flat"} color={view === "aging"     ? "primary" : "default"} onPress={() => setView("aging")}>
+          <Button size="sm" variant={view === "aging"       ? "solid" : "flat"} color={view === "aging"       ? "primary" : "default"} onPress={() => setView("aging")}>
             {t("ar.tabAging")}
+          </Button>
+          <Button size="sm" variant={view === "tax-report"  ? "solid" : "flat"} color={view === "tax-report"  ? "primary" : "default"} onPress={() => setView("tax-report")}>
+            Tax Report
           </Button>
         </div>
         <div className="flex gap-2">
@@ -566,8 +623,8 @@ export function ARTab({
                     <CardBody className="px-5 py-3 flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm text-default-900">{c.name}</p>
-                        {c.address && (
-                          <p className="text-xs text-default-400 mt-0.5 whitespace-pre-line">{c.address}</p>
+                        {custAddrLines(c).length > 0 && (
+                          <p className="text-xs text-default-400 mt-0.5 whitespace-pre-line">{custAddrLines(c).join("\n")}</p>
                         )}
                         {(c.email || c.phone || c.terms) && (
                           <p className="text-xs text-default-400 mt-0.5">
@@ -649,6 +706,103 @@ export function ARTab({
             )}
           </CardBody>
         </Card>
+      )}
+
+      {/* ── Tax Report ── */}
+      {view === "tax-report" && (
+        <div className="space-y-4">
+          {/* Date range */}
+          <Card shadow="sm">
+            <CardBody className="px-5 py-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-sm font-medium text-default-700">Period:</span>
+                <Input type="date" label="From" value={taxFrom} onValueChange={setTaxFrom} size="sm" className="w-44" />
+                <Input type="date" label="To"   value={taxTo}   onValueChange={setTaxTo}   size="sm" className="w-44" />
+              </div>
+            </CardBody>
+          </Card>
+
+          {taxReport.totalTax < 0.01 ? (
+            <Card shadow="none" className="border-2 border-dashed border-default-200">
+              <CardBody className="py-12 text-center text-default-400">
+                <p className="text-sm font-medium">No taxable invoices in this period</p>
+              </CardBody>
+            </Card>
+          ) : (
+            <>
+              {/* By tax rate */}
+              {taxReport.groups.map((group) => {
+                const groupTax = group.rows.reduce((s, inv) => s + (inv.taxAmount ?? 0), 0);
+                const groupSub = group.rows.reduce((s, inv) => s + invoiceSubtotal(inv), 0);
+                return (
+                  <Card key={group.label} shadow="sm">
+                    <CardHeader className="px-5 pt-4 pb-2">
+                      <h3 className="text-sm font-bold text-default-900">{group.label}</h3>
+                    </CardHeader>
+                    <Divider />
+                    <CardBody className="px-0 py-0">
+                      {/* Column headers */}
+                      <div className="grid grid-cols-[90px_1fr_80px_60px_80px_80px] gap-2 px-5 py-2 text-xs font-medium text-default-400 bg-default-50 border-b border-default-100">
+                        <span>Invoice #</span>
+                        <span>Customer</span>
+                        <span>State</span>
+                        <span className="text-right">Date</span>
+                        <span className="text-right">Subtotal</span>
+                        <span className="text-right">Tax</span>
+                      </div>
+                      {group.rows.map((inv, i) => {
+                        const cust = customers.find((c) => c.id === inv.customerId);
+                        return (
+                          <div key={inv.id}
+                            className={`grid grid-cols-[90px_1fr_80px_60px_80px_80px] gap-2 px-5 py-2.5 items-center text-sm ${i < group.rows.length - 1 ? "border-b border-default-100" : ""}`}>
+                            <span className="font-mono text-xs text-default-600">{inv.invoiceNumber}</span>
+                            <span className="text-default-800 truncate">{cust?.name ?? "—"}</span>
+                            <span className="text-xs text-default-500">{cust?.state ?? "—"}</span>
+                            <span className="text-xs text-default-500 text-right">{fmtDate(inv.date, locale)}</span>
+                            <span className="text-right tabular-nums text-default-700">{fmt(invoiceSubtotal(inv))}</span>
+                            <span className="text-right tabular-nums font-medium text-default-900">{fmt(inv.taxAmount ?? 0)}</span>
+                          </div>
+                        );
+                      })}
+                      {/* Group total */}
+                      <div className="grid grid-cols-[90px_1fr_80px_60px_80px_80px] gap-2 px-5 py-2 border-t border-default-200 bg-default-50 text-sm font-semibold">
+                        <span className="col-span-4 text-default-600 text-xs">Subtotal taxable: {fmt(groupSub)}</span>
+                        <span></span>
+                        <span className="text-right tabular-nums text-primary-700">{fmt(groupTax)}</span>
+                      </div>
+                    </CardBody>
+                  </Card>
+                );
+              })}
+
+              {/* By state */}
+              {taxReport.byState.length > 1 && (
+                <Card shadow="sm">
+                  <CardHeader className="px-5 pt-4 pb-2">
+                    <h3 className="text-sm font-bold text-default-900">Tax by State</h3>
+                  </CardHeader>
+                  <Divider />
+                  <CardBody className="px-5 py-3 space-y-1.5">
+                    {taxReport.byState.map(([st, amt]) => (
+                      <div key={st} className="flex justify-between text-sm">
+                        <span className="text-default-600 font-medium">{st}</span>
+                        <span className="tabular-nums font-semibold">{fmt(amt)}</span>
+                      </div>
+                    ))}
+                  </CardBody>
+                </Card>
+              )}
+
+              {/* Grand total */}
+              <Card shadow="sm" className="border border-primary-200 bg-primary-50/30">
+                <CardBody className="px-5 py-4 flex flex-row justify-between items-center">
+                  <span className="font-bold text-default-900">Total Tax Liability — {fmtDate(taxFrom, locale)} to {fmtDate(taxTo, locale)}</span>
+                  <span className="text-xl font-bold text-primary-700 tabular-nums">{fmt(taxReport.totalTax)}</span>
+                </CardBody>
+              </Card>
+            </>
+          )}
+        </div>
       )}
 
       {/* ── Invoice Add/Edit Modal ── */}
@@ -882,12 +1036,20 @@ export function ARTab({
                 isInvalid={!!fCustErr} errorMessage={fCustErr}
                 size="sm"
               />
-              <textarea
-                placeholder={t("ar.customerAddress")}
-                value={fCustAddress}
-                onChange={(e) => setFCustAddress(e.target.value)}
-                rows={3}
-                className="w-full rounded-lg border border-default-200 bg-default-100 px-3 py-2 text-sm text-default-800 placeholder-default-400 focus:outline-none focus:border-primary resize-none"
+              <Input
+                label="Street"
+                placeholder="123 Main St"
+                value={fCustStreet} onValueChange={setFCustStreet} size="sm"
+              />
+              <div className="flex gap-2">
+                <Input label="City"  value={fCustCity}  onValueChange={setFCustCity}  size="sm" className="flex-1" />
+                <Input label="State" placeholder="CA"   value={fCustState} onValueChange={(v) => setFCustState(v.toUpperCase())} size="sm" className="w-20" maxLength={2} />
+                <Input label="ZIP"   value={fCustZip}   onValueChange={setFCustZip}   size="sm" className="w-28" />
+              </div>
+              <Input
+                label="Country"
+                placeholder="USA"
+                value={fCustCountry} onValueChange={setFCustCountry} size="sm"
               />
               <Input
                 label={t("ar.customerEmail")} type="email"

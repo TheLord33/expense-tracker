@@ -268,11 +268,16 @@ export interface CheckRecord {
 export interface Customer {
   id: string;
   name: string;
-  address?: string;
+  street?: string;   // street line 1 (+ optional line 2)
+  city?: string;
+  state?: string;    // 2-letter code; used for tax jurisdiction
+  zip?: string;
+  country?: string;
+  address?: string;  // legacy free-form — kept for migration only
   email?: string;
   phone?: string;
   terms?: string;
-  taxId?: string;   // resale / exemption certificate; if set → tax-exempt
+  taxId?: string;    // resale / exemption certificate; if set → tax-exempt
 }
 
 export interface InvoiceLine {
