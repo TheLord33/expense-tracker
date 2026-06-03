@@ -7,6 +7,15 @@ const COMPANIES_KEY    = "folio-companies";
 const ACTIVE_KEY       = "folio-active-company";
 const LEGACY_PROFILE   = "folio-company-profile";
 
+function nextCode(list: Company[]): string {
+  const used = new Set(list.map((c) => c.code).filter(Boolean));
+  for (let i = 1; i <= 99; i++) {
+    const code = String(i).padStart(2, "0");
+    if (!used.has(code)) return code;
+  }
+  return "";
+}
+
 function migrateToMultiCompany(id: string) {
   const pairs: [string, string][] = [
     ["folio-bills",                      `folio-${id}-bills`],
@@ -43,11 +52,24 @@ export function useCompanies() {
         const id      = crypto.randomUUID();
         const legacy  = localStorage.getItem(LEGACY_PROFILE);
         const company: Company = legacy
-          ? { ...JSON.parse(legacy), id }
-          : { id, name: "My Company" };
+          ? { ...JSON.parse(legacy), id, code: "01" }
+          : { id, name: "My Company", code: "01" };
         migrateToMultiCompany(id);
         list = [company];
         localStorage.setItem(COMPANIES_KEY, JSON.stringify(list));
+      } else {
+        // Assign codes to companies created before this feature
+        const used = new Set(list.map((c) => c.code).filter(Boolean));
+        let changed = false;
+        list = list.map((c) => {
+          if (c.code) return c;
+          for (let i = 1; i <= 99; i++) {
+            const code = String(i).padStart(2, "0");
+            if (!used.has(code)) { used.add(code); changed = true; return { ...c, code }; }
+          }
+          return c;
+        });
+        if (changed) localStorage.setItem(COMPANIES_KEY, JSON.stringify(list));
       }
 
       const storedActive = localStorage.getItem(ACTIVE_KEY);
@@ -71,7 +93,10 @@ export function useCompanies() {
 
   const addCompany = useCallback((data: Omit<Company, "id">): string => {
     const id = crypto.randomUUID();
-    setCompanies((prev) => [...prev, { ...data, id }]);
+    setCompanies((prev) => {
+      const code = data.code?.trim() || nextCode(prev);
+      return [...prev, { ...data, id, code }];
+    });
     return id;
   }, []);
 

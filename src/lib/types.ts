@@ -203,12 +203,14 @@ export interface Vendor {
   name: string;
   email?: string;
   phone?: string;
+  terms?: string;
 }
 
 export interface Bill {
   id: string;
   vendorId: string;
   billNumber: string;
+  vendorInvoiceNumber?: string;
   date: string;             // YYYY-MM-DD received
   dueDate: string;          // YYYY-MM-DD
   amount: number;
@@ -239,6 +241,7 @@ export interface CompanyProfile {
 
 export interface Company extends CompanyProfile {
   id: string;
+  code?: string;            // 2-digit display identifier (01–99)
 }
 
 export interface CheckRecord {
@@ -259,6 +262,7 @@ export interface Customer {
   address?: string;
   email?: string;
   phone?: string;
+  terms?: string;
 }
 
 export interface InvoiceLine {
