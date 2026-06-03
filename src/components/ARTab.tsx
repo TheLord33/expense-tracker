@@ -157,11 +157,13 @@ export function ARTab({
     return `${prefix}${String(max + 1).padStart(6, "0")}`;
   }
 
-  // Returns defaultTaxRateId only if it still exists in the rates table; "exempt" otherwise.
+  // Returns the best available tax rate ID: explicit default if valid, else first rate, else "exempt".
   function resolvedDefaultTaxId() {
-    return (defaultTaxRateId && taxRates.some((r) => r.id === defaultTaxRateId))
-      ? defaultTaxRateId
-      : "exempt";
+    if (defaultTaxRateId && taxRates.some((r) => r.id === defaultTaxRateId)) {
+      return defaultTaxRateId;
+    }
+    if (taxRates.length > 0) return taxRates[0].id;
+    return "exempt";
   }
 
   function openAddInvoice() {

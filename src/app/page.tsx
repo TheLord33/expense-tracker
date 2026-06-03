@@ -163,7 +163,11 @@ export default function HomePage() {
     setCCode(c.code ?? ""); setCName(c.name); setCAddr(c.address ?? ""); setCEmail(c.email ?? "");
     setCPhone(c.phone ?? ""); setCWebsite(c.website ?? ""); setCTaxId(c.taxId ?? "");
     setCMaxCheck(c.maxCheckAmount != null ? String(c.maxCheckAmount) : "");
-    setCTaxRates(c.taxRates ?? []); setCDefaultTaxId(c.defaultTaxRateId ?? "");
+    const storedRates = c.taxRates ?? [];
+    const storedDefault = storedRates.some((r) => r.id === c.defaultTaxRateId)
+      ? (c.defaultTaxRateId ?? "")
+      : (storedRates[0]?.id ?? "");
+    setCTaxRates(storedRates); setCDefaultTaxId(storedDefault);
     setCNewTaxName(""); setCNewTaxRate("");
     companyModal.onOpen();
   }
@@ -876,7 +880,8 @@ export default function HomePage() {
                       const newRate: TaxRate = { id: crypto.randomUUID(), name: cNewTaxName.trim(), rate };
                       const next = [...cTaxRates, newRate];
                       setCTaxRates(next);
-                      if (!cDefaultTaxId) setCDefaultTaxId(newRate.id);
+                      const defaultStillValid = next.some((r) => r.id === cDefaultTaxId);
+                      if (!defaultStillValid) setCDefaultTaxId(newRate.id);
                       setCNewTaxName(""); setCNewTaxRate("");
                     }}>
                     Add
