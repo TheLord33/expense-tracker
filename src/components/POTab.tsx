@@ -168,35 +168,66 @@ export function POTab({
   const [receivingPO, setReceivingPO] = useState<PurchaseOrder | null>(null);
   const [receiving, setReceiving] = useState(false);
   const [vendorInvNum, setVendorInvNum] = useState("");
+  const [receiveQtys, setReceiveQtys] = useState<Record<string, string>>({});
 
   function openReceive(po: PurchaseOrder) {
     setReceivingPO(po);
     setVendorInvNum("");
+    const qtys: Record<string, string> = {};
+    for (const l of po.lines) qtys[l.id] = String(l.qty);
+    setReceiveQtys(qtys);
     receiveModal.onOpen();
+  }
+
+  // ── Remainder PO modal ────────────────────────────────────────────────────
+
+  type RemainderLine = { id: string; inventoryItemId: string; qty: number; unitCost: number };
+  const remainderModal = useDisclosure();
+  const [remainderPO, setRemainderPO] = useState<PurchaseOrder | null>(null);
+  const [remainderLines, setRemainderLines] = useState<RemainderLine[]>([]);
+
+  function handleCreateRemainderPO() {
+    if (!remainderPO) return;
+    const nextNum = String(orders.length + 1).padStart(4, "0");
+    onAddOrder({
+      vendorId: remainderPO.vendorId,
+      poNumber: `PO-${nextNum}`,
+      date: today,
+      status: "draft",
+      lines: remainderLines.map((l) => ({ id: crypto.randomUUID(), inventoryItemId: l.inventoryItemId, qty: l.qty, unitCost: l.unitCost })),
+      notes: `Remainder from ${remainderPO.poNumber}`,
+    });
+    remainderModal.onClose();
   }
 
   function handleReceive() {
     if (!receivingPO) return;
     setReceiving(true);
 
-    const total = poTotal(receivingPO);
+    const receivedLines = receivingPO.lines.map((l) => ({
+      ...l,
+      receivedQty: Math.min(Math.max(Number(receiveQtys[l.id] ?? l.qty) || 0, 0), l.qty),
+    }));
 
-    // Create one inventory movement per PO line (DR Inventory / CR AP via counterAccountId)
-    for (const line of receivingPO.lines) {
-      const item = inventoryItems.find((i) => i.id === line.inventoryItemId);
+    const receivedTotal = receivedLines.reduce((s, l) => s + l.receivedQty * l.unitCost, 0);
+    const hasPartial    = receivedLines.some((l) => l.receivedQty < l.qty);
+
+    for (const rLine of receivedLines) {
+      if (rLine.receivedQty <= 0) continue;
+      const item = inventoryItems.find((i) => i.id === rLine.inventoryItemId);
       if (!item) continue;
       onAddMovement({
-        itemId: line.inventoryItemId,
+        itemId: rLine.inventoryItemId,
         date: today,
         type: "purchase",
-        quantity: line.qty,
-        unitCost: line.unitCost,
-        note: `PO ${receivingPO.poNumber}`,
+        quantity: rLine.receivedQty,
+        unitCost: rLine.unitCost,
+        note: `PO ${receivingPO.poNumber}${hasPartial ? " (partial)" : ""}`,
         counterAccountId: AP_ACCOUNT_ID,
       });
     }
 
-    // Create a tracking-only AP bill (fromPOId skips the duplicate GL entry in ledger.ts)
+    // Create a tracking-only AP bill (fromPOId skips duplicate GL entry)
     const vendor = vendors.find((v) => v.id === receivingPO.vendorId);
     const billId = onAddBill({
       vendorId: receivingPO.vendorId,
@@ -204,8 +235,8 @@ export function POTab({
       vendorInvoiceNumber: vendorInvNum.trim() || undefined,
       date: today,
       dueDate: addDays(today, 30),
-      amount: total,
-      description: `Received PO ${receivingPO.poNumber}${vendor ? ` — ${vendor.name}` : ""}`,
+      amount: receivedTotal,
+      description: `Received PO ${receivingPO.poNumber}${vendor ? ` — ${vendor.name}` : ""}${hasPartial ? " (partial)" : ""}`,
       expenseAccountId: INV_ACCOUNT_ID,
       fromPOId: receivingPO.id,
     });
@@ -213,6 +244,15 @@ export function POTab({
     onUpdateOrder(receivingPO.id, { status: "received", billId });
     setReceiving(false);
     receiveModal.onClose();
+
+    if (hasPartial) {
+      const remaining: RemainderLine[] = receivedLines
+        .filter((l) => l.receivedQty < l.qty)
+        .map((l) => ({ id: l.id, inventoryItemId: l.inventoryItemId, qty: l.qty - l.receivedQty, unitCost: l.unitCost }));
+      setRemainderLines(remaining);
+      setRemainderPO(receivingPO);
+      remainderModal.onOpen();
+    }
   }
 
   // ── Sorted orders ─────────────────────────────────────────────────────────
@@ -436,15 +476,42 @@ export function POTab({
 
       {/* ── Receive Confirm Modal ── */}
       {receivingPO && (
-        <Modal isOpen={receiveModal.isOpen} onClose={receiveModal.onClose} placement="center">
+        <Modal isOpen={receiveModal.isOpen} onClose={receiveModal.onClose} placement="center" size="md" scrollBehavior="inside">
           <ModalContent>
             <ModalHeader>{t("po.confirmReceiveTitle")}</ModalHeader>
             <ModalBody className="gap-3">
               <div className="bg-default-50 rounded-xl px-4 py-3 space-y-1 text-sm">
                 <p className="font-semibold text-default-800">#{receivingPO.poNumber}</p>
                 <p className="text-default-500">{vendors.find((v) => v.id === receivingPO.vendorId)?.name}</p>
-                <p className="text-default-500">{receivingPO.lines.length} {receivingPO.lines.length === 1 ? t("po.item") : t("po.lineItems")}</p>
               </div>
+
+              {/* Per-line qty received */}
+              <div>
+                <p className="text-xs font-medium text-default-500 mb-1.5">{t("po.qtyReceived")}</p>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-[1fr_80px_80px] gap-2 text-xs text-default-400 px-1">
+                    <span>{t("po.item")}</span>
+                    <span className="text-right">{t("po.ordered")}</span>
+                    <span className="text-right">{t("po.receiving")}</span>
+                  </div>
+                  {receivingPO.lines.map((line) => {
+                    const item = inventoryItems.find((i) => i.id === line.inventoryItemId);
+                    return (
+                      <div key={line.id} className="grid grid-cols-[1fr_80px_80px] gap-2 items-center">
+                        <span className="text-sm text-default-700 truncate">{item?.name ?? line.inventoryItemId}</span>
+                        <span className="text-sm text-default-400 text-right tabular-nums">{line.qty}</span>
+                        <input
+                          type="number" min="0" max={line.qty} step="1"
+                          className="text-sm text-right bg-default-100 border border-default-200 rounded-lg px-2 py-1 focus:outline-none focus:border-primary w-full"
+                          value={receiveQtys[line.id] ?? line.qty}
+                          onChange={(e) => setReceiveQtys((prev) => ({ ...prev, [line.id]: e.target.value }))}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               <Input
                 label={t("po.vendorInvoiceNumber")}
                 placeholder="optional"
@@ -452,15 +519,39 @@ export function POTab({
                 onValueChange={setVendorInvNum}
                 size="sm"
               />
-              <p className="text-sm text-default-600">
-                {t("po.confirmReceiveBody").replace("{amount}", fmt(poTotal(receivingPO)))}
-              </p>
             </ModalBody>
             <ModalFooter>
               <Button variant="flat" onPress={receiveModal.onClose}>{t("cancel")}</Button>
               <Button color="success" isLoading={receiving} onPress={handleReceive}>
                 {t("po.receive")}
               </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      )}
+
+      {/* ── Remainder PO Modal ── */}
+      {remainderPO && (
+        <Modal isOpen={remainderModal.isOpen} onClose={remainderModal.onClose} placement="center">
+          <ModalContent>
+            <ModalHeader>{t("po.remainderTitle")}</ModalHeader>
+            <ModalBody className="gap-3">
+              <p className="text-sm text-default-600">{t("po.remainderBody")}</p>
+              <div className="bg-default-50 rounded-xl px-4 py-3 space-y-1.5">
+                {remainderLines.map((l) => {
+                  const item = inventoryItems.find((i) => i.id === l.inventoryItemId);
+                  return (
+                    <div key={l.id} className="flex justify-between text-sm">
+                      <span className="text-default-700">{item?.name ?? l.inventoryItemId}</span>
+                      <span className="text-default-500 tabular-nums">{t("po.qty")}: {l.qty}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="flat" onPress={remainderModal.onClose}>{t("po.remainderSkip")}</Button>
+              <Button color="primary" onPress={handleCreateRemainderPO}>{t("po.remainderCreate")}</Button>
             </ModalFooter>
           </ModalContent>
         </Modal>

@@ -30,6 +30,7 @@ import { useAR } from "@/lib/useAR";
 import { useCompanies } from "@/lib/useCompanies";
 import { useChecks } from "@/lib/useChecks";
 import { usePurchaseOrders } from "@/lib/usePurchaseOrders";
+import { useTaxPayments } from "@/lib/useTaxPayments";
 import type { Budget, RecurringExpense, IncomeSource, TaxRate } from "@/lib/types";
 
 import { AppHeader } from "@/components/AppHeader";
@@ -131,6 +132,7 @@ export default function HomePage() {
   const { items: inventoryItems, movements: inventoryMovements, addItem, updateItem, deleteItem, addMovement, deleteMovement, qtyOnHand, inventoryValue, totalInventoryValue } = useInventory(activeId);
   const { customers, invoices, payments: invoicePayments, addCustomer, updateCustomer, deleteCustomer, addInvoice, updateInvoice, deleteInvoice, addPayment: addInvoicePayment, collectedAmount, outstanding: invoiceOutstanding } = useAR(activeId);
   const { checks, addChecks, updateCheck, deleteCheck } = useChecks(activeId);
+  const { taxPayments, addTaxPayment } = useTaxPayments(activeId);
   const { orders: purchaseOrders, addOrder, updateOrder, deleteOrder, poTotal } = usePurchaseOrders(activeId);
 
   // ── Company modal state ───────────────────────────────────────────────────────
@@ -665,6 +667,7 @@ export default function HomePage() {
                 bills={bills} billPayments={billPayments}
                 inventoryItems={inventoryItems} inventoryMovements={inventoryMovements}
                 invoices={invoices} invoicePayments={invoicePayments}
+                taxPayments={taxPayments}
                 onAddAccount={addAccount} onUpdateAccount={updateAccount} onDeleteAccount={deleteAccount}
               />
             )}
@@ -675,6 +678,7 @@ export default function HomePage() {
                 bills={bills} billPayments={billPayments}
                 inventoryItems={inventoryItems} inventoryMovements={inventoryMovements}
                 invoices={invoices} invoicePayments={invoicePayments}
+                taxPayments={taxPayments}
               />
             )}
 
@@ -684,6 +688,7 @@ export default function HomePage() {
                 bills={bills} billPayments={billPayments}
                 inventoryItems={inventoryItems} inventoryMovements={inventoryMovements}
                 invoices={invoices} invoicePayments={invoicePayments}
+                taxPayments={taxPayments}
                 openingBalances={openingBalances}
                 onSetBalance={setOpeningBalance}
               />
@@ -695,6 +700,7 @@ export default function HomePage() {
                 bills={bills} billPayments={billPayments}
                 inventoryItems={inventoryItems} inventoryMovements={inventoryMovements}
                 invoices={invoices} invoicePayments={invoicePayments}
+                taxPayments={taxPayments}
               />
             )}
 
@@ -705,6 +711,7 @@ export default function HomePage() {
                 bills={bills} billPayments={billPayments}
                 inventoryItems={inventoryItems} inventoryMovements={inventoryMovements}
                 invoices={invoices} invoicePayments={invoicePayments}
+                taxPayments={taxPayments}
               />
             )}
 
@@ -742,6 +749,7 @@ export default function HomePage() {
                 onAddCustomer={addCustomer} onUpdateCustomer={updateCustomer} onDeleteCustomer={deleteCustomer}
                 onAddInvoice={addInvoice} onUpdateInvoice={updateInvoice} onDeleteInvoice={deleteInvoice}
                 onAddPayment={addInvoicePayment}
+                onAddTaxPayment={addTaxPayment} onAddChecks={addChecks}
                 collectedAmount={collectedAmount} outstanding={invoiceOutstanding}
               />
             ) : upgradePrompt)}

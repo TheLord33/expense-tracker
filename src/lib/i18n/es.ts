@@ -511,6 +511,7 @@ const es: Translations = {
     payDate: "Fecha de Pago",
     payAmount: "Monto a Pagar",
     payNote: "Nota (opcional)",
+    payReference: "Cheque / Doc. #",
     addVendor: "Agregar Proveedor",
     editVendor: "Editar Proveedor",
     vendorName: "Nombre del Proveedor",
@@ -588,6 +589,13 @@ const es: Translations = {
     errorCost: "Ingrese un costo válido",
     selectItem: "Seleccionar artículo…",
     maxAmountWarning: "El total supera el límite de cheque de {max}",
+    qtyReceived: "Cantidades a Recibir",
+    ordered: "Pedido",
+    receiving: "Recibiendo",
+    remainderTitle: "¿Crear OC de Saldo?",
+    remainderBody: "Algunos artículos fueron recibidos parcialmente. ¿Crear una nueva OC borrador para las cantidades restantes?",
+    remainderSkip: "Omitir",
+    remainderCreate: "Crear OC de Saldo",
   },
 
   inventory: {
@@ -690,6 +698,7 @@ const es: Translations = {
     payDate: "Fecha de Cobro",
     payAmount: "Monto Cobrado",
     payNote: "Nota (opcional)",
+    payReference: "Cheque / Doc. #",
     addCustomer: "Agregar Cliente",
     editCustomer: "Editar Cliente",
     customerName: "Nombre del Cliente",
@@ -749,6 +758,12 @@ const es: Translations = {
     credits: "Abonos",
     balance: "Saldo",
     totalDue: "Total a Pagar",
+    writeTaxCheck: "Emitir Cheque",
+    taxPaymentTitle: "Pagar Impuesto",
+    taxPayee: "Pagar A",
+    taxCheckNo: "Cheque #",
+    taxPeriodFrom: "Período Desde",
+    taxPeriodTo: "Período Hasta",
   },
 
   finCalc: {

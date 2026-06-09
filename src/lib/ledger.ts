@@ -1,4 +1,4 @@
-import type { Account, AccountType, Bill, BillPayment, Customer, Expense, IncomeSource, InventoryItem, Invoice, InvoicePayment, JournalEntry, StockMovement } from "./types";
+import type { Account, AccountType, Bill, BillPayment, Expense, IncomeSource, InventoryItem, Invoice, InvoicePayment, JournalEntry, StockMovement, TaxPayment } from "./types";
 import { toMonthly } from "./useIncome";
 
 const CASH_CODE     = "1000";
@@ -174,7 +174,8 @@ export function deriveInventoryEntries(
   return entries;
 }
 
-const AR_ACCOUNT_ID = "acc-1100"; // Accounts Receivable (builtin)
+const AR_ACCOUNT_ID      = "acc-1100"; // Accounts Receivable (builtin)
+const TAX_PAYABLE_ID     = "acc-2200"; // Sales Tax Payable (builtin)
 
 /** Derive journal entries from AR invoices and payments received. */
 export function deriveAREntries(
@@ -189,25 +190,32 @@ export function deriveAREntries(
 
   const entries: JournalEntry[] = [];
 
+  const stpAccount = accounts.find((a) => a.id === TAX_PAYABLE_ID);
+
   for (const inv of invoices) {
     const revAccount = accounts.find((a) => a.id === inv.revenueAccountId);
     if (!revAccount) continue;
-    const total = inv.lines?.length
+    const subtotal = inv.lines?.length
       ? inv.lines.reduce((s, l) => s + l.quantity * l.unitPrice, 0)
       : (inv.amount ?? 0);
-    if (total < 0.005) continue;
+    if (subtotal < 0.005) continue;
+
+    const taxAmt  = stpAccount && (inv.taxAmount ?? 0) > 0.005 ? Math.round((inv.taxAmount ?? 0) * 100) / 100 : 0;
+    const arTotal = Math.round((subtotal + taxAmt) * 100) / 100;
 
     const firstDesc = inv.lines?.[0]?.description ?? (inv.description ?? "");
+    const invLines = [
+      { accountId: arAccount.id,  debit: arTotal,   credit: 0        },
+      { accountId: revAccount.id, debit: 0,         credit: subtotal },
+      ...(taxAmt > 0.005 ? [{ accountId: stpAccount!.id, debit: 0, credit: taxAmt }] : []),
+    ];
     entries.push({
       id:          `inv-${inv.id}`,
       date:        inv.date,
       description: `Invoice #${inv.invoiceNumber}: ${firstDesc}`,
       sourceId:    inv.id,
       sourceType:  "invoice",
-      lines: [
-        { accountId: arAccount.id,  debit: total, credit: 0     },
-        { accountId: revAccount.id, debit: 0,     credit: total },
-      ],
+      lines:       invLines,
     });
 
     // COGS entries for inventory-linked line items
@@ -249,7 +257,25 @@ export function deriveAREntries(
   return entries;
 }
 
-/** All derived journal entries (expenses + income + AP + inventory + AR), sorted ascending by date. */
+/** Derive a journal entry from a tax payment: DR Sales Tax Payable / CR Cash. */
+export function taxPaymentToEntry(payment: TaxPayment, accounts: Account[]): JournalEntry | null {
+  const stpAccount  = accounts.find((a) => a.id === TAX_PAYABLE_ID);
+  const cashAccount = accounts.find((a) => a.code === CASH_CODE);
+  if (!stpAccount || !cashAccount) return null;
+  return {
+    id:          `taxpay-${payment.id}`,
+    date:        payment.date,
+    description: `Tax payment — ${payment.payee}${payment.checkNumber ? ` #${payment.checkNumber}` : ""}`,
+    sourceId:    payment.id,
+    sourceType:  "tax-payment",
+    lines: [
+      { accountId: stpAccount.id,  debit: payment.amount, credit: 0              },
+      { accountId: cashAccount.id, debit: 0,              credit: payment.amount },
+    ],
+  };
+}
+
+/** All derived journal entries (expenses + income + AP + inventory + AR + tax payments), sorted ascending by date. */
 export function deriveAllEntries(
   expenses: Expense[],
   sources: IncomeSource[],
@@ -259,15 +285,20 @@ export function deriveAllEntries(
   inventoryItems: InventoryItem[] = [],
   inventoryMovements: StockMovement[] = [],
   invoices: Invoice[] = [],
-  invoicePayments: InvoicePayment[] = []
+  invoicePayments: InvoicePayment[] = [],
+  taxPayments: TaxPayment[] = []
 ): JournalEntry[] {
   if (accounts.length === 0) return [];
-  const expEntries = expenses.map((e) => expenseToEntry(e, accounts));
-  const incEntries = deriveIncomeEntries(sources, accounts);
-  const billEntries  = deriveBillEntries(bills, billPayments, accounts);
-  const invEntries   = deriveInventoryEntries(inventoryItems, inventoryMovements);
-  const arEntries    = deriveAREntries(invoices, invoicePayments, accounts, inventoryItems);
-  return [...expEntries, ...incEntries, ...billEntries, ...invEntries, ...arEntries].sort((a, b) => a.date.localeCompare(b.date));
+  const expEntries  = expenses.map((e) => expenseToEntry(e, accounts));
+  const incEntries  = deriveIncomeEntries(sources, accounts);
+  const billEntries = deriveBillEntries(bills, billPayments, accounts);
+  const invEntries  = deriveInventoryEntries(inventoryItems, inventoryMovements);
+  const arEntries   = deriveAREntries(invoices, invoicePayments, accounts, inventoryItems);
+  const taxEntries  = taxPayments
+    .map((p) => taxPaymentToEntry(p, accounts))
+    .filter((e): e is JournalEntry => e !== null);
+  return [...expEntries, ...incEntries, ...billEntries, ...invEntries, ...arEntries, ...taxEntries]
+    .sort((a, b) => a.date.localeCompare(b.date));
 }
 
 export interface LedgerRow {

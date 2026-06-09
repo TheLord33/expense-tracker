@@ -511,6 +511,7 @@ const de: Translations = {
     payDate: "Zahlungsdatum",
     payAmount: "Zahlungsbetrag",
     payNote: "Notiz (optional)",
+    payReference: "Scheck / Dok.-Nr.",
     addVendor: "Lieferant hinzufügen",
     editVendor: "Lieferant bearbeiten",
     vendorName: "Lieferantenname",
@@ -588,6 +589,13 @@ const de: Translations = {
     errorCost: "Gültigen Preis eingeben",
     selectItem: "Artikel auswählen…",
     maxAmountWarning: "Gesamt überschreitet das Schecklimit von {max}",
+    qtyReceived: "Eingehende Mengen",
+    ordered: "Bestellt",
+    receiving: "Eingehend",
+    remainderTitle: "Rest-Bestellung erstellen?",
+    remainderBody: "Einige Artikel wurden nur teilweise empfangen. Neuen Entwurf für die verbleibenden Mengen erstellen?",
+    remainderSkip: "Überspringen",
+    remainderCreate: "Rest-Bestellung erstellen",
   },
 
   inventory: {
@@ -690,6 +698,7 @@ const de: Translations = {
     payDate: "Zahlungsdatum",
     payAmount: "Zahlungsbetrag",
     payNote: "Notiz (optional)",
+    payReference: "Scheck / Dok.-Nr.",
     addCustomer: "Kunden hinzufügen",
     editCustomer: "Kunden bearbeiten",
     customerName: "Kundenname",
@@ -749,6 +758,12 @@ const de: Translations = {
     credits: "Gutschriften",
     balance: "Saldo",
     totalDue: "Fälliger Betrag",
+    writeTaxCheck: "Scheck Ausstellen",
+    taxPaymentTitle: "Steuer Bezahlen",
+    taxPayee: "Begünstigter",
+    taxCheckNo: "Scheck #",
+    taxPeriodFrom: "Zeitraum Von",
+    taxPeriodTo: "Zeitraum Bis",
   },
 
   finCalc: {

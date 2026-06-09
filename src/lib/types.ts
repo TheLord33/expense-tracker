@@ -140,7 +140,7 @@ export interface JournalLine {
   credit: number;
 }
 
-export type JournalEntrySource = "expense" | "income" | "manual" | "bill" | "bill-payment" | "inventory" | "invoice" | "invoice-payment";
+export type JournalEntrySource = "expense" | "income" | "manual" | "bill" | "bill-payment" | "inventory" | "invoice" | "invoice-payment" | "tax-payment";
 
 export interface JournalEntry {
   id: string;
@@ -157,6 +157,7 @@ export const BUILTIN_ACCOUNTS: Account[] = [
   { id: "acc-1200", code: "1200", name: "Inventory",           type: "asset",     isBuiltin: true },
   { id: "acc-2000", code: "2000", name: "Accounts Payable",    type: "liability", isBuiltin: true },
   { id: "acc-2100", code: "2100", name: "Credit Cards",        type: "liability", isBuiltin: true },
+  { id: "acc-2200", code: "2200", name: "Sales Tax Payable",   type: "liability", isBuiltin: true },
   { id: "acc-3000", code: "3000", name: "Owner's Equity",      type: "equity",    isBuiltin: true },
   { id: "acc-4000", code: "4000", name: "General Income",      type: "revenue",   isBuiltin: true },
   { id: "acc-5000", code: "5000", name: "Cost of Goods Sold",  type: "expense",   isBuiltin: true },
@@ -311,6 +312,19 @@ export interface InvoicePayment {
   invoiceId: string;
   date: string;             // YYYY-MM-DD
   amount: number;
+  note?: string;
+  reference?: string;       // check number or document reference
+}
+
+export interface TaxPayment {
+  id: string;
+  date: string;             // YYYY-MM-DD
+  checkNumber: string;
+  payee: string;            // taxing authority name
+  amount: number;
+  taxRateId?: string;       // which TaxRate was paid (for reference)
+  periodFrom?: string;      // YYYY-MM-DD
+  periodTo?: string;        // YYYY-MM-DD
   note?: string;
 }
 

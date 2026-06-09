@@ -511,6 +511,7 @@ const ja: Translations = {
     payDate: "支払日",
     payAmount: "支払金額",
     payNote: "メモ（任意）",
+    payReference: "小切手 / 書類番号",
     addVendor: "仕入先を追加",
     editVendor: "仕入先を編集",
     vendorName: "仕入先名",
@@ -588,6 +589,13 @@ const ja: Translations = {
     errorCost: "有効な単価を入力してください",
     selectItem: "品目を選択…",
     maxAmountWarning: "合計は小切手限度額 {max} を超えています",
+    qtyReceived: "受領数量",
+    ordered: "発注数",
+    receiving: "受領数",
+    remainderTitle: "残余発注書を作成しますか？",
+    remainderBody: "一部の品目が部分的にしか受領されませんでした。残余数量の新規下書き発注書を作成しますか？",
+    remainderSkip: "スキップ",
+    remainderCreate: "残余発注書を作成",
   },
 
   inventory: {
@@ -690,6 +698,7 @@ const ja: Translations = {
     payDate: "入金日",
     payAmount: "入金額",
     payNote: "メモ（任意）",
+    payReference: "小切手 / 書類番号",
     addCustomer: "顧客を追加",
     editCustomer: "顧客を編集",
     customerName: "顧客名",
@@ -749,6 +758,12 @@ const ja: Translations = {
     credits: "入金",
     balance: "残高",
     totalDue: "合計残高",
+    writeTaxCheck: "小切手発行",
+    taxPaymentTitle: "税金支払い",
+    taxPayee: "支払先",
+    taxCheckNo: "小切手番号",
+    taxPeriodFrom: "期間開始",
+    taxPeriodTo: "期間終了",
   },
 
   finCalc: {
