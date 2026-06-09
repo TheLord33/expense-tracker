@@ -8,8 +8,8 @@ import {
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
   useDisclosure,
 } from "@nextui-org/react";
-import { Plus, Pencil, Trash2, BadgeDollarSign, CheckCircle, Download, Settings, X, FileText } from "lucide-react";
-import type { Account, CompanyProfile, Customer, InventoryItem, Invoice, InvoiceLine, InvoicePayment, TaxRate } from "@/lib/types";
+import { Plus, Pencil, Trash2, BadgeDollarSign, CheckCircle, Download, Settings, X, FileText, PenLine } from "lucide-react";
+import type { Account, CheckRecord, CompanyProfile, Customer, InventoryItem, Invoice, InvoiceLine, InvoicePayment, TaxPayment, TaxRate } from "@/lib/types";
 import { invoiceTotal, invoiceSubtotal } from "@/lib/useAR";
 import { generateInvoicePDF, generateStatementPDF } from "@/lib/exportPDF";
 import { downloadBlob } from "@/lib/importExport";
@@ -83,6 +83,8 @@ interface Props {
   onUpdateInvoice: (id: string, data: Partial<Omit<Invoice, "id">>) => void;
   onDeleteInvoice: (id: string) => void;
   onAddPayment: (p: Omit<InvoicePayment, "id">) => void;
+  onAddTaxPayment: (p: Omit<TaxPayment, "id">) => void;
+  onAddChecks: (checks: Omit<CheckRecord, "id">[]) => void;
   collectedAmount: (invoiceId: string) => number;
   outstanding: (inv: Invoice) => number;
 }
@@ -96,7 +98,7 @@ export function ARTab({
   onUpdateCompany,
   onAddCustomer, onUpdateCustomer, onDeleteCustomer,
   onAddInvoice, onUpdateInvoice, onDeleteInvoice,
-  onAddPayment, collectedAmount, outstanding,
+  onAddPayment, onAddTaxPayment, onAddChecks, collectedAmount, outstanding,
 }: Props) {
   const { t, locale } = useLanguage();
   const { fmt } = useCurrency();
@@ -108,6 +110,55 @@ export function ARTab({
   const [taxFrom, setTaxFrom] = useState(`${thisYear}-01-01`);
   const [taxTo,   setTaxTo]   = useState(todayISO());
   const today = todayISO();
+
+  // ── Tax payment modal state ──────────────────────────────────────────────────
+  const taxPayModal     = useDisclosure();
+  const [taxPayAmt,        setTaxPayAmt]        = useState("");
+  const [taxPayDate,       setTaxPayDate]        = useState(today);
+  const [taxPayee,         setTaxPayee]          = useState("");
+  const [taxPayCheckNum,   setTaxPayCheckNum]    = useState("");
+  const [taxPayNote,       setTaxPayNote]        = useState("");
+  const [taxPayPeriodFrom, setTaxPayPeriodFrom]  = useState("");
+  const [taxPayPeriodTo,   setTaxPayPeriodTo]    = useState("");
+  const [taxPayRateId,     setTaxPayRateId]      = useState<string | undefined>(undefined);
+  const [taxPayErr,        setTaxPayErr]         = useState("");
+
+  function openTaxPayModal(amount: number, payee: string, rateId?: string) {
+    setTaxPayAmt(String(Math.round(amount * 100) / 100));
+    setTaxPayDate(today);
+    setTaxPayee(payee);
+    setTaxPayCheckNum(""); setTaxPayNote(""); setTaxPayErr("");
+    setTaxPayPeriodFrom(taxFrom);
+    setTaxPayPeriodTo(taxTo);
+    setTaxPayRateId(rateId);
+    taxPayModal.onOpen();
+  }
+
+  function handleTaxPaySubmit(e: FormEvent) {
+    e.preventDefault();
+    const amt = parseFloat(taxPayAmt);
+    if (isNaN(amt) || amt <= 0) { setTaxPayErr(t("ar.errorPayAmount")); return; }
+    if (!taxPayee.trim())        { setTaxPayErr("Payee is required");    return; }
+    onAddTaxPayment({
+      date:        taxPayDate,
+      checkNumber: taxPayCheckNum.trim(),
+      payee:       taxPayee.trim(),
+      amount:      amt,
+      taxRateId:   taxPayRateId,
+      periodFrom:  taxPayPeriodFrom || undefined,
+      periodTo:    taxPayPeriodTo   || undefined,
+      note:        taxPayNote.trim() || undefined,
+    });
+    onAddChecks([{
+      date:        taxPayDate,
+      checkNumber: taxPayCheckNum.trim(),
+      payee:       taxPayee.trim(),
+      amount:      amt,
+      memo:        taxPayNote.trim() || `Tax payment${taxPayPeriodFrom ? ` ${taxPayPeriodFrom} – ${taxPayPeriodTo}` : ""}`,
+      status:      "outstanding",
+    }]);
+    taxPayModal.onClose();
+  }
 
   async function handleDownloadPDF(inv: Invoice) {
     const customer = customers.find((c) => c.id === inv.customerId);
@@ -443,12 +494,12 @@ export function ARTab({
         && inv.date >= taxFrom && inv.date <= taxTo
     );
     // group by taxRateId
-    const groups = new Map<string, { label: string; rate: number; rows: typeof taxedInvoices }>();
+    const groups = new Map<string, { label: string; rate: number; rateId: string | undefined; rows: typeof taxedInvoices }>();
     for (const inv of taxedInvoices) {
       const key = inv.taxRateId ?? "unknown";
       const tr  = taxRates.find((r) => r.id === inv.taxRateId);
       const label = tr ? `${tr.name} (${(inv.taxRate! * 100).toFixed(2)}%)` : `${((inv.taxRate ?? 0) * 100).toFixed(2)}%`;
-      if (!groups.has(key)) groups.set(key, { label, rate: inv.taxRate ?? 0, rows: [] });
+      if (!groups.has(key)) groups.set(key, { label, rate: inv.taxRate ?? 0, rateId: inv.taxRateId, rows: [] });
       groups.get(key)!.rows.push(inv);
     }
     // state breakdown
@@ -760,10 +811,16 @@ export function ARTab({
               {taxReport.groups.map((group) => {
                 const groupTax = group.rows.reduce((s, inv) => s + (inv.taxAmount ?? 0), 0);
                 const groupSub = group.rows.reduce((s, inv) => s + invoiceSubtotal(inv), 0);
+                const tr = taxRates.find((r) => r.id === group.rateId);
+                const defaultPayee = tr?.name ? `${tr.name} Tax Authority` : "Tax Authority";
                 return (
                   <Card key={group.label} shadow="sm">
-                    <CardHeader className="px-5 pt-4 pb-2">
+                    <CardHeader className="px-5 pt-4 pb-2 flex items-center justify-between">
                       <h3 className="text-sm font-bold text-default-900">{group.label}</h3>
+                      <Button size="sm" variant="flat" color="primary" startContent={<PenLine size={13} />}
+                        onPress={() => openTaxPayModal(groupTax, defaultPayee, group.rateId)}>
+                        {t("ar.writeTaxCheck")}
+                      </Button>
                     </CardHeader>
                     <Divider />
                     <CardBody className="px-0 py-0">
@@ -821,9 +878,18 @@ export function ARTab({
 
               {/* Grand total */}
               <Card shadow="sm" className="border border-primary-200 bg-primary-50/30">
-                <CardBody className="px-5 py-4 flex flex-row justify-between items-center">
-                  <span className="font-bold text-default-900">Total Tax Liability — {fmtDate(taxFrom, locale)} to {fmtDate(taxTo, locale)}</span>
-                  <span className="text-xl font-bold text-primary-700 tabular-nums">{fmt(taxReport.totalTax)}</span>
+                <CardBody className="px-5 py-4 flex flex-row justify-between items-center gap-3">
+                  <div>
+                    <p className="font-bold text-default-900">Total Tax Liability</p>
+                    <p className="text-xs text-default-500">{fmtDate(taxFrom, locale)} to {fmtDate(taxTo, locale)}</p>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-xl font-bold text-primary-700 tabular-nums">{fmt(taxReport.totalTax)}</span>
+                    <Button size="sm" color="primary" startContent={<PenLine size={13} />}
+                      onPress={() => openTaxPayModal(taxReport.totalTax, "Tax Authority")}>
+                      {t("ar.writeTaxCheck")}
+                    </Button>
+                  </div>
                 </CardBody>
               </Card>
             </>
@@ -1162,6 +1228,54 @@ export function ARTab({
               <Button color="primary" type="submit" isLoading={stmtLoading}
                 startContent={!stmtLoading ? <Download size={14} /> : undefined}>
                 {t("ar.statement")} PDF
+              </Button>
+            </ModalFooter>
+          </form>
+        </ModalContent>
+      </Modal>
+
+      {/* ── Tax Payment Modal ── */}
+      <Modal isOpen={taxPayModal.isOpen} onClose={taxPayModal.onClose} placement="center" size="sm">
+        <ModalContent>
+          <form onSubmit={handleTaxPaySubmit}>
+            <ModalHeader>{t("ar.taxPaymentTitle")}</ModalHeader>
+            <ModalBody className="gap-3">
+              <Input
+                label={t("ar.taxPayee")} placeholder="State Tax Authority"
+                value={taxPayee} onValueChange={(v) => { setTaxPayee(v); setTaxPayErr(""); }}
+                size="sm"
+              />
+              <Input
+                type="date" label={t("ar.payDate")}
+                value={taxPayDate} onValueChange={setTaxPayDate}
+                size="sm"
+              />
+              <Input
+                label={t("ar.payAmount")} type="number" min="0.01" step="0.01"
+                value={taxPayAmt}
+                onValueChange={(v) => { setTaxPayAmt(v); setTaxPayErr(""); }}
+                isInvalid={!!taxPayErr} errorMessage={taxPayErr}
+                size="sm"
+              />
+              <Input
+                label={t("ar.taxCheckNo")} placeholder="e.g. 1043"
+                value={taxPayCheckNum} onValueChange={setTaxPayCheckNum}
+                size="sm"
+              />
+              <div className="flex gap-3">
+                <Input type="date" label={t("ar.taxPeriodFrom")} value={taxPayPeriodFrom} onValueChange={setTaxPayPeriodFrom} size="sm" className="flex-1" />
+                <Input type="date" label={t("ar.taxPeriodTo")}   value={taxPayPeriodTo}   onValueChange={setTaxPayPeriodTo}   size="sm" className="flex-1" />
+              </div>
+              <Input
+                label={t("ar.payNote")}
+                value={taxPayNote} onValueChange={setTaxPayNote}
+                size="sm"
+              />
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="flat" onPress={taxPayModal.onClose}>{t("cancel")}</Button>
+              <Button color="primary" type="submit" startContent={<PenLine size={14} />}>
+                {t("ar.writeTaxCheck")}
               </Button>
             </ModalFooter>
           </form>

@@ -830,6 +830,12 @@ const en = {
     credits: "Credits",
     balance: "Balance",
     totalDue: "Total Due",
+    writeTaxCheck: "Write Check",
+    taxPaymentTitle: "Pay Tax Liability",
+    taxPayee: "Pay To",
+    taxCheckNo: "Check #",
+    taxPeriodFrom: "Period From",
+    taxPeriodTo: "Period To",
   },
   companies: {
     label: "Company",

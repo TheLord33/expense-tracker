@@ -758,6 +758,12 @@ const it: Translations = {
     credits: "Accrediti",
     balance: "Saldo",
     totalDue: "Totale Dovuto",
+    writeTaxCheck: "Emetti Assegno",
+    taxPaymentTitle: "Paga Imposta",
+    taxPayee: "Beneficiario",
+    taxCheckNo: "Assegno #",
+    taxPeriodFrom: "Periodo Dal",
+    taxPeriodTo: "Periodo Al",
   },
 
   finCalc: {

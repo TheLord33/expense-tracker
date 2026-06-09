@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { Card, CardBody, CardHeader, Divider, Select, SelectItem, Input, Button } from "@nextui-org/react";
 import { TrendingUp, TrendingDown, Download } from "lucide-react";
-import type { Account, Bill, BillPayment, Expense, IncomeSource, InventoryItem, Invoice, InvoicePayment, StockMovement } from "@/lib/types";
+import type { Account, Bill, BillPayment, Expense, IncomeSource, InventoryItem, Invoice, InvoicePayment, StockMovement, TaxPayment } from "@/lib/types";
 import { deriveAllEntries, computePnL } from "@/lib/ledger";
 import { pnlToCSV, download, downloadBlob } from "@/lib/importExport";
 import { generatePnLPDF } from "@/lib/exportPDF";
@@ -74,11 +74,12 @@ interface Props {
   inventoryMovements?: StockMovement[];
   invoices?: Invoice[];
   invoicePayments?: InvoicePayment[];
+  taxPayments?: TaxPayment[];
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function PnLTab({ expenses, sources, accounts, bills = [], billPayments = [], inventoryItems = [], inventoryMovements = [], invoices = [], invoicePayments = [] }: Props) {
+export function PnLTab({ expenses, sources, accounts, bills = [], billPayments = [], inventoryItems = [], inventoryMovements = [], invoices = [], invoicePayments = [], taxPayments = [] }: Props) {
   const { t, locale } = useLanguage();
   const { fmt } = useCurrency();
 
@@ -100,8 +101,8 @@ export function PnLTab({ expenses, sources, accounts, bills = [], billPayments =
   const { from, to } = getDateRange(preset, customFrom, customTo);
 
   const entries = useMemo(
-    () => deriveAllEntries(expenses, sources, accounts, bills, billPayments, inventoryItems, inventoryMovements, invoices, invoicePayments),
-    [expenses, sources, accounts, bills, billPayments, inventoryItems, inventoryMovements, invoices, invoicePayments]
+    () => deriveAllEntries(expenses, sources, accounts, bills, billPayments, inventoryItems, inventoryMovements, invoices, invoicePayments, taxPayments),
+    [expenses, sources, accounts, bills, billPayments, inventoryItems, inventoryMovements, invoices, invoicePayments, taxPayments]
   );
 
   const report = useMemo(

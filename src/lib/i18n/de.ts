@@ -758,6 +758,12 @@ const de: Translations = {
     credits: "Gutschriften",
     balance: "Saldo",
     totalDue: "Fälliger Betrag",
+    writeTaxCheck: "Scheck Ausstellen",
+    taxPaymentTitle: "Steuer Bezahlen",
+    taxPayee: "Begünstigter",
+    taxCheckNo: "Scheck #",
+    taxPeriodFrom: "Zeitraum Von",
+    taxPeriodTo: "Zeitraum Bis",
   },
 
   finCalc: {

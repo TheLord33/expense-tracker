@@ -758,6 +758,12 @@ const fr: Translations = {
     credits: "Crédits",
     balance: "Solde",
     totalDue: "Total Dû",
+    writeTaxCheck: "Émettre Chèque",
+    taxPaymentTitle: "Payer la Taxe",
+    taxPayee: "Bénéficiaire",
+    taxCheckNo: "Chèque #",
+    taxPeriodFrom: "Période Du",
+    taxPeriodTo: "Période Au",
   },
 
   finCalc: {

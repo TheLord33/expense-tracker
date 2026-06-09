@@ -758,6 +758,12 @@ const ja: Translations = {
     credits: "入金",
     balance: "残高",
     totalDue: "合計残高",
+    writeTaxCheck: "小切手発行",
+    taxPaymentTitle: "税金支払い",
+    taxPayee: "支払先",
+    taxCheckNo: "小切手番号",
+    taxPeriodFrom: "期間開始",
+    taxPeriodTo: "期間終了",
   },
 
   finCalc: {
