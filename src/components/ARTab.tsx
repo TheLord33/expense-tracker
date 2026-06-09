@@ -260,11 +260,14 @@ export function ARTab({
   const [payDate,    setPayDate]    = useState(today);
   const [payAmt,     setPayAmt]     = useState("");
   const [payNote,    setPayNote]    = useState("");
+  const [payRef,     setPayRef]     = useState("");
   const [payErr,     setPayErr]     = useState("");
 
   function openPayment(inv: Invoice) {
     setPayInvoice(inv);
-    setPayDate(today); setPayAmt(""); setPayNote(""); setPayErr("");
+    setPayDate(today);
+    setPayAmt(String(Math.round(outstanding(inv) * 100) / 100));
+    setPayNote(""); setPayRef(""); setPayErr("");
     payModal.onOpen();
   }
 
@@ -274,7 +277,7 @@ export function ARTab({
     const amt = parseFloat(payAmt);
     if (isNaN(amt) || amt <= 0) { setPayErr(t("ar.errorPayAmount")); return; }
     if (amt > outstanding(payInvoice) + 0.01) { setPayErr(t("ar.errorPayExceeds")); return; }
-    onAddPayment({ invoiceId: payInvoice.id, date: payDate, amount: amt, note: payNote.trim() || undefined });
+    onAddPayment({ invoiceId: payInvoice.id, date: payDate, amount: amt, note: payNote.trim() || undefined, reference: payRef.trim() || undefined });
     payModal.onClose();
   }
 
@@ -1054,6 +1057,7 @@ export function ARTab({
                 isInvalid={!!payErr} errorMessage={payErr}
                 size="sm"
               />
+              <Input label={t("ar.payReference")} placeholder="e.g. 1042" value={payRef} onValueChange={setPayRef} size="sm" />
               <Input label={t("ar.payNote")} value={payNote} onValueChange={setPayNote} size="sm" />
             </ModalBody>
             <ModalFooter>

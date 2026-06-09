@@ -312,6 +312,7 @@ export interface InvoicePayment {
   date: string;             // YYYY-MM-DD
   amount: number;
   note?: string;
+  reference?: string;       // check number or document reference
 }
 
 // ── Purchase Orders ───────────────────────────────────────────────────────────
