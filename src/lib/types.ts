@@ -455,12 +455,19 @@ export interface Employee {
 
 export interface PayRunLine {
   employeeId: string;
-  // Hours (hourly employees)
+  // Hours (hourly employees only)
   regularHours?: number;
   overtimeHours?: number;
+  overtimeMultiplier?: 1.5 | 2.0;
+  holidayHours?: number;
+  sickHours?: number;
+  vacationHours?: number;
   // Gross
   regularPay: number;
   overtimePay: number;
+  holidayPay?: number;
+  sickPay?: number;
+  vacationPay?: number;
   grossPay: number;
   // Pre-tax deductions
   healthPremium: number;

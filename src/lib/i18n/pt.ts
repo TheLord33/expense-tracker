@@ -890,7 +890,7 @@ const pt: Translations = {
     garnishment: "Penhora ($/período)", otherPostTax: "Outras Deduções Pós-imposto ($/período)", isActive: "Ativo",
     periodFrom: "Início do Período", periodTo: "Fim do Período", payDate: "Data de Pagamento", frequency: "Frequência",
     selectEmployees: "Selecionar Funcionários", allActive: "Todos os Funcionários Ativos", reviewCalc: "Revisar e Ajustar",
-    regularHours: "Hrs Regulares", overtimeHours: "Hrs Extras", grossPay: "Pagamento Bruto", preTaxDed: "Ded. Pré-imposto",
+    hoursEntry: "Entrada de Horas", regularHours: "Hrs Regulares", overtimeRate: "Taxa HE", holidayHours: "Feriado", sickHours: "Doença", vacationHours: "Férias", overtimeHours: "Hrs Extras", grossPay: "Pagamento Bruto", preTaxDed: "Ded. Pré-imposto",
     taxableWages: "Salário Tributável", federalTax: "Imp. Federal", fica: "FICA", stateTax: "Imp. Estadual",
     postTaxDed: "Ded. Pós-imposto", netPay: "Pagamento Líquido", empTax: "Impostos do Empregador", totalCost: "Custo Total",
     approve: "Aprovar e Pagar", approved: "Aprovado", draft: "Rascunho", deleteRun: "Excluir",

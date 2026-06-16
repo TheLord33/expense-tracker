@@ -8,7 +8,7 @@ import {
 } from "@nextui-org/react";
 import { Plus, Pencil, Trash2, Download, CheckCircle, Users, Play } from "lucide-react";
 import type { CheckRecord, CompanyProfile, Employee, FilingStatus, PayFrequency, PayRun, PayRunLine } from "@/lib/types";
-import { calculatePayRunLine, payRunTotals, ytdWages, PERIODS_PER_YEAR } from "@/lib/payroll";
+import { calculatePayRunLine, defaultHours, payRunTotals, ytdWages, PERIODS_PER_YEAR, type HoursInput } from "@/lib/payroll";
 import { generatePayStubPDF, generatePayrollSummaryPDF } from "@/lib/exportPDF";
 import { downloadBlob } from "@/lib/importExport";
 import { useLanguage, useCurrency } from "@/app/providers";
@@ -182,6 +182,8 @@ export function PayrollTab({
   const [wFreq,        setWFreq]        = useState<PayFrequency>("biweekly");
   const [wSelectedIds, setWSelectedIds] = useState<Set<string>>(new Set());
   const [wLines,       setWLines]       = useState<PayRunLine[]>([]);
+  const [wHours,       setWHours]       = useState<Record<string, HoursInput>>({});
+  const [wYTD,         setWYTD]         = useState<Record<string, number>>({});
   const [wNotes,       setWNotes]       = useState("");
   const [wErr,         setWErr]         = useState("");
 
@@ -192,6 +194,7 @@ export function PayrollTab({
     setWPeriodFrom(""); setWPeriodTo(""); setWPayDate(todayISO());
     setWFreq("biweekly"); setWNotes(""); setWErr("");
     setWSelectedIds(new Set(activeEmployees.map((e) => e.id)));
+    setWHours({}); setWYTD({});
     wizardModal.onOpen();
   }
 
@@ -201,14 +204,29 @@ export function PayrollTab({
     if (!wPayDate)                  { setWErr(t("payroll.errorNoPayDate")); return; }
 
     const lines: PayRunLine[] = [];
+    const hoursMap: Record<string, HoursInput> = {};
+    const ytdMap: Record<string, number> = {};
     for (const emp of activeEmployees) {
       if (!wSelectedIds.has(emp.id)) continue;
       const priorYTD = ytdWages(emp.id, payRuns);
-      lines.push(calculatePayRunLine(emp, priorYTD));
+      ytdMap[emp.id] = priorYTD;
+      const hrs = emp.payType === "hourly" ? defaultHours(wFreq) : undefined;
+      if (hrs) hoursMap[emp.id] = hrs;
+      lines.push(calculatePayRunLine(emp, priorYTD, hrs));
     }
     setWLines(lines);
+    setWHours(hoursMap);
+    setWYTD(ytdMap);
     setWErr("");
     setWizardStep("review");
+  }
+
+  function updateLineHours(empId: string, newHours: HoursInput) {
+    const emp = employees.find((e) => e.id === empId);
+    if (!emp) return;
+    setWHours((prev) => ({ ...prev, [empId]: newHours }));
+    const newLine = calculatePayRunLine(emp, wYTD[empId] ?? 0, newHours);
+    setWLines((prev) => prev.map((l) => (l.employeeId === empId ? newLine : l)));
   }
 
   function updateLineField(empId: string, field: keyof PayRunLine, raw: string) {
@@ -619,10 +637,25 @@ export function PayrollTab({
             {wizardStep === "setup" && (
               <>
                 <div className="flex gap-3">
-                  <Input type="date" label={t("payroll.periodFrom")} value={wPeriodFrom} onChange={(e) => { setWPeriodFrom(e.target.value); setWErr(""); }} size="sm" className="flex-1" />
-                  <Input type="date" label={t("payroll.periodTo")}   value={wPeriodTo}   onChange={(e) => { setWPeriodTo(e.target.value);   setWErr(""); }} size="sm" className="flex-1" />
+                  <div className="flex flex-col gap-1 flex-1">
+                    <label className="text-xs text-default-600 px-1">{t("payroll.periodFrom")}</label>
+                    <input type="date" value={wPeriodFrom}
+                      onChange={(e) => { setWPeriodFrom(e.target.value); setWErr(""); }}
+                      className="h-10 w-full rounded-xl border border-default-200 bg-default-100 px-3 text-sm text-foreground focus:outline-none focus:border-primary-400 transition-colors" />
+                  </div>
+                  <div className="flex flex-col gap-1 flex-1">
+                    <label className="text-xs text-default-600 px-1">{t("payroll.periodTo")}</label>
+                    <input type="date" value={wPeriodTo}
+                      onChange={(e) => { setWPeriodTo(e.target.value); setWErr(""); }}
+                      className="h-10 w-full rounded-xl border border-default-200 bg-default-100 px-3 text-sm text-foreground focus:outline-none focus:border-primary-400 transition-colors" />
+                  </div>
                 </div>
-                <Input type="date" label={t("payroll.payDate")} value={wPayDate} onChange={(e) => { setWPayDate(e.target.value); setWErr(""); }} size="sm" />
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-default-600 px-1">{t("payroll.payDate")}</label>
+                  <input type="date" value={wPayDate}
+                    onChange={(e) => { setWPayDate(e.target.value); setWErr(""); }}
+                    className="h-10 w-full rounded-xl border border-default-200 bg-default-100 px-3 text-sm text-foreground focus:outline-none focus:border-primary-400 transition-colors" />
+                </div>
                 <Select label={t("payroll.frequency")} selectedKeys={[wFreq]}
                   onSelectionChange={(k) => setWFreq([...k][0] as PayFrequency)} size="sm">
                   <SelectItem key="weekly">{t("payroll.freqWeekly")}</SelectItem>
@@ -658,6 +691,75 @@ export function PayrollTab({
             {wizardStep === "review" && (
               <>
                 <p className="text-xs text-default-500">{t("payroll.reviewCalc")}</p>
+
+                {/* ── Hours entry — hourly employees only ────────────────── */}
+                {wLines.some((l) => employees.find((e) => e.id === l.employeeId)?.payType === "hourly") && (
+                  <div>
+                    <p className="text-xs font-semibold text-default-500 uppercase tracking-wide mb-2">{t("payroll.hoursEntry")}</p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-default-50 border-b border-default-200">
+                            <th className="text-left px-3 py-2 font-medium text-default-500">Employee</th>
+                            <th className="text-right px-2 py-2 font-medium text-default-500">{t("payroll.regularHours")}</th>
+                            <th className="text-right px-2 py-2 font-medium text-default-500">{t("payroll.overtimeHours")}</th>
+                            <th className="text-center px-2 py-2 font-medium text-default-500">{t("payroll.overtimeRate")}</th>
+                            <th className="text-right px-2 py-2 font-medium text-default-500">{t("payroll.holidayHours")}</th>
+                            <th className="text-right px-2 py-2 font-medium text-default-500">{t("payroll.sickHours")}</th>
+                            <th className="text-right px-2 py-2 font-medium text-default-500">{t("payroll.vacationHours")}</th>
+                            <th className="text-right px-3 py-2 font-medium text-default-500">{t("payroll.grossPay")}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {wLines
+                            .filter((l) => employees.find((e) => e.id === l.employeeId)?.payType === "hourly")
+                            .map((line) => {
+                              const emp = employees.find((e) => e.id === line.employeeId);
+                              const hrs = wHours[line.employeeId] ?? defaultHours(wFreq);
+                              const inp = "w-16 text-right bg-default-50 border border-default-200 rounded px-1 py-0.5 text-xs tabular-nums focus:outline-none focus:border-primary";
+                              return (
+                                <tr key={line.employeeId} className="border-b border-default-100">
+                                  <td className="px-3 py-2 font-medium text-default-800">{emp ? empFullName(emp) : "—"}</td>
+                                  <td className="px-2 py-1.5">
+                                    <input type="number" min="0" step="0.5" className={inp} value={hrs.regular}
+                                      onChange={(e) => updateLineHours(line.employeeId, { ...hrs, regular: parseFloat(e.target.value) || 0 })} />
+                                  </td>
+                                  <td className="px-2 py-1.5">
+                                    <input type="number" min="0" step="0.5" className={inp} value={hrs.overtime}
+                                      onChange={(e) => updateLineHours(line.employeeId, { ...hrs, overtime: parseFloat(e.target.value) || 0 })} />
+                                  </td>
+                                  <td className="px-2 py-1.5 text-center">
+                                    <select
+                                      className="bg-default-50 border border-default-200 rounded px-1 py-0.5 text-xs focus:outline-none focus:border-primary"
+                                      value={hrs.overtimeMultiplier}
+                                      onChange={(e) => updateLineHours(line.employeeId, { ...hrs, overtimeMultiplier: parseFloat(e.target.value) as 1.5 | 2.0 })}
+                                    >
+                                      <option value={1.5}>1.5×</option>
+                                      <option value={2.0}>2.0×</option>
+                                    </select>
+                                  </td>
+                                  <td className="px-2 py-1.5">
+                                    <input type="number" min="0" step="0.5" className={inp} value={hrs.holiday}
+                                      onChange={(e) => updateLineHours(line.employeeId, { ...hrs, holiday: parseFloat(e.target.value) || 0 })} />
+                                  </td>
+                                  <td className="px-2 py-1.5">
+                                    <input type="number" min="0" step="0.5" className={inp} value={hrs.sick}
+                                      onChange={(e) => updateLineHours(line.employeeId, { ...hrs, sick: parseFloat(e.target.value) || 0 })} />
+                                  </td>
+                                  <td className="px-2 py-1.5">
+                                    <input type="number" min="0" step="0.5" className={inp} value={hrs.vacation}
+                                      onChange={(e) => updateLineHours(line.employeeId, { ...hrs, vacation: parseFloat(e.target.value) || 0 })} />
+                                  </td>
+                                  <td className="px-3 py-2 text-right tabular-nums font-semibold text-default-800">{fmt(line.grossPay)}</td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                    <Divider className="my-2" />
+                  </div>
+                )}
 
                 {/* Scrollable review table */}
                 <div className="overflow-x-auto">

@@ -890,7 +890,7 @@ const ja: Translations = {
     garnishment: "給与差押え（$/期間）", otherPostTax: "その他税後控除（$/期間）", isActive: "在籍中",
     periodFrom: "期間開始", periodTo: "期間終了", payDate: "支払日", frequency: "頻度",
     selectEmployees: "従業員選択", allActive: "全在籍従業員", reviewCalc: "確認・調整",
-    regularHours: "通常時間", overtimeHours: "残業時間", grossPay: "総支給額", preTaxDed: "税前控除",
+    hoursEntry: "時間入力", regularHours: "通常時間", overtimeRate: "残業率", holidayHours: "祝日", sickHours: "病欠", vacationHours: "有給休暇", overtimeHours: "残業時間", grossPay: "総支給額", preTaxDed: "税前控除",
     taxableWages: "課税賃金", federalTax: "連邦税", fica: "FICA", stateTax: "州税",
     postTaxDed: "税後控除", netPay: "手取り額", empTax: "雇用主税", totalCost: "総コスト",
     approve: "承認・支払", approved: "承認済", draft: "下書き", deleteRun: "削除",
