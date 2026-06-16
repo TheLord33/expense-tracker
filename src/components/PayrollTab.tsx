@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, type FormEvent } from "react";
+import { useState, useMemo, useRef, useEffect, type FormEvent } from "react";
 import {
   Card, CardBody, CardHeader, Divider, Button, Input, Select, SelectItem,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
@@ -39,6 +39,72 @@ function fmtDate(iso: string, locale: string) {
   return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString(locale, {
     month: "short", day: "numeric", year: "numeric",
   });
+}
+
+// ── Segmented date input (MM/DD/YYYY with auto-advance) ───────────────────────
+
+function SegmentedDateInput({
+  value, onChange, label, className = "",
+}: {
+  value: string; onChange: (v: string) => void; label: string; className?: string;
+}) {
+  const parse = (v: string) => {
+    const m = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    return m ? [m[2], m[3], m[1]] : ["", "", ""];
+  };
+  const [init] = useState(() => parse(value));
+  const [mo, setMo] = useState(init[0]);
+  const [dy, setDy] = useState(init[1]);
+  const [yr, setYr] = useState(init[2]);
+  const moRef = useRef<HTMLInputElement>(null);
+  const dyRef = useRef<HTMLInputElement>(null);
+  const yrRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const [m, d, y] = parse(value);
+    setMo(m); setDy(d); setYr(y);
+  }, [value]);
+
+  function emit(m: string, d: string, y: string) {
+    if (m.length === 2 && d.length === 2 && y.length === 4) onChange(`${y}-${m}-${d}`);
+  }
+
+  const seg = "w-8 bg-transparent text-sm text-center text-foreground placeholder:text-default-400 focus:outline-none tabular-nums";
+
+  return (
+    <div className={`flex flex-col gap-1 ${className}`}>
+      <span className="text-xs text-default-600 px-1">{label}</span>
+      <div className="flex items-center h-10 rounded-xl border border-default-200 bg-default-100 px-3 gap-0.5 focus-within:border-primary-400 transition-colors">
+        <input ref={moRef} type="text" inputMode="numeric" placeholder="MM" maxLength={2} value={mo}
+          className={seg}
+          onFocus={(e) => e.target.select()}
+          onChange={(e) => {
+            const v = e.target.value.replace(/\D/g, "").slice(0, 2);
+            setMo(v); emit(v, dy, yr);
+            if (v.length === 2) dyRef.current?.focus();
+          }} />
+        <span className="text-default-400 select-none text-sm">/</span>
+        <input ref={dyRef} type="text" inputMode="numeric" placeholder="DD" maxLength={2} value={dy}
+          className={seg}
+          onFocus={(e) => e.target.select()}
+          onChange={(e) => {
+            const v = e.target.value.replace(/\D/g, "").slice(0, 2);
+            setDy(v); emit(mo, v, yr);
+            if (v.length === 2) yrRef.current?.focus();
+          }}
+          onKeyDown={(e) => { if (e.key === "Backspace" && dy === "") moRef.current?.focus(); }} />
+        <span className="text-default-400 select-none text-sm">/</span>
+        <input ref={yrRef} type="text" inputMode="numeric" placeholder="YYYY" maxLength={4} value={yr}
+          className="w-12 bg-transparent text-sm text-center text-foreground placeholder:text-default-400 focus:outline-none tabular-nums"
+          onFocus={(e) => e.target.select()}
+          onChange={(e) => {
+            const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+            setYr(v); emit(mo, dy, v);
+          }}
+          onKeyDown={(e) => { if (e.key === "Backspace" && yr === "") dyRef.current?.focus(); }} />
+      </div>
+    </div>
+  );
 }
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -184,6 +250,7 @@ export function PayrollTab({
   const [wLines,       setWLines]       = useState<PayRunLine[]>([]);
   const [wHours,       setWHours]       = useState<Record<string, HoursInput>>({});
   const [wYTD,         setWYTD]         = useState<Record<string, number>>({});
+  const [wizardKey,    setWizardKey]    = useState(0);
   const [wNotes,       setWNotes]       = useState("");
   const [wErr,         setWErr]         = useState("");
 
@@ -195,6 +262,7 @@ export function PayrollTab({
     setWFreq("biweekly"); setWNotes(""); setWErr("");
     setWSelectedIds(new Set(activeEmployees.map((e) => e.id)));
     setWHours({}); setWYTD({});
+    setWizardKey((k) => k + 1);
     wizardModal.onOpen();
   }
 
@@ -637,25 +705,13 @@ export function PayrollTab({
             {wizardStep === "setup" && (
               <>
                 <div className="flex gap-3">
-                  <div className="flex flex-col gap-1 flex-1">
-                    <label className="text-xs text-default-600 px-1">{t("payroll.periodFrom")}</label>
-                    <input type="date" value={wPeriodFrom}
-                      onChange={(e) => { setWPeriodFrom(e.target.value); setWErr(""); }}
-                      className="h-10 w-full rounded-xl border border-default-200 bg-default-100 px-3 text-sm text-foreground focus:outline-none focus:border-primary-400 transition-colors" />
-                  </div>
-                  <div className="flex flex-col gap-1 flex-1">
-                    <label className="text-xs text-default-600 px-1">{t("payroll.periodTo")}</label>
-                    <input type="date" value={wPeriodTo}
-                      onChange={(e) => { setWPeriodTo(e.target.value); setWErr(""); }}
-                      className="h-10 w-full rounded-xl border border-default-200 bg-default-100 px-3 text-sm text-foreground focus:outline-none focus:border-primary-400 transition-colors" />
-                  </div>
+                  <SegmentedDateInput key={`pf-${wizardKey}`} label={t("payroll.periodFrom")} value={wPeriodFrom}
+                    onChange={(v) => { setWPeriodFrom(v); setWErr(""); }} className="flex-1" />
+                  <SegmentedDateInput key={`pt-${wizardKey}`} label={t("payroll.periodTo")} value={wPeriodTo}
+                    onChange={(v) => { setWPeriodTo(v); setWErr(""); }} className="flex-1" />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-default-600 px-1">{t("payroll.payDate")}</label>
-                  <input type="date" value={wPayDate}
-                    onChange={(e) => { setWPayDate(e.target.value); setWErr(""); }}
-                    className="h-10 w-full rounded-xl border border-default-200 bg-default-100 px-3 text-sm text-foreground focus:outline-none focus:border-primary-400 transition-colors" />
-                </div>
+                <SegmentedDateInput key={`pd-${wizardKey}`} label={t("payroll.payDate")} value={wPayDate}
+                  onChange={(v) => { setWPayDate(v); setWErr(""); }} />
                 <Select label={t("payroll.frequency")} selectedKeys={[wFreq]}
                   onSelectionChange={(k) => setWFreq([...k][0] as PayFrequency)} size="sm">
                   <SelectItem key="weekly">{t("payroll.freqWeekly")}</SelectItem>
@@ -722,10 +778,12 @@ export function PayrollTab({
                                   <td className="px-3 py-2 font-medium text-default-800">{emp ? empFullName(emp) : "—"}</td>
                                   <td className="px-2 py-1.5">
                                     <input type="number" min="0" step="0.5" className={inp} value={hrs.regular}
+                                      onFocus={(e) => e.target.select()}
                                       onChange={(e) => updateLineHours(line.employeeId, { ...hrs, regular: parseFloat(e.target.value) || 0 })} />
                                   </td>
                                   <td className="px-2 py-1.5">
                                     <input type="number" min="0" step="0.5" className={inp} value={hrs.overtime}
+                                      onFocus={(e) => e.target.select()}
                                       onChange={(e) => updateLineHours(line.employeeId, { ...hrs, overtime: parseFloat(e.target.value) || 0 })} />
                                   </td>
                                   <td className="px-2 py-1.5 text-center">
@@ -740,14 +798,17 @@ export function PayrollTab({
                                   </td>
                                   <td className="px-2 py-1.5">
                                     <input type="number" min="0" step="0.5" className={inp} value={hrs.holiday}
+                                      onFocus={(e) => e.target.select()}
                                       onChange={(e) => updateLineHours(line.employeeId, { ...hrs, holiday: parseFloat(e.target.value) || 0 })} />
                                   </td>
                                   <td className="px-2 py-1.5">
                                     <input type="number" min="0" step="0.5" className={inp} value={hrs.sick}
+                                      onFocus={(e) => e.target.select()}
                                       onChange={(e) => updateLineHours(line.employeeId, { ...hrs, sick: parseFloat(e.target.value) || 0 })} />
                                   </td>
                                   <td className="px-2 py-1.5">
                                     <input type="number" min="0" step="0.5" className={inp} value={hrs.vacation}
+                                      onFocus={(e) => e.target.select()}
                                       onChange={(e) => updateLineHours(line.employeeId, { ...hrs, vacation: parseFloat(e.target.value) || 0 })} />
                                   </td>
                                   <td className="px-3 py-2 text-right tabular-nums font-semibold text-default-800">{fmt(line.grossPay)}</td>
@@ -785,18 +846,21 @@ export function PayrollTab({
                             <td className="px-2 py-1.5">
                               <input className="w-24 text-right bg-default-50 border border-default-200 rounded px-1 py-0.5 text-xs tabular-nums focus:outline-none focus:border-primary"
                                 type="number" step="0.01" defaultValue={line.grossPay}
+                                onFocus={(e) => e.target.select()}
                                 onBlur={(e) => updateLineField(line.employeeId, "grossPay", e.target.value)} />
                             </td>
                             <td className="px-2 py-2 text-right tabular-nums">{fmt(line.totalPreTax)}</td>
                             <td className="px-2 py-1.5">
                               <input className="w-20 text-right bg-default-50 border border-default-200 rounded px-1 py-0.5 text-xs tabular-nums focus:outline-none focus:border-primary"
                                 type="number" step="0.01" defaultValue={line.federalIncomeTax}
+                                onFocus={(e) => e.target.select()}
                                 onBlur={(e) => updateLineField(line.employeeId, "federalIncomeTax", e.target.value)} />
                             </td>
                             <td className="px-2 py-2 text-right tabular-nums">{fmt(line.socialSecurityTax + line.medicareTax)}</td>
                             <td className="px-2 py-1.5">
                               <input className="w-20 text-right bg-default-50 border border-default-200 rounded px-1 py-0.5 text-xs tabular-nums focus:outline-none focus:border-primary"
                                 type="number" step="0.01" defaultValue={line.stateIncomeTax}
+                                onFocus={(e) => e.target.select()}
                                 onBlur={(e) => updateLineField(line.employeeId, "stateIncomeTax", e.target.value)} />
                             </td>
                             <td className="px-2 py-2 text-right tabular-nums">{fmt(line.garnishment + line.otherPostTax)}</td>
