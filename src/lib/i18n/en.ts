@@ -921,6 +921,8 @@ const en = {
     selectEmployees: "Select Employees",
     allActive: "All Active Employees",
     reviewCalc: "Review & Adjust",
+    standardWeeklyHours: "Standard Weekly Hours",
+    standardWeeklyHoursHint: "Default hours per week (e.g. 40, 37.5, 35)",
     hoursEntry: "Hours Entry",
     regularHours: "Regular Hrs",
     overtimeHours: "OT Hrs",

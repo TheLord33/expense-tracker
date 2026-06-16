@@ -421,12 +421,13 @@ export function ARTab({
 
   // ── Company profile modal ─────────────────────────────────────────────────────
   const bizModal = useDisclosure();
-  const [fBizName,    setFBizName]    = useState("");
-  const [fBizAddress, setFBizAddress] = useState("");
-  const [fBizEmail,   setFBizEmail]   = useState("");
-  const [fBizPhone,   setFBizPhone]   = useState("");
-  const [fBizWebsite, setFBizWebsite] = useState("");
-  const [fBizTaxId,   setFBizTaxId]   = useState("");
+  const [fBizName,      setFBizName]      = useState("");
+  const [fBizAddress,   setFBizAddress]   = useState("");
+  const [fBizEmail,     setFBizEmail]     = useState("");
+  const [fBizPhone,     setFBizPhone]     = useState("");
+  const [fBizWebsite,   setFBizWebsite]   = useState("");
+  const [fBizTaxId,     setFBizTaxId]     = useState("");
+  const [fBizStdHours,  setFBizStdHours]  = useState("");
 
   function openBizModal() {
     setFBizName(company.name ?? "");
@@ -435,6 +436,7 @@ export function ARTab({
     setFBizPhone(company.phone ?? "");
     setFBizWebsite(company.website ?? "");
     setFBizTaxId(company.taxId ?? "");
+    setFBizStdHours(String(company.standardWeeklyHours ?? 40));
     bizModal.onOpen();
   }
 
@@ -447,6 +449,7 @@ export function ARTab({
       phone:   fBizPhone.trim()   || undefined,
       website: fBizWebsite.trim() || undefined,
       taxId:   fBizTaxId.trim()   || undefined,
+      standardWeeklyHours: fBizStdHours ? parseFloat(fBizStdHours) : undefined,
     });
     bizModal.onClose();
   }
@@ -1313,6 +1316,9 @@ export function ARTab({
                 <Input label={t("ar.businessTaxId")}
                   value={fBizTaxId} onValueChange={setFBizTaxId} size="sm" className="flex-1" />
               </div>
+              <Input label={t("payroll.standardWeeklyHours")} type="number" min="1" max="168" step="0.5"
+                description={t("payroll.standardWeeklyHoursHint")}
+                value={fBizStdHours} onValueChange={setFBizStdHours} size="sm" className="w-48" />
             </ModalBody>
             <ModalFooter>
               <Button variant="flat" onPress={bizModal.onClose}>{t("cancel")}</Button>

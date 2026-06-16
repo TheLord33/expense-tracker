@@ -250,6 +250,7 @@ export interface CompanyProfile {
   maxCheckAmount?: number;
   taxRates?: TaxRate[];
   defaultTaxRateId?: string;
+  standardWeeklyHours?: number; // default work week for payroll (e.g. 40, 37.5, 35)
 }
 
 export interface Company extends CompanyProfile {
@@ -431,6 +432,7 @@ export interface Employee {
   city?: string;
   state?: string;
   zip?: string;
+  standardWeeklyHours?: number; // overrides company default for this employee
   startDate: string;
   isActive: boolean;
   // Pay
