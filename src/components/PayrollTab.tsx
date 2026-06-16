@@ -444,7 +444,7 @@ export function PayrollTab({
                           )}
                           <p className="text-xs text-default-400 mt-0.5">
                             {emp.payType === "salary" ? "Salary" : "Hourly"} ·{" "}
-                            {emp.payFrequency} · Filing: {emp.filingStatus}
+                            {emp.payFrequency} · {emp.standardWeeklyHours ?? company.standardWeeklyHours ?? 40}h/wk · Filing: {emp.filingStatus}
                           </p>
                         </div>
                         <div className="text-right shrink-0">
@@ -640,11 +640,9 @@ export function PayrollTab({
                   <SelectItem key="monthly">{t("payroll.freqMonthly")}</SelectItem>
                 </Select>
               </div>
-              {ePayType === "hourly" && (
-                <Input label={t("payroll.standardWeeklyHours")} type="number" min="1" max="168" step="0.5"
-                  description={t("payroll.standardWeeklyHoursHint")}
-                  value={eStdHours} onValueChange={setEStdHours} size="sm" className="w-48" />
-              )}
+              <Input label={t("payroll.standardWeeklyHours")} type="number" min="1" max="168" step="0.5"
+                description={t("payroll.standardWeeklyHoursHint")}
+                value={eStdHours} onValueChange={setEStdHours} size="sm" className="w-48" />
 
               {/* Tax */}
               <Divider />
