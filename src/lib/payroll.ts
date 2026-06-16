@@ -91,32 +91,67 @@ export function ytdWages(
     .reduce((s, l) => s + l.grossPay, 0);
 }
 
+// ── Hours input ───────────────────────────────────────────────────────────────
+
+export interface HoursInput {
+  regular: number;
+  overtime: number;
+  overtimeMultiplier: 1.5 | 2.0;
+  holiday: number;
+  sick: number;
+  vacation: number;
+}
+
+export function defaultHours(freq: PayFrequency): HoursInput {
+  const reg = freq === "weekly" ? 40 : freq === "biweekly" ? 80 : 173;
+  return { regular: reg, overtime: 0, overtimeMultiplier: 1.5, holiday: 0, sick: 0, vacation: 0 };
+}
+
 // ── Per-employee calculation ───────────────────────────────────────────────────
 
 export function calculatePayRunLine(
   employee: Employee,
   priorYTDGross: number,
-  hoursOverride?: { regular: number; overtime: number }
+  hoursOverride?: Partial<HoursInput>
 ): PayRunLine {
   const periods = PERIODS_PER_YEAR[employee.payFrequency];
 
   // ── Gross pay ─────────────────────────────────────────────────────────────
   let regularPay: number;
   let overtimePay = 0;
+  let holidayPay: number | undefined;
+  let sickPay: number | undefined;
+  let vacationPay: number | undefined;
   let regularHours: number | undefined;
   let overtimeHours: number | undefined;
+  let overtimeMultiplier: 1.5 | 2.0 | undefined;
+  let holidayHours: number | undefined;
+  let sickHours: number | undefined;
+  let vacationHours: number | undefined;
 
   if (employee.payType === "hourly") {
-    const reg = hoursOverride?.regular ?? 40;
-    const ot  = hoursOverride?.overtime ?? 0;
-    regularHours  = reg;
-    overtimeHours = ot;
-    regularPay    = round2(reg  * employee.payRate);
-    overtimePay   = round2(ot   * employee.payRate * 1.5);
+    const hrs = defaultHours(employee.payFrequency);
+    const reg  = hoursOverride?.regular            ?? hrs.regular;
+    const ot   = hoursOverride?.overtime           ?? 0;
+    const mult = hoursOverride?.overtimeMultiplier ?? 1.5;
+    const hol  = hoursOverride?.holiday            ?? 0;
+    const sck  = hoursOverride?.sick               ?? 0;
+    const vac  = hoursOverride?.vacation           ?? 0;
+    regularHours      = reg;
+    overtimeHours     = ot;
+    overtimeMultiplier = mult;
+    holidayHours      = hol;
+    sickHours         = sck;
+    vacationHours     = vac;
+    regularPay        = round2(reg  * employee.payRate);
+    overtimePay       = round2(ot   * employee.payRate * mult);
+    holidayPay        = round2(hol  * employee.payRate);
+    sickPay           = round2(sck  * employee.payRate);
+    vacationPay       = round2(vac  * employee.payRate);
   } else {
     regularPay = round2(employee.payRate / periods);
   }
-  const grossPay = round2(regularPay + overtimePay);
+  const grossPay = round2(regularPay + overtimePay + (holidayPay ?? 0) + (sickPay ?? 0) + (vacationPay ?? 0));
 
   // ── Pre-tax deductions ────────────────────────────────────────────────────
   const healthPremium  = round2(employee.healthPremium  ?? 0);
@@ -171,8 +206,9 @@ export function calculatePayRunLine(
 
   return {
     employeeId: employee.id,
-    regularHours, overtimeHours,
-    regularPay, overtimePay, grossPay,
+    regularHours, overtimeHours, overtimeMultiplier,
+    holidayHours, sickHours, vacationHours,
+    regularPay, overtimePay, holidayPay, sickPay, vacationPay, grossPay,
     healthPremium, dentalPremium, visionPremium, retirement401k, hsa,
     totalPreTax, taxableWages,
     federalIncomeTax, socialSecurityTax, medicareTax, stateIncomeTax,
