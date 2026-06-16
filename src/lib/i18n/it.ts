@@ -86,6 +86,7 @@ const it: Translations = {
     accounting: "Contabilità",
     po: "O/A",
     checkRec: "Ric. Assegni",
+    payroll: "Paghe",
   },
 
   summary: {
@@ -866,6 +867,32 @@ const it: Translations = {
     clearedDateLabel: "Data di Compensazione",
     noChecks: "Nessun assegno ancora",
     noChecksSub: "Gli assegni appariranno qui quando si stampano assegni dalla Contabilità Fornitori",
+  },
+
+  payroll: {
+    title: "Paghe", tabEmployees: "Dipendenti", tabPayRuns: "Elaborazioni Paghe",
+    addEmployee: "Aggiungi Dipendente", editEmployee: "Modifica Dipendente",
+    noEmployees: "Nessun dipendente ancora", noEmployeesSub: "Aggiungi dipendenti per iniziare le paghe",
+    noPayRuns: "Nessuna elaborazione ancora", noPayRunsSub: "Elabora le paghe per pagare i dipendenti",
+    runPayroll: "Elabora Paghe", employeeName: "Nome Completo", jobTitle: "Titolo", department: "Dipartimento",
+    startDate: "Data di Assunzione", payType: "Tipo di Retribuzione", payTypeSalary: "Stipendio", payTypeHourly: "Orario",
+    payRate: "Tariffa", payRateSalaryHint: "Stipendio annuale", payRateHourlyHint: "Tariffa oraria",
+    payFrequency: "Frequenza di Pagamento", freqWeekly: "Settimanale", freqBiweekly: "Bisettimanale", freqMonthly: "Mensile",
+    filingStatus: "Stato Civile Federale", filingSingle: "Celibe/Nubile", filingMarried: "Coniugato Dichiarazione Congiunta",
+    filingHead: "Capofamiglia", additionalFed: "Ritenuta Federale Aggiuntiva ($/periodo)",
+    stateRate: "Aliquota Imposta Statale (%)", additionalState: "Ritenuta Statale Aggiuntiva ($/periodo)",
+    ssnLast4: "Ultimi 4 SSN", healthPremium: "Assicurazione Sanitaria ($/periodo)", dentalPremium: "Assicurazione Dentale ($/periodo)",
+    visionPremium: "Assicurazione Vista ($/periodo)", retirement401k: "Contributo 401(k) (%)", hsaContrib: "Contributo HSA ($/periodo)",
+    garnishment: "Pignoramento ($/periodo)", otherPostTax: "Altre Deduzioni Post-tasse ($/periodo)", isActive: "Attivo",
+    periodFrom: "Inizio Periodo", periodTo: "Fine Periodo", payDate: "Data di Pagamento", frequency: "Frequenza",
+    selectEmployees: "Seleziona Dipendenti", allActive: "Tutti i Dipendenti Attivi", reviewCalc: "Rivedi e Aggiusta",
+    regularHours: "Ore Regolari", overtimeHours: "Ore Straordinarie", grossPay: "Retribuzione Lorda", preTaxDed: "Ded. Pre-tasse",
+    taxableWages: "Retribuzione Imponibile", federalTax: "Imposta Federale", fica: "FICA", stateTax: "Imposta Statale",
+    postTaxDed: "Ded. Post-tasse", netPay: "Retribuzione Netta", empTax: "Contributi Datoriali", totalCost: "Costo Totale",
+    approve: "Approva e Paga", approved: "Approvato", draft: "Bozza", deleteRun: "Elimina",
+    payStub: "Busta Paga", summary: "Riepilogo PDF", errorNoPeriod: "Inserisci un periodo di pagamento",
+    errorNoEmployees: "Seleziona almeno un dipendente", errorNoPayDate: "Inserisci una data di pagamento",
+    disclaimer: "La ritenuta federale usa le tabelle IRS Pubblicazione 15-T 2025. Verificare con un professionista.",
   },
 };
 

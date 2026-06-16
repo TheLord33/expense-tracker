@@ -86,6 +86,7 @@ const fr: Translations = {
     accounting: "Comptabilité",
     po: "B/C",
     checkRec: "Rappr. Chèques",
+    payroll: "Paie",
   },
 
   summary: {
@@ -866,6 +867,32 @@ const fr: Translations = {
     clearedDateLabel: "Date de Compensation",
     noChecks: "Aucun chèque pour l'instant",
     noChecksSub: "Les chèques apparaîtront ici lorsque vous imprimez des chèques depuis les Comptes Fournisseurs",
+  },
+
+  payroll: {
+    title: "Paie", tabEmployees: "Employés", tabPayRuns: "Bulletins de Paie",
+    addEmployee: "Ajouter un Employé", editEmployee: "Modifier l'Employé",
+    noEmployees: "Aucun employé", noEmployeesSub: "Ajoutez des employés pour commencer la paie",
+    noPayRuns: "Aucun bulletin de paie", noPayRunsSub: "Lancez la paie pour payer vos employés",
+    runPayroll: "Lancer la Paie", employeeName: "Nom Complet", jobTitle: "Poste", department: "Département",
+    startDate: "Date d'Embauche", payType: "Type de Rémunération", payTypeSalary: "Salaire", payTypeHourly: "Horaire",
+    payRate: "Taux de Rémunération", payRateSalaryHint: "Salaire annuel", payRateHourlyHint: "Taux horaire",
+    payFrequency: "Fréquence de Paie", freqWeekly: "Hebdomadaire", freqBiweekly: "Bimensuel", freqMonthly: "Mensuel",
+    filingStatus: "Situation Fiscale Fédérale", filingSingle: "Célibataire / MFS", filingMarried: "Marié Déclaration Conjointe",
+    filingHead: "Chef de Famille", additionalFed: "Retenue Fédérale Supplémentaire ($/période)",
+    stateRate: "Taux d'Imposition Étatique (%)", additionalState: "Retenue Étatique Supplémentaire ($/période)",
+    ssnLast4: "4 Derniers Chiffres SSN", healthPremium: "Assurance Santé ($/période)", dentalPremium: "Assurance Dentaire ($/période)",
+    visionPremium: "Assurance Vision ($/période)", retirement401k: "Cotisation 401(k) (%)", hsaContrib: "Cotisation HSA ($/période)",
+    garnishment: "Saisie sur Salaire ($/période)", otherPostTax: "Autres Déductions Post-impôt ($/période)", isActive: "Actif",
+    periodFrom: "Début de Période", periodTo: "Fin de Période", payDate: "Date de Paie", frequency: "Fréquence",
+    selectEmployees: "Sélectionner les Employés", allActive: "Tous les Employés Actifs", reviewCalc: "Vérifier et Ajuster",
+    regularHours: "Heures Régulières", overtimeHours: "Heures Supplémentaires", grossPay: "Salaire Brut", preTaxDed: "Ded. Pré-impôt",
+    taxableWages: "Salaire Imposable", federalTax: "Impôt Fédéral", fica: "FICA", stateTax: "Impôt Étatique",
+    postTaxDed: "Ded. Post-impôt", netPay: "Salaire Net", empTax: "Charges Patronales", totalCost: "Coût Total",
+    approve: "Approuver et Payer", approved: "Approuvé", draft: "Brouillon", deleteRun: "Supprimer",
+    payStub: "Bulletin de Paie", summary: "Résumé PDF", errorNoPeriod: "Saisissez une période de paie",
+    errorNoEmployees: "Sélectionnez au moins un employé", errorNoPayDate: "Saisissez une date de paie",
+    disclaimer: "La retenue fédérale utilise les tables IRS Publication 15-T 2025. Vérifiez avec un professionnel de la paie.",
   },
 };
 

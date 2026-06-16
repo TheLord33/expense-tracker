@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { Card, CardBody, CardHeader, Divider, Select, SelectItem, Input, Button } from "@nextui-org/react";
 import { TrendingUp, TrendingDown, Download } from "lucide-react";
-import type { Account, Bill, BillPayment, Expense, IncomeSource, InventoryItem, Invoice, InvoicePayment, StockMovement, TaxPayment } from "@/lib/types";
+import type { Account, Bill, BillPayment, Expense, IncomeSource, InventoryItem, Invoice, InvoicePayment, PayRun, StockMovement, TaxPayment } from "@/lib/types";
 import { deriveAllEntries, computeCashFlow } from "@/lib/ledger";
 import { cashFlowToCSV, download } from "@/lib/importExport";
 import { useLanguage, useCurrency } from "@/app/providers";
@@ -75,6 +75,7 @@ interface Props {
   invoices?: Invoice[];
   invoicePayments?: InvoicePayment[];
   taxPayments?: TaxPayment[];
+  payRuns?: PayRun[];
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -109,7 +110,7 @@ export function CashFlowTab({
   expenses, sources, accounts, openingBalances,
   bills = [], billPayments = [],
   inventoryItems = [], inventoryMovements = [],
-  invoices = [], invoicePayments = [], taxPayments = [],
+  invoices = [], invoicePayments = [], taxPayments = [], payRuns = [],
 }: Props) {
   const { t, locale } = useLanguage();
   const { fmt } = useCurrency();
@@ -132,8 +133,8 @@ export function CashFlowTab({
   const { from, to } = getDateRange(preset, customFrom, customTo);
 
   const entries = useMemo(
-    () => deriveAllEntries(expenses, sources, accounts, bills, billPayments, inventoryItems, inventoryMovements, invoices, invoicePayments, taxPayments),
-    [expenses, sources, accounts, bills, billPayments, inventoryItems, inventoryMovements, invoices, invoicePayments, taxPayments]
+    () => deriveAllEntries(expenses, sources, accounts, bills, billPayments, inventoryItems, inventoryMovements, invoices, invoicePayments, taxPayments, payRuns),
+    [expenses, sources, accounts, bills, billPayments, inventoryItems, inventoryMovements, invoices, invoicePayments, taxPayments, payRuns]
   );
 
   const report = useMemo(

@@ -1,4 +1,4 @@
-import type { Account, AccountType, Bill, BillPayment, Expense, IncomeSource, InventoryItem, Invoice, InvoicePayment, JournalEntry, StockMovement, TaxPayment } from "./types";
+import type { Account, AccountType, Bill, BillPayment, Expense, IncomeSource, InventoryItem, Invoice, InvoicePayment, JournalEntry, PayRun, StockMovement, TaxPayment } from "./types";
 import { toMonthly } from "./useIncome";
 
 const CASH_CODE     = "1000";
@@ -257,6 +257,47 @@ export function deriveAREntries(
   return entries;
 }
 
+// ── Payroll GL ────────────────────────────────────────────────────────────────
+
+const WAGES_ACCT_ID    = "acc-5700";
+const PAYROLL_TAX_ACCT = "acc-5800";
+const PAYROLL_LIAB_ID  = "acc-2300";
+
+/**
+ * Derive a journal entry from an approved pay run.
+ * DR Wages & Salaries Expense    (total gross wages)
+ * DR Payroll Tax Expense         (total employer FICA + FUTA)
+ * CR Cash & Bank                 (total net pay disbursed)
+ * CR Payroll Liabilities         (all withheld taxes + benefit deductions + employer taxes)
+ */
+export function payRunToEntry(run: PayRun, accounts: Account[]): JournalEntry | null {
+  if (run.status !== "approved" || run.lines.length === 0) return null;
+  const wagesAcct    = accounts.find((a) => a.id === WAGES_ACCT_ID);
+  const taxAcct      = accounts.find((a) => a.id === PAYROLL_TAX_ACCT);
+  const cashAcct     = accounts.find((a) => a.code === CASH_CODE);
+  const liabAcct     = accounts.find((a) => a.id === PAYROLL_LIAB_ID);
+  if (!wagesAcct || !taxAcct || !cashAcct || !liabAcct) return null;
+
+  const totalGross    = run.lines.reduce((s, l) => s + l.grossPay, 0);
+  const totalNetPay   = run.lines.reduce((s, l) => s + l.netPay, 0);
+  const totalEmpTax   = run.lines.reduce((s, l) => s + l.totalEmployerTax, 0);
+  const totalLiab     = totalGross + totalEmpTax - totalNetPay;
+
+  return {
+    id:          `payroll-${run.id}`,
+    date:        run.payDate,
+    description: `Payroll ${run.periodFrom} – ${run.periodTo} (${run.lines.length} employee${run.lines.length !== 1 ? "s" : ""})`,
+    sourceId:    run.id,
+    sourceType:  "payroll",
+    lines: [
+      { accountId: wagesAcct.id, debit: Math.round(totalGross  * 100) / 100, credit: 0 },
+      { accountId: taxAcct.id,   debit: Math.round(totalEmpTax * 100) / 100, credit: 0 },
+      { accountId: cashAcct.id,  debit: 0, credit: Math.round(totalNetPay  * 100) / 100 },
+      { accountId: liabAcct.id,  debit: 0, credit: Math.round(totalLiab    * 100) / 100 },
+    ],
+  };
+}
+
 /** Derive a journal entry from a tax payment: DR Sales Tax Payable / CR Cash. */
 export function taxPaymentToEntry(payment: TaxPayment, accounts: Account[]): JournalEntry | null {
   const stpAccount  = accounts.find((a) => a.id === TAX_PAYABLE_ID);
@@ -275,7 +316,7 @@ export function taxPaymentToEntry(payment: TaxPayment, accounts: Account[]): Jou
   };
 }
 
-/** All derived journal entries (expenses + income + AP + inventory + AR + tax payments), sorted ascending by date. */
+/** All derived journal entries (expenses + income + AP + inventory + AR + tax payments + payroll), sorted ascending by date. */
 export function deriveAllEntries(
   expenses: Expense[],
   sources: IncomeSource[],
@@ -286,18 +327,22 @@ export function deriveAllEntries(
   inventoryMovements: StockMovement[] = [],
   invoices: Invoice[] = [],
   invoicePayments: InvoicePayment[] = [],
-  taxPayments: TaxPayment[] = []
+  taxPayments: TaxPayment[] = [],
+  payRuns: PayRun[] = []
 ): JournalEntry[] {
   if (accounts.length === 0) return [];
-  const expEntries  = expenses.map((e) => expenseToEntry(e, accounts));
-  const incEntries  = deriveIncomeEntries(sources, accounts);
-  const billEntries = deriveBillEntries(bills, billPayments, accounts);
-  const invEntries  = deriveInventoryEntries(inventoryItems, inventoryMovements);
-  const arEntries   = deriveAREntries(invoices, invoicePayments, accounts, inventoryItems);
-  const taxEntries  = taxPayments
+  const expEntries     = expenses.map((e) => expenseToEntry(e, accounts));
+  const incEntries     = deriveIncomeEntries(sources, accounts);
+  const billEntries    = deriveBillEntries(bills, billPayments, accounts);
+  const invEntries     = deriveInventoryEntries(inventoryItems, inventoryMovements);
+  const arEntries      = deriveAREntries(invoices, invoicePayments, accounts, inventoryItems);
+  const taxEntries     = taxPayments
     .map((p) => taxPaymentToEntry(p, accounts))
     .filter((e): e is JournalEntry => e !== null);
-  return [...expEntries, ...incEntries, ...billEntries, ...invEntries, ...arEntries, ...taxEntries]
+  const payrollEntries = payRuns
+    .map((r) => payRunToEntry(r, accounts))
+    .filter((e): e is JournalEntry => e !== null);
+  return [...expEntries, ...incEntries, ...billEntries, ...invEntries, ...arEntries, ...taxEntries, ...payrollEntries]
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 

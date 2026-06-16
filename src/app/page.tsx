@@ -12,7 +12,7 @@ import {
 import {
   Receipt, PiggyBank, RefreshCw, TrendingUp,
   BookOpen, BarChart2, Scale, ClipboardList, Wallet, Package, BadgeDollarSign,
-  Banknote, Calculator, Building2, ChevronDown, ShoppingCart, ListChecks, Pencil, Trash2, Crown,
+  Banknote, Calculator, Building2, ChevronDown, ShoppingCart, ListChecks, Pencil, Trash2, Crown, Users,
 } from "lucide-react";
 
 import { useExpenses } from "@/lib/useExpenses";
@@ -31,6 +31,8 @@ import { useCompanies } from "@/lib/useCompanies";
 import { useChecks } from "@/lib/useChecks";
 import { usePurchaseOrders } from "@/lib/usePurchaseOrders";
 import { useTaxPayments } from "@/lib/useTaxPayments";
+import { useEmployees } from "@/lib/useEmployees";
+import { usePayRuns } from "@/lib/usePayRuns";
 import type { Budget, RecurringExpense, IncomeSource, TaxRate } from "@/lib/types";
 
 import { AppHeader } from "@/components/AppHeader";
@@ -57,6 +59,7 @@ import { CashFlowTab } from "@/components/CashFlowTab";
 import { FinCalcTab } from "@/components/FinCalcTab";
 import { POTab } from "@/components/POTab";
 import { CheckRecTab } from "@/components/CheckRecTab";
+import { PayrollTab } from "@/components/PayrollTab";
 import { LoginGate } from "@/components/LoginGate";
 import { HelpModal } from "@/components/HelpModal";
 import { useAuth } from "@/lib/useAuth";
@@ -70,7 +73,7 @@ import { useLanguage, useToast, useCurrency } from "@/app/providers";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type PersonalTab      = "expenses" | "budgets" | "recurring" | "income" | "finCalc";
-type AccountingModule = "ledger" | "pnl" | "balanceSheet" | "trialBalance" | "cashFlow" | "ap" | "inventory" | "ar" | "po" | "checkRec";
+type AccountingModule = "ledger" | "pnl" | "balanceSheet" | "trialBalance" | "cashFlow" | "ap" | "inventory" | "ar" | "po" | "checkRec" | "payroll";
 type ActiveTab        = PersonalTab | "accounting";
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -133,6 +136,8 @@ export default function HomePage() {
   const { customers, invoices, payments: invoicePayments, addCustomer, updateCustomer, deleteCustomer, addInvoice, updateInvoice, deleteInvoice, addPayment: addInvoicePayment, collectedAmount, outstanding: invoiceOutstanding } = useAR(activeId);
   const { checks, addChecks, updateCheck, deleteCheck } = useChecks(activeId);
   const { taxPayments, addTaxPayment } = useTaxPayments(activeId);
+  const { employees, addEmployee, updateEmployee, deleteEmployee } = useEmployees(activeId);
+  const { payRuns, addPayRun, updatePayRun, deletePayRun } = usePayRuns(activeId);
   const { orders: purchaseOrders, addOrder, updateOrder, deleteOrder, poTotal } = usePurchaseOrders(activeId);
 
   // ── Company modal state ───────────────────────────────────────────────────────
@@ -341,6 +346,7 @@ export default function HomePage() {
     { key: "ar",        label: t("tabs.ar"),        icon: BadgeDollarSign },
     { key: "po",        label: t("tabs.po"),        icon: ShoppingCart    },
     { key: "checkRec",  label: t("tabs.checkRec"),  icon: ListChecks      },
+    { key: "payroll",   label: t("tabs.payroll"),   icon: Users           },
   ];
 
   const ALL_ACCT = [...REPORTS, ...MODULES];
@@ -667,7 +673,7 @@ export default function HomePage() {
                 bills={bills} billPayments={billPayments}
                 inventoryItems={inventoryItems} inventoryMovements={inventoryMovements}
                 invoices={invoices} invoicePayments={invoicePayments}
-                taxPayments={taxPayments}
+                taxPayments={taxPayments} payRuns={payRuns}
                 onAddAccount={addAccount} onUpdateAccount={updateAccount} onDeleteAccount={deleteAccount}
               />
             )}
@@ -678,7 +684,7 @@ export default function HomePage() {
                 bills={bills} billPayments={billPayments}
                 inventoryItems={inventoryItems} inventoryMovements={inventoryMovements}
                 invoices={invoices} invoicePayments={invoicePayments}
-                taxPayments={taxPayments}
+                taxPayments={taxPayments} payRuns={payRuns}
               />
             )}
 
@@ -688,7 +694,7 @@ export default function HomePage() {
                 bills={bills} billPayments={billPayments}
                 inventoryItems={inventoryItems} inventoryMovements={inventoryMovements}
                 invoices={invoices} invoicePayments={invoicePayments}
-                taxPayments={taxPayments}
+                taxPayments={taxPayments} payRuns={payRuns}
                 openingBalances={openingBalances}
                 onSetBalance={setOpeningBalance}
               />
@@ -700,7 +706,7 @@ export default function HomePage() {
                 bills={bills} billPayments={billPayments}
                 inventoryItems={inventoryItems} inventoryMovements={inventoryMovements}
                 invoices={invoices} invoicePayments={invoicePayments}
-                taxPayments={taxPayments}
+                taxPayments={taxPayments} payRuns={payRuns}
               />
             )}
 
@@ -711,7 +717,7 @@ export default function HomePage() {
                 bills={bills} billPayments={billPayments}
                 inventoryItems={inventoryItems} inventoryMovements={inventoryMovements}
                 invoices={invoices} invoicePayments={invoicePayments}
-                taxPayments={taxPayments}
+                taxPayments={taxPayments} payRuns={payRuns}
               />
             )}
 
@@ -772,6 +778,15 @@ export default function HomePage() {
 
             {acctModule === "checkRec" && (isPro ? (
               <CheckRecTab checks={checks} onUpdateCheck={updateCheck} onDeleteCheck={deleteCheck} />
+            ) : upgradePrompt)}
+
+            {acctModule === "payroll" && (isPro ? (
+              <PayrollTab
+                employees={employees} payRuns={payRuns} company={activeCompany}
+                onAddEmployee={addEmployee} onUpdateEmployee={updateEmployee} onDeleteEmployee={deleteEmployee}
+                onAddPayRun={addPayRun} onUpdatePayRun={updatePayRun} onDeletePayRun={deletePayRun}
+                onAddChecks={addChecks}
+              />
             ) : upgradePrompt)}
             </div>
           </div>

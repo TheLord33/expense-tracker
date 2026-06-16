@@ -86,6 +86,7 @@ const ja: Translations = {
     accounting: "会計",
     po: "発注",
     checkRec: "小切手照合",
+    payroll: "給与",
   },
 
   summary: {
@@ -866,6 +867,32 @@ const ja: Translations = {
     clearedDateLabel: "決済日",
     noChecks: "小切手はまだありません",
     noChecksSub: "買掛金から小切手を印刷するとここに表示されます",
+  },
+
+  payroll: {
+    title: "給与計算", tabEmployees: "従業員", tabPayRuns: "給与実行",
+    addEmployee: "従業員追加", editEmployee: "従業員編集",
+    noEmployees: "従業員はまだいません", noEmployeesSub: "従業員を追加して給与計算を始めましょう",
+    noPayRuns: "給与実行はまだありません", noPayRunsSub: "給与計算を実行して従業員に支払いましょう",
+    runPayroll: "給与計算実行", employeeName: "氏名", jobTitle: "役職", department: "部署",
+    startDate: "入社日", payType: "給与タイプ", payTypeSalary: "給与", payTypeHourly: "時給",
+    payRate: "給与率", payRateSalaryHint: "年間給与", payRateHourlyHint: "時間給",
+    payFrequency: "支払頻度", freqWeekly: "週次", freqBiweekly: "隔週", freqMonthly: "月次",
+    filingStatus: "連邦申告区分", filingSingle: "独身 / MFS", filingMarried: "既婚共同申告",
+    filingHead: "世帯主", additionalFed: "追加連邦源泉徴収（$/期間）",
+    stateRate: "州所得税率（%）", additionalState: "追加州源泉徴収（$/期間）",
+    ssnLast4: "SSN下4桁", healthPremium: "健康保険（$/期間）", dentalPremium: "歯科保険（$/期間）",
+    visionPremium: "眼科保険（$/期間）", retirement401k: "401(k)拠出率（%）", hsaContrib: "HSA拠出（$/期間）",
+    garnishment: "給与差押え（$/期間）", otherPostTax: "その他税後控除（$/期間）", isActive: "在籍中",
+    periodFrom: "期間開始", periodTo: "期間終了", payDate: "支払日", frequency: "頻度",
+    selectEmployees: "従業員選択", allActive: "全在籍従業員", reviewCalc: "確認・調整",
+    regularHours: "通常時間", overtimeHours: "残業時間", grossPay: "総支給額", preTaxDed: "税前控除",
+    taxableWages: "課税賃金", federalTax: "連邦税", fica: "FICA", stateTax: "州税",
+    postTaxDed: "税後控除", netPay: "手取り額", empTax: "雇用主税", totalCost: "総コスト",
+    approve: "承認・支払", approved: "承認済", draft: "下書き", deleteRun: "削除",
+    payStub: "給与明細", summary: "サマリーPDF", errorNoPeriod: "給与期間を入力してください",
+    errorNoEmployees: "従業員を1名以上選択してください", errorNoPayDate: "支払日を入力してください",
+    disclaimer: "連邦源泉徴収はIRS Publication 15-T 2025の表を使用。給与専門家に確認してください。",
   },
 };
 
