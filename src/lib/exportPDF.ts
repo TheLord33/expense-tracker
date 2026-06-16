@@ -1056,13 +1056,21 @@ export async function generatePayStubPDF(
 
   y += 5;
   doc.setFontSize(11);
-  doc.text(employee.name, M, y);
+  const fullName = [employee.firstName, employee.middleInitial ? employee.middleInitial + "." : "", employee.lastName].filter(Boolean).join(" ");
+  doc.text(fullName, M, y);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...GRAY);
   if (employee.jobTitle)   { y += 5; doc.text(employee.jobTitle,  M, y); }
   if (employee.department) { y += 4; doc.text(employee.department, M, y); }
-  if (employee.ssnLast4)   { y += 4; doc.text(`SSN: ***-**-${employee.ssnLast4}`, M, y); }
+  if (employee.street || employee.city) {
+    const addrLine = [employee.street, [employee.city, employee.state, employee.zip].filter(Boolean).join(", ")].filter(Boolean).join(", ");
+    y += 4; doc.text(addrLine, M, y);
+  }
+  if (employee.ssn && employee.ssn.replace(/\D/g, "").length === 9) {
+    const d = employee.ssn.replace(/\D/g, "");
+    y += 4; doc.text(`SSN: ***-**-${d.slice(5)}`, M, y);
+  }
 
   const boxX = PW / 2;
   const summaryStartY = 49;
@@ -1219,7 +1227,7 @@ export async function generatePayrollSummaryPDF(
   const rows = run.lines.map((l) => {
     const emp = employees.find((e) => e.id === l.employeeId);
     return [
-      emp?.name ?? "—",
+      emp ? [emp.firstName, emp.middleInitial ? emp.middleInitial + "." : "", emp.lastName].filter(Boolean).join(" ") : "—",
       fmt(l.grossPay),
       fmt(l.totalPreTax),
       fmt(l.totalEmployeeWithholding),
