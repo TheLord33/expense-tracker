@@ -86,6 +86,7 @@ const de: Translations = {
     accounting: "Buchhaltung",
     po: "B/O",
     checkRec: "Scheckabst.",
+    payroll: "Gehaltsabr.",
   },
 
   summary: {
@@ -866,6 +867,32 @@ const de: Translations = {
     clearedDateLabel: "Einlösungsdatum",
     noChecks: "Noch keine Schecks",
     noChecksSub: "Schecks erscheinen hier, wenn Sie Schecks aus der Kreditorenbuchhaltung drucken",
+  },
+
+  payroll: {
+    title: "Gehaltsabrechnung", tabEmployees: "Mitarbeiter", tabPayRuns: "Gehaltsläufe",
+    addEmployee: "Mitarbeiter Hinzufügen", editEmployee: "Mitarbeiter Bearbeiten",
+    noEmployees: "Noch keine Mitarbeiter", noEmployeesSub: "Fügen Sie Mitarbeiter hinzu, um die Gehaltsabrechnung zu starten",
+    noPayRuns: "Noch keine Gehaltsläufe", noPayRunsSub: "Führen Sie die Gehaltsabrechnung durch, um Ihre Mitarbeiter zu bezahlen",
+    runPayroll: "Gehaltsabrechnung Ausführen", employeeName: "Vollständiger Name", jobTitle: "Berufsbezeichnung", department: "Abteilung",
+    startDate: "Einstellungsdatum", payType: "Vergütungsart", payTypeSalary: "Gehalt", payTypeHourly: "Stundenlohn",
+    payRate: "Vergütungssatz", payRateSalaryHint: "Jahresgehalt", payRateHourlyHint: "Stundensatz",
+    payFrequency: "Zahlungsfrequenz", freqWeekly: "Wöchentlich", freqBiweekly: "Vierzehntägig", freqMonthly: "Monatlich",
+    filingStatus: "Steuerklasse (Federal)", filingSingle: "Ledig / MFS", filingMarried: "Verheiratet Gemeinsam",
+    filingHead: "Haushaltsvorstand", additionalFed: "Zusätzliche Bundessteuer ($/Periode)",
+    stateRate: "Staatssteuerrate (%)", additionalState: "Zusätzliche Staatssteuer ($/Periode)",
+    ssnLast4: "Letzte 4 SSN", healthPremium: "Krankenversicherung ($/Periode)", dentalPremium: "Zahnversicherung ($/Periode)",
+    visionPremium: "Sehversicherung ($/Periode)", retirement401k: "401(k)-Beitrag (%)", hsaContrib: "HSA-Beitrag ($/Periode)",
+    garnishment: "Lohnpfändung ($/Periode)", otherPostTax: "Sonstige Nachsteuerabzüge ($/Periode)", isActive: "Aktiv",
+    periodFrom: "Periodenbeginn", periodTo: "Periodenende", payDate: "Zahlungsdatum", frequency: "Frequenz",
+    selectEmployees: "Mitarbeiter Auswählen", allActive: "Alle Aktiven Mitarbeiter", reviewCalc: "Überprüfen und Anpassen",
+    regularHours: "Regelstunden", overtimeHours: "Überstunden", grossPay: "Bruttolohn", preTaxDed: "Vorsteuerabzüge",
+    taxableWages: "Steuerpflichtiger Lohn", federalTax: "Bundessteuer", fica: "FICA", stateTax: "Staatssteuer",
+    postTaxDed: "Nachsteuerabzüge", netPay: "Nettolohn", empTax: "Arbeitgebersteuern", totalCost: "Gesamtkosten",
+    approve: "Genehmigen und Zahlen", approved: "Genehmigt", draft: "Entwurf", deleteRun: "Löschen",
+    payStub: "Gehaltsnachweis", summary: "Zusammenfassung PDF", errorNoPeriod: "Geben Sie eine Abrechnungsperiode ein",
+    errorNoEmployees: "Wählen Sie mindestens einen Mitarbeiter", errorNoPayDate: "Geben Sie ein Zahlungsdatum ein",
+    disclaimer: "Bundessteuerabzug verwendet IRS Publikation 15-T 2025. Mit einem Gehaltsexperten verifizieren.",
   },
 };
 

@@ -86,6 +86,7 @@ const pt: Translations = {
     accounting: "Contabilidade",
     po: "O/C",
     checkRec: "Conc. Cheques",
+    payroll: "Folha Pgto",
   },
 
   summary: {
@@ -866,6 +867,32 @@ const pt: Translations = {
     clearedDateLabel: "Data de Compensação",
     noChecks: "Nenhum cheque ainda",
     noChecksSub: "Os cheques aparecerão aqui quando você imprimir cheques nas Contas a Pagar",
+  },
+
+  payroll: {
+    title: "Folha de Pagamento", tabEmployees: "Funcionários", tabPayRuns: "Execuções de Pagamento",
+    addEmployee: "Adicionar Funcionário", editEmployee: "Editar Funcionário",
+    noEmployees: "Sem funcionários ainda", noEmployeesSub: "Adicione funcionários para começar com a folha de pagamento",
+    noPayRuns: "Sem execuções ainda", noPayRunsSub: "Execute a folha de pagamento para pagar seus funcionários",
+    runPayroll: "Executar Folha", employeeName: "Nome Completo", jobTitle: "Cargo", department: "Departamento",
+    startDate: "Data de Início", payType: "Tipo de Pagamento", payTypeSalary: "Salário", payTypeHourly: "Por Hora",
+    payRate: "Taxa de Pagamento", payRateSalaryHint: "Salário anual", payRateHourlyHint: "Taxa por hora",
+    payFrequency: "Frequência de Pagamento", freqWeekly: "Semanal", freqBiweekly: "Quinzenal", freqMonthly: "Mensal",
+    filingStatus: "Status Civil Federal", filingSingle: "Solteiro / MFS", filingMarried: "Casado Declaração Conjunta",
+    filingHead: "Chefe de Família", additionalFed: "Retenção Federal Adicional ($/período)",
+    stateRate: "Alíquota IRRF Estadual (%)", additionalState: "Retenção Estadual Adicional ($/período)",
+    ssnLast4: "Últimos 4 do SSN", healthPremium: "Plano de Saúde ($/período)", dentalPremium: "Plano Dental ($/período)",
+    visionPremium: "Plano de Visão ($/período)", retirement401k: "Contribuição 401(k) (%)", hsaContrib: "Contribuição HSA ($/período)",
+    garnishment: "Penhora ($/período)", otherPostTax: "Outras Deduções Pós-imposto ($/período)", isActive: "Ativo",
+    periodFrom: "Início do Período", periodTo: "Fim do Período", payDate: "Data de Pagamento", frequency: "Frequência",
+    selectEmployees: "Selecionar Funcionários", allActive: "Todos os Funcionários Ativos", reviewCalc: "Revisar e Ajustar",
+    regularHours: "Hrs Regulares", overtimeHours: "Hrs Extras", grossPay: "Pagamento Bruto", preTaxDed: "Ded. Pré-imposto",
+    taxableWages: "Salário Tributável", federalTax: "Imp. Federal", fica: "FICA", stateTax: "Imp. Estadual",
+    postTaxDed: "Ded. Pós-imposto", netPay: "Pagamento Líquido", empTax: "Impostos do Empregador", totalCost: "Custo Total",
+    approve: "Aprovar e Pagar", approved: "Aprovado", draft: "Rascunho", deleteRun: "Excluir",
+    payStub: "Holerite", summary: "Resumo PDF", errorNoPeriod: "Insira um período de pagamento",
+    errorNoEmployees: "Selecione pelo menos um funcionário", errorNoPayDate: "Insira uma data de pagamento",
+    disclaimer: "A retenção federal usa as tabelas IRS Publicação 15-T 2025. Verifique com um profissional de folha de pagamento.",
   },
 };
 

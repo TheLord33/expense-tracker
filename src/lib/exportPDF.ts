@@ -1,5 +1,5 @@
 import { Expense } from "./types";
-import type { Bill, BillPayment, CompanyProfile, Customer, Invoice, InvoicePayment, Vendor } from "./types";
+import type { Bill, BillPayment, CompanyProfile, Customer, Employee, Invoice, InvoicePayment, PayRun, PayRunLine, Vendor } from "./types";
 import { invoiceTotal, invoiceSubtotal } from "./useAR";
 
 function custAddrLines(c: Customer): string[] {
@@ -992,6 +992,283 @@ export async function printChecksPDF(
       0.5, cT + cH - 0.2
     );
   });
+
+  return doc.output("blob");
+}
+
+// ── Pay Stub PDF ───────────────────────────────────────────────────────────────
+
+export async function generatePayStubPDF(
+  run: PayRun,
+  line: PayRunLine,
+  employee: Employee,
+  company: CompanyProfile,
+  fmt: (n: number) => string
+): Promise<Blob> {
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
+
+  const doc = new jsPDF({ unit: "mm", format: "letter" });
+  const PW = 215.9;
+  const M  = 14;
+
+  function fmtDate(iso: string) {
+    const [y, m, d] = iso.split("-");
+    return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+
+  doc.setFontSize(20);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...INDIGO);
+  doc.text(company.name || "Folio", M, 18);
+
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...GRAY);
+  if (company.address) {
+    const addrLines = company.address.split("\n").filter(Boolean);
+    addrLines.forEach((l, i) => doc.text(l, M, 24 + i * 4));
+  }
+
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(17, 24, 39);
+  doc.text("PAY STUB", PW - M, 18, { align: "right" });
+
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...GRAY);
+  doc.text(`Pay Period: ${fmtDate(run.periodFrom)} – ${fmtDate(run.periodTo)}`, PW - M, 24, { align: "right" });
+  doc.text(`Pay Date: ${fmtDate(run.payDate)}`, PW - M, 29, { align: "right" });
+
+  doc.setDrawColor(229, 231, 235);
+  doc.setLineWidth(0.3);
+  doc.line(M, 36, PW - M, 36);
+
+  let y = 44;
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(17, 24, 39);
+  doc.text("EMPLOYEE", M, y);
+  doc.text("PAY SUMMARY", PW / 2, y);
+
+  y += 5;
+  doc.setFontSize(11);
+  doc.text(employee.name, M, y);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...GRAY);
+  if (employee.jobTitle)   { y += 5; doc.text(employee.jobTitle,  M, y); }
+  if (employee.department) { y += 4; doc.text(employee.department, M, y); }
+  if (employee.ssnLast4)   { y += 4; doc.text(`SSN: ***-**-${employee.ssnLast4}`, M, y); }
+
+  const boxX = PW / 2;
+  const summaryStartY = 49;
+  const summaryRows: [string, string][] = [
+    ["Gross Pay",        fmt(line.grossPay)],
+    ["Total Deductions", fmt(line.totalPreTax + line.totalEmployeeWithholding + line.garnishment + line.otherPostTax)],
+    ["Net Pay",          fmt(line.netPay)],
+  ];
+  summaryRows.forEach(([label, value], i) => {
+    const ry = summaryStartY + i * 7;
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...GRAY);
+    doc.text(label, boxX, ry);
+    const isNet = label === "Net Pay";
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(isNet ? INDIGO[0] : 17, isNet ? INDIGO[1] : 24, isNet ? INDIGO[2] : 39);
+    doc.text(value, PW - M, ry, { align: "right" });
+  });
+
+  y = Math.max(y, summaryStartY + summaryRows.length * 7) + 10;
+
+  autoTable(doc, {
+    startY: y,
+    head: [["EARNINGS", "Hours", "Rate", "Amount"]],
+    body: [
+      ...(employee.payType === "hourly" ? [
+        ["Regular Pay", String(line.regularHours ?? 0), fmt(employee.payRate), fmt(line.regularPay)],
+        ...(line.overtimePay > 0 ? [["Overtime (1.5×)", String(line.overtimeHours ?? 0), fmt(employee.payRate * 1.5), fmt(line.overtimePay)]] : []),
+      ] : [
+        ["Salary", "—", "—", fmt(line.grossPay)],
+      ]),
+      [{ content: "Gross Pay", styles: { fontStyle: "bold" } }, "", "", fmt(line.grossPay)],
+    ],
+    theme: "plain",
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [243, 244, 246], textColor: [...GRAY], fontStyle: "bold", fontSize: 7 },
+    columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } },
+    margin: { left: M, right: M },
+  });
+
+  const afterEarnings = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
+  const colW = (PW - M * 2 - 6) / 2;
+
+  autoTable(doc, {
+    startY: afterEarnings,
+    head: [["PRE-TAX DEDUCTIONS", "Amount"]],
+    body: [
+      ...(line.healthPremium  > 0 ? [["Health Insurance", fmt(line.healthPremium)]]  : []),
+      ...(line.dentalPremium  > 0 ? [["Dental Insurance", fmt(line.dentalPremium)]]  : []),
+      ...(line.visionPremium  > 0 ? [["Vision Insurance", fmt(line.visionPremium)]]  : []),
+      ...(line.retirement401k > 0 ? [["401(k)",           fmt(line.retirement401k)]] : []),
+      ...(line.hsa            > 0 ? [["HSA",              fmt(line.hsa)]]            : []),
+      [{ content: "Total Pre-Tax", styles: { fontStyle: "bold" } }, fmt(line.totalPreTax)],
+    ],
+    theme: "plain",
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [243, 244, 246], textColor: [...GRAY], fontStyle: "bold", fontSize: 7 },
+    columnStyles: { 1: { halign: "right" } },
+    tableWidth: colW,
+    margin: { left: M, right: M + colW + 6 },
+  });
+
+  autoTable(doc, {
+    startY: afterEarnings,
+    head: [["TAXES & WITHHOLDING", "Amount"]],
+    body: [
+      ["Federal Income Tax",  fmt(line.federalIncomeTax)],
+      ["Social Security",     fmt(line.socialSecurityTax)],
+      ["Medicare",            fmt(line.medicareTax)],
+      ...(line.stateIncomeTax > 0 ? [["State Income Tax", fmt(line.stateIncomeTax)]] : []),
+      ...(line.garnishment    > 0 ? [["Garnishment",       fmt(line.garnishment)]]    : []),
+      ...(line.otherPostTax   > 0 ? [["Other Post-Tax",    fmt(line.otherPostTax)]]   : []),
+      [{ content: "Total Withheld", styles: { fontStyle: "bold" } },
+       fmt(line.totalEmployeeWithholding + line.garnishment + line.otherPostTax)],
+    ],
+    theme: "plain",
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [243, 244, 246], textColor: [...GRAY], fontStyle: "bold", fontSize: 7 },
+    columnStyles: { 1: { halign: "right" } },
+    tableWidth: colW,
+    margin: { left: M + colW + 6, right: M },
+  });
+
+  const lastY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6;
+  doc.setFillColor(...INDIGO);
+  doc.roundedRect(M, lastY, PW - M * 2, 14, 2, 2, "F");
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(255, 255, 255);
+  doc.text("NET PAY", M + 6, lastY + 9);
+  doc.text(fmt(line.netPay), PW - M - 6, lastY + 9, { align: "right" });
+
+  const empY = lastY + 22;
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...GRAY);
+  doc.text("EMPLOYER TAXES (informational)", M, empY);
+  doc.setFont("helvetica", "normal");
+  doc.text(
+    `Social Security: ${fmt(line.employerSocialSecurity)}   Medicare: ${fmt(line.employerMedicare)}   FUTA: ${fmt(line.futa)}   Total Employer Cost: ${fmt(line.grossPay + line.totalEmployerTax)}`,
+    M, empY + 5
+  );
+
+  doc.setFontSize(7);
+  doc.setTextColor(156, 163, 175);
+  doc.text(
+    "Federal withholding computed using 2025 IRS Publication 15-T percentage method. Verify with a payroll professional.",
+    M, empY + 12
+  );
+
+  return doc.output("blob");
+}
+
+export async function generatePayrollSummaryPDF(
+  run: PayRun,
+  employees: Employee[],
+  company: CompanyProfile,
+  fmt: (n: number) => string
+): Promise<Blob> {
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
+
+  const doc = new jsPDF({ unit: "mm", format: "letter" });
+  const PW = 215.9;
+  const M  = 14;
+
+  function fmtDate(iso: string) {
+    const [y, m, d] = iso.split("-");
+    return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...INDIGO);
+  doc.text(company.name || "Folio", M, 18);
+
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(17, 24, 39);
+  doc.text("Payroll Summary", PW - M, 16, { align: "right" });
+
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...GRAY);
+  doc.text(`Pay Period: ${fmtDate(run.periodFrom)} – ${fmtDate(run.periodTo)}`, PW - M, 22, { align: "right" });
+  doc.text(`Pay Date: ${fmtDate(run.payDate)}`, PW - M, 27, { align: "right" });
+
+  doc.setDrawColor(229, 231, 235);
+  doc.setLineWidth(0.3);
+  doc.line(M, 32, PW - M, 32);
+
+  const rows = run.lines.map((l) => {
+    const emp = employees.find((e) => e.id === l.employeeId);
+    return [
+      emp?.name ?? "—",
+      fmt(l.grossPay),
+      fmt(l.totalPreTax),
+      fmt(l.totalEmployeeWithholding),
+      fmt(l.garnishment + l.otherPostTax),
+      fmt(l.netPay),
+      fmt(l.totalEmployerTax),
+    ];
+  });
+
+  const totals = run.lines.reduce(
+    (acc, l) => ({
+      gross:    acc.gross    + l.grossPay,
+      preTax:   acc.preTax   + l.totalPreTax,
+      withhold: acc.withhold + l.totalEmployeeWithholding,
+      postTax:  acc.postTax  + l.garnishment + l.otherPostTax,
+      net:      acc.net      + l.netPay,
+      empTax:   acc.empTax   + l.totalEmployerTax,
+    }),
+    { gross: 0, preTax: 0, withhold: 0, postTax: 0, net: 0, empTax: 0 }
+  );
+
+  autoTable(doc, {
+    startY: 38,
+    head: [["Employee", "Gross Pay", "Pre-Tax Ded.", "Withholding", "Post-Tax Ded.", "Net Pay", "Employer Tax"]],
+    body: [
+      ...rows,
+      [
+        { content: "TOTALS", styles: { fontStyle: "bold" } },
+        fmt(totals.gross), fmt(totals.preTax), fmt(totals.withhold),
+        fmt(totals.postTax), fmt(totals.net), fmt(totals.empTax),
+      ],
+    ],
+    theme: "striped",
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [...INDIGO], textColor: [255, 255, 255], fontSize: 7, fontStyle: "bold" },
+    columnStyles: {
+      1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" },
+      4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" },
+    },
+    margin: { left: M, right: M },
+  });
+
+  const lastY2 = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6;
+  doc.setFontSize(7);
+  doc.setTextColor(156, 163, 175);
+  doc.text(
+    "Federal withholding computed using 2025 IRS Publication 15-T percentage method. Verify with a payroll professional.",
+    M, lastY2
+  );
 
   return doc.output("blob");
 }
