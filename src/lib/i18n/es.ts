@@ -923,7 +923,7 @@ const es: Translations = {
     selectEmployees: "Seleccionar Empleados",
     allActive: "Todos los Empleados Activos",
     reviewCalc: "Revisar y Ajustar",
-    standardWeeklyHours: "Horas Semanales Estándar", standardWeeklyHoursHint: "Horas predeterminadas por semana (ej. 40, 37.5, 35)", hoursEntry: "Entrada de Horas",
+    standardWeeklyHours: "Horas Semanales Estándar", standardWeeklyHoursHint: "Horas predeterminadas por semana (ej. 40, 37.5, 35)", paymentMethod: "Método de Pago", payMethodCheck: "Cheque", payMethodDD: "Depósito Directo", bankRouting: "Número de Ruta", bankAccount: "Número de Cuenta", bankAccountType: "Tipo de Cuenta", bankChecking: "Corriente", bankSavings: "Ahorros", companyBank: "Banco de la Empresa (para ACH)", companyBankHint: "Requerido para generar archivos NACHA de depósito directo", startingCheckNo: "Cheque Inicial #", printChecks: "Imprimir Cheques", downloadACH: "Descargar Archivo ACH", payrollApproved: "¡Nómina aprobada!", payrollApprovedSub: "Descargue el archivo ACH y/o imprima los cheques.", hoursEntry: "Entrada de Horas",
     regularHours: "Hrs Regulares",
     overtimeRate: "Tasa HE",
     holidayHours: "Festivo",

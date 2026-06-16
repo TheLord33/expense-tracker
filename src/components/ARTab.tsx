@@ -427,7 +427,10 @@ export function ARTab({
   const [fBizPhone,     setFBizPhone]     = useState("");
   const [fBizWebsite,   setFBizWebsite]   = useState("");
   const [fBizTaxId,     setFBizTaxId]     = useState("");
-  const [fBizStdHours,  setFBizStdHours]  = useState("");
+  const [fBizStdHours,    setFBizStdHours]    = useState("");
+  const [fBizBankRouting, setFBizBankRouting] = useState("");
+  const [fBizBankAccount, setFBizBankAccount] = useState("");
+  const [fBizBankType,    setFBizBankType]    = useState<"checking" | "savings">("checking");
 
   function openBizModal() {
     setFBizName(company.name ?? "");
@@ -437,6 +440,9 @@ export function ARTab({
     setFBizWebsite(company.website ?? "");
     setFBizTaxId(company.taxId ?? "");
     setFBizStdHours(String(company.standardWeeklyHours ?? 40));
+    setFBizBankRouting(company.bankRoutingNumber ?? "");
+    setFBizBankAccount(company.bankAccountNumber ?? "");
+    setFBizBankType(company.bankAccountType ?? "checking");
     bizModal.onOpen();
   }
 
@@ -449,7 +455,10 @@ export function ARTab({
       phone:   fBizPhone.trim()   || undefined,
       website: fBizWebsite.trim() || undefined,
       taxId:   fBizTaxId.trim()   || undefined,
-      standardWeeklyHours: fBizStdHours ? parseFloat(fBizStdHours) : undefined,
+      standardWeeklyHours:  fBizStdHours    ? parseFloat(fBizStdHours)                    : undefined,
+      bankRoutingNumber:    fBizBankRouting ? fBizBankRouting.replace(/\D/g, "")           : undefined,
+      bankAccountNumber:    fBizBankAccount ? fBizBankAccount.replace(/\D/g, "")           : undefined,
+      bankAccountType:      fBizBankAccount ? fBizBankType                                 : undefined,
     });
     bizModal.onClose();
   }
@@ -1319,6 +1328,22 @@ export function ARTab({
               <Input label={t("payroll.standardWeeklyHours")} type="number" min="1" max="168" step="0.5"
                 description={t("payroll.standardWeeklyHoursHint")}
                 value={fBizStdHours} onValueChange={setFBizStdHours} size="sm" className="w-48" />
+              <Divider />
+              <p className="text-xs font-semibold text-default-500 uppercase tracking-wide">{t("payroll.companyBank")}</p>
+              <p className="text-xs text-default-400">{t("payroll.companyBankHint")}</p>
+              <div className="flex gap-3">
+                <Input label={t("payroll.bankRouting")} type="text" inputMode="numeric" maxLength={9}
+                  placeholder="9-digit routing"
+                  value={fBizBankRouting} onValueChange={(v) => setFBizBankRouting(v.replace(/\D/g, "").slice(0, 9))} size="sm" className="flex-1" />
+                <Input label={t("payroll.bankAccount")} type="text" inputMode="numeric"
+                  placeholder="Account number"
+                  value={fBizBankAccount} onValueChange={(v) => setFBizBankAccount(v.replace(/\D/g, ""))} size="sm" className="flex-1" />
+                <Select label={t("payroll.bankAccountType")} selectedKeys={[fBizBankType]}
+                  onSelectionChange={(k) => setFBizBankType([...k][0] as "checking" | "savings")} size="sm" className="flex-1">
+                  <SelectItem key="checking">{t("payroll.bankChecking")}</SelectItem>
+                  <SelectItem key="savings">{t("payroll.bankSavings")}</SelectItem>
+                </Select>
+              </div>
             </ModalBody>
             <ModalFooter>
               <Button variant="flat" onPress={bizModal.onClose}>{t("cancel")}</Button>

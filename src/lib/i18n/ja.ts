@@ -890,7 +890,7 @@ const ja: Translations = {
     garnishment: "給与差押え（$/期間）", otherPostTax: "その他税後控除（$/期間）", isActive: "在籍中",
     periodFrom: "期間開始", periodTo: "期間終了", payDate: "支払日", frequency: "頻度",
     selectEmployees: "従業員選択", allActive: "全在籍従業員", reviewCalc: "確認・調整",
-    standardWeeklyHours: "標準週労働時間", standardWeeklyHoursHint: "週あたりのデフォルト労働時間（例：40、37.5、35）", hoursEntry: "時間入力", regularHours: "通常時間", overtimeRate: "残業率", holidayHours: "祝日", sickHours: "病欠", vacationHours: "有給休暇", overtimeHours: "残業時間", grossPay: "総支給額", preTaxDed: "税前控除",
+    standardWeeklyHours: "標準週労働時間", standardWeeklyHoursHint: "週あたりのデフォルト労働時間（例：40、37.5、35）", paymentMethod: "支払方法", payMethodCheck: "小切手", payMethodDD: "直接振込", bankRouting: "ルーティング番号", bankAccount: "口座番号", bankAccountType: "口座種別", bankChecking: "当座預金", bankSavings: "普通預金", companyBank: "会社銀行口座（ACH給与用）", companyBankHint: "NACHAダイレクトデポジットファイルの生成に必要", startingCheckNo: "開始小切手番号", printChecks: "小切手印刷", downloadACH: "ACHファイルダウンロード", payrollApproved: "給与が承認されました！", payrollApprovedSub: "ACHファイルをダウンロードするか、小切手を印刷してください。", hoursEntry: "時間入力", regularHours: "通常時間", overtimeRate: "残業率", holidayHours: "祝日", sickHours: "病欠", vacationHours: "有給休暇", overtimeHours: "残業時間", grossPay: "総支給額", preTaxDed: "税前控除",
     taxableWages: "課税賃金", federalTax: "連邦税", fica: "FICA", stateTax: "州税",
     postTaxDed: "税後控除", netPay: "手取り額", empTax: "雇用主税", totalCost: "総コスト",
     approve: "承認・支払", approved: "承認済", draft: "下書き", deleteRun: "削除",

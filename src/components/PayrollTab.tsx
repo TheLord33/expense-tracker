@@ -9,7 +9,7 @@ import {
 import { Plus, Pencil, Trash2, Download, CheckCircle, Users, Play } from "lucide-react";
 import type { CheckRecord, CompanyProfile, Employee, FilingStatus, PayFrequency, PayRun, PayRunLine } from "@/lib/types";
 import { calculatePayRunLine, defaultHours, payRunTotals, ytdWages, PERIODS_PER_YEAR, type HoursInput } from "@/lib/payroll";
-import { generatePayStubPDF, generatePayrollSummaryPDF } from "@/lib/exportPDF";
+import { generatePayStubPDF, generatePayrollSummaryPDF, generatePayrollChecksPDF, generateNACHAText } from "@/lib/exportPDF";
 import { downloadBlob } from "@/lib/importExport";
 import { useLanguage, useCurrency } from "@/app/providers";
 
@@ -19,6 +19,11 @@ const todayISO = () => new Date().toISOString().split("T")[0];
 
 function empFullName(e: Pick<Employee, "firstName" | "middleInitial" | "lastName">): string {
   return [e.firstName, e.middleInitial ? e.middleInitial + "." : "", e.lastName].filter(Boolean).join(" ");
+}
+
+function maskAccount(acct: string): string {
+  const d = acct.replace(/\D/g, "");
+  return d.length < 4 ? "****" : `****${d.slice(-4)}`;
 }
 
 function maskSSN(ssn: string): string {
@@ -163,6 +168,10 @@ export function PayrollTab({
   const [eGarn,          setEGarn]          = useState("");
   const [eOtherPost,     setEOtherPost]     = useState("");
   const [eStdHours,      setEStdHours]      = useState("");
+  const [ePayMethod,     setEPayMethod]     = useState<"check" | "direct_deposit">("check");
+  const [eBankRouting,   setEBankRouting]   = useState("");
+  const [eBankAccount,   setEBankAccount]   = useState("");
+  const [eBankAcctType,  setEBankAcctType]  = useState<"checking" | "savings">("checking");
   const [eIsActive,      setEIsActive]      = useState(true);
   const [eErr,           setEErr]           = useState("");
 
@@ -176,6 +185,7 @@ export function PayrollTab({
     setEHealth(""); setEDental(""); setEVision("");
     setE401k(""); setEHsa(""); setEGarn(""); setEOtherPost("");
     setEStdHours(String(company.standardWeeklyHours ?? 40));
+    setEPayMethod("check"); setEBankRouting(""); setEBankAccount(""); setEBankAcctType("checking");
     setEIsActive(true); setEErr("");
     empModal.onOpen();
   }
@@ -199,6 +209,9 @@ export function PayrollTab({
     setEGarn(e.garnishment ? String(e.garnishment) : "");
     setEOtherPost(e.otherPostTax ? String(e.otherPostTax) : "");
     setEStdHours(e.standardWeeklyHours ? String(e.standardWeeklyHours) : String(company.standardWeeklyHours ?? 40));
+    setEPayMethod(e.paymentMethod ?? "check");
+    setEBankRouting(e.bankRoutingNumber ?? ""); setEBankAccount(e.bankAccountNumber ?? "");
+    setEBankAcctType(e.bankAccountType ?? "checking");
     setEIsActive(e.isActive !== false); setEErr("");
     empModal.onOpen();
   }
@@ -215,6 +228,10 @@ export function PayrollTab({
       jobTitle:      eTitle.trim()  || undefined,
       department:    eDept.trim()   || undefined,
       standardWeeklyHours: eStdHours ? parseFloat(eStdHours) : undefined,
+      paymentMethod:    ePayMethod,
+      bankRoutingNumber: eBankRouting.replace(/\D/g, "") || undefined,
+      bankAccountNumber: eBankAccount.replace(/\D/g, "") || undefined,
+      bankAccountType:   ePayMethod === "direct_deposit" ? eBankAcctType : undefined,
       startDate:     eStartDate,
       isActive:      eIsActive,
       payType:       ePayType,
@@ -243,7 +260,7 @@ export function PayrollTab({
   }
 
   // ── Pay run wizard ────────────────────────────────────────────────────────
-  type WizardStep = "setup" | "review";
+  type WizardStep = "setup" | "review" | "done";
   const wizardModal = useDisclosure();
   const [wizardStep,   setWizardStep]   = useState<WizardStep>("setup");
   const [wPeriodFrom,  setWPeriodFrom]  = useState("");
@@ -255,6 +272,8 @@ export function PayrollTab({
   const [wHours,       setWHours]       = useState<Record<string, HoursInput>>({});
   const [wYTD,         setWYTD]         = useState<Record<string, number>>({});
   const [wizardKey,    setWizardKey]    = useState(0);
+  const [wCheckStart,  setWCheckStart]  = useState("1001");
+  const [wDoneRun,     setWDoneRun]     = useState<PayRun | null>(null);
   const [wNotes,       setWNotes]       = useState("");
   const [wErr,         setWErr]         = useState("");
 
@@ -266,6 +285,7 @@ export function PayrollTab({
     setWFreq("biweekly"); setWNotes(""); setWErr("");
     setWSelectedIds(new Set(activeEmployees.map((e) => e.id)));
     setWHours({}); setWYTD({});
+    setWCheckStart("1001"); setWDoneRun(null);
     setWizardKey((k) => k + 1);
     wizardModal.onOpen();
   }
@@ -328,28 +348,65 @@ export function PayrollTab({
   }
 
   function handleApprove() {
-    const run: Omit<PayRun, "id" | "createdAt"> = {
-      periodFrom: wPeriodFrom, periodTo: wPeriodTo, payDate: wPayDate,
-      frequency: wFreq, status: "approved", lines: wLines, notes: wNotes || undefined,
-    };
-    onAddPayRun(run);
-    // Create a check per employee
-    const checks: Omit<CheckRecord, "id">[] = wLines.map((l) => {
+    // Assign check numbers to check-payment lines sequentially
+    let nextChk = parseInt(wCheckStart) || 1001;
+    const linesWithPayment: PayRunLine[] = wLines.map((l) => {
       const emp = employees.find((e) => e.id === l.employeeId);
+      const method = emp?.paymentMethod ?? "check";
+      if (method === "check") {
+        return { ...l, paymentMethod: "check" as const, checkNumber: String(nextChk++) };
+      }
+      return { ...l, paymentMethod: "direct_deposit" as const };
+    });
+
+    const runData: Omit<PayRun, "id" | "createdAt"> = {
+      periodFrom: wPeriodFrom, periodTo: wPeriodTo, payDate: wPayDate,
+      frequency: wFreq, status: "approved", lines: linesWithPayment, notes: wNotes || undefined,
+    };
+    const savedRun = { ...runData, id: crypto.randomUUID(), createdAt: new Date().toISOString() } as PayRun;
+    onAddPayRun(runData);
+    setWDoneRun(savedRun);
+
+    // CheckRec entry for every payment (DD entries use "DD" memo)
+    const checks: Omit<CheckRecord, "id">[] = linesWithPayment.map((l) => {
+      const emp = employees.find((e) => e.id === l.employeeId);
+      const isDD = l.paymentMethod === "direct_deposit";
       return {
         date:        wPayDate,
-        checkNumber: l.checkNumber ?? "",
+        checkNumber: isDD ? "DD" : (l.checkNumber ?? ""),
         payee:       emp ? empFullName(emp) : "—",
         amount:      l.netPay,
-        memo:        `Payroll ${wPeriodFrom} – ${wPeriodTo}`,
+        memo:        isDD ? `Direct Deposit – Payroll ${wPeriodFrom} – ${wPeriodTo}` : `Payroll ${wPeriodFrom} – ${wPeriodTo}`,
         status:      "outstanding" as const,
       };
     });
     onAddChecks(checks);
-    wizardModal.onClose();
+    setWLines(linesWithPayment);
+    setWizardStep("done");
   }
 
   const totals = useMemo(() => payRunTotals(wLines), [wLines]);
+
+  async function handlePrintChecks(run: PayRun) {
+    const checkEntries = run.lines
+      .filter((l) => (l.paymentMethod ?? "check") === "check")
+      .map((l) => ({ line: l, employee: employees.find((e) => e.id === l.employeeId)! }))
+      .filter((e) => !!e.employee);
+    if (!checkEntries.length) return;
+    const blob = await generatePayrollChecksPDF(run, checkEntries, company, fmt);
+    downloadBlob(blob, `payroll-checks-${run.payDate}.pdf`);
+  }
+
+  function handleDownloadACH(run: PayRun) {
+    const ddEntries = run.lines
+      .filter((l) => l.paymentMethod === "direct_deposit")
+      .map((l) => ({ line: l, employee: employees.find((e) => e.id === l.employeeId)! }))
+      .filter((e) => !!e.employee);
+    if (!ddEntries.length) return;
+    const text = generateNACHAText(run, ddEntries, company);
+    const blob = new Blob([text], { type: "text/plain" });
+    downloadBlob(blob, `payroll-ach-${run.payDate}.ach`);
+  }
 
   // ── PDF handlers ──────────────────────────────────────────────────────────
   async function handlePayStub(run: PayRun, line: PayRunLine) {
@@ -445,6 +502,11 @@ export function PayrollTab({
                           <p className="text-xs text-default-400 mt-0.5">
                             {emp.payType === "salary" ? "Salary" : "Hourly"} ·{" "}
                             {emp.payFrequency} · {emp.standardWeeklyHours ?? company.standardWeeklyHours ?? 40}h/wk · Filing: {emp.filingStatus}
+                          </p>
+                          <p className="text-xs mt-0.5">
+                            {emp.paymentMethod === "direct_deposit"
+                              ? <span className="text-primary-600 font-medium">⬡ Direct Deposit {emp.bankAccountNumber ? maskAccount(emp.bankAccountNumber) : ""}</span>
+                              : <span className="text-default-400">✎ Check</span>}
                           </p>
                         </div>
                         <div className="text-right shrink-0">
@@ -559,10 +621,20 @@ export function PayrollTab({
                       </div>
                     </CardBody>
                     <Divider />
-                    <div className="px-5 py-2 flex gap-2 justify-end">
+                    <div className="px-5 py-2 flex gap-2 justify-end flex-wrap">
                       <Button size="sm" variant="flat" startContent={<Download size={12} />} onPress={() => handleSummaryPDF(run)}>
                         {t("payroll.summary")}
                       </Button>
+                      {run.lines.some((l) => (l.paymentMethod ?? "check") === "check") && (
+                        <Button size="sm" variant="flat" color="primary" startContent={<Download size={12} />} onPress={() => handlePrintChecks(run)}>
+                          {t("payroll.printChecks")}
+                        </Button>
+                      )}
+                      {run.lines.some((l) => l.paymentMethod === "direct_deposit") && (
+                        <Button size="sm" variant="flat" color="secondary" startContent={<Download size={12} />} onPress={() => handleDownloadACH(run)}>
+                          {t("payroll.downloadACH")}
+                        </Button>
+                      )}
                       <Button size="sm" variant="light" color="danger" startContent={<Trash2 size={12} />}
                         onPress={() => onDeletePayRun(run.id)}>
                         {t("payroll.deleteRun")}
@@ -692,6 +764,30 @@ export function PayrollTab({
                   value={eOtherPost} onValueChange={setEOtherPost} size="sm" className="flex-1" />
               </div>
 
+              {/* Payment */}
+              <Divider />
+              <p className="text-xs font-semibold text-default-500 uppercase tracking-wide">{t("payroll.paymentMethod")}</p>
+              <Select label={t("payroll.paymentMethod")} selectedKeys={[ePayMethod]}
+                onSelectionChange={(k) => setEPayMethod([...k][0] as "check" | "direct_deposit")} size="sm">
+                <SelectItem key="check">{t("payroll.payMethodCheck")}</SelectItem>
+                <SelectItem key="direct_deposit">{t("payroll.payMethodDD")}</SelectItem>
+              </Select>
+              {ePayMethod === "direct_deposit" && (
+                <div className="space-y-3">
+                  <Input label={t("payroll.bankRouting")} type="text" inputMode="numeric" maxLength={9}
+                    placeholder="9-digit routing number"
+                    value={eBankRouting} onValueChange={(v) => setEBankRouting(v.replace(/\D/g, "").slice(0, 9))} size="sm" />
+                  <Input label={t("payroll.bankAccount")} type="text" inputMode="numeric"
+                    placeholder="Account number"
+                    value={eBankAccount} onValueChange={(v) => setEBankAccount(v.replace(/\D/g, ""))} size="sm" />
+                  <Select label={t("payroll.bankAccountType")} selectedKeys={[eBankAcctType]}
+                    onSelectionChange={(k) => setEBankAcctType([...k][0] as "checking" | "savings")} size="sm">
+                    <SelectItem key="checking">{t("payroll.bankChecking")}</SelectItem>
+                    <SelectItem key="savings">{t("payroll.bankSavings")}</SelectItem>
+                  </Select>
+                </div>
+              )}
+
               {/* Active toggle */}
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={eIsActive} onChange={(e) => setEIsActive(e.target.checked)} className="rounded" />
@@ -713,7 +809,8 @@ export function PayrollTab({
         size={wizardStep === "review" ? "5xl" : "md"} scrollBehavior="inside">
         <ModalContent>
           <ModalHeader>
-            {t("payroll.runPayroll")} — {wizardStep === "setup" ? "1/2 Setup" : "2/2 Review"}
+            {t("payroll.runPayroll")} —{" "}
+            {wizardStep === "setup" ? "1/2 Setup" : wizardStep === "review" ? "2/2 Review" : "✓ Done"}
           </ModalHeader>
           <ModalBody className="gap-3">
             {wizardStep === "setup" && (
@@ -916,7 +1013,54 @@ export function PayrollTab({
                   </div>
                 </div>
 
+                {/* Starting check number */}
+                {wLines.some((l) => (employees.find((e) => e.id === l.employeeId)?.paymentMethod ?? "check") === "check") && (
+                  <div className="flex items-center gap-3 rounded-xl bg-default-50 px-4 py-3">
+                    <span className="text-xs text-default-600 font-medium">{t("payroll.startingCheckNo")}</span>
+                    <input type="text" inputMode="numeric" value={wCheckStart}
+                      onChange={(e) => setWCheckStart(e.target.value.replace(/\D/g, ""))}
+                      className="w-24 rounded-lg border border-default-200 bg-white px-2 py-1 text-sm tabular-nums focus:outline-none focus:border-primary" />
+                    <span className="text-xs text-default-400">Checks auto-numbered from this value</span>
+                  </div>
+                )}
+
+                {/* Payment method summary */}
+                <div className="flex gap-2 flex-wrap">
+                  {wLines.map((l) => {
+                    const emp = employees.find((e) => e.id === l.employeeId);
+                    const isDD = emp?.paymentMethod === "direct_deposit";
+                    return (
+                      <Chip key={l.employeeId} size="sm" color={isDD ? "primary" : "default"} variant="flat">
+                        {emp ? empFullName(emp) : "—"} — {isDD ? t("payroll.payMethodDD") : t("payroll.payMethodCheck")}
+                      </Chip>
+                    );
+                  })}
+                </div>
+
                 <p className="text-xs text-default-400">{t("payroll.disclaimer")}</p>
+              </>
+            )}
+
+            {wizardStep === "done" && wDoneRun && (
+              <>
+                <div className="rounded-xl bg-success-50 border border-success-200 px-4 py-3">
+                  <p className="text-sm font-semibold text-success-700">{t("payroll.payrollApproved")}</p>
+                  <p className="text-xs text-success-600 mt-0.5">{t("payroll.payrollApprovedSub")}</p>
+                </div>
+                <div className="flex gap-3 flex-wrap">
+                  {wDoneRun.lines.some((l) => (l.paymentMethod ?? "check") === "check") && (
+                    <Button color="primary" variant="flat" startContent={<Download size={14} />}
+                      onPress={() => handlePrintChecks(wDoneRun!)}>
+                      {t("payroll.printChecks")}
+                    </Button>
+                  )}
+                  {wDoneRun.lines.some((l) => l.paymentMethod === "direct_deposit") && (
+                    <Button color="secondary" variant="flat" startContent={<Download size={14} />}
+                      onPress={() => handleDownloadACH(wDoneRun!)}>
+                      {t("payroll.downloadACH")}
+                    </Button>
+                  )}
+                </div>
               </>
             )}
           </ModalBody>
@@ -926,13 +1070,15 @@ export function PayrollTab({
                 <Button variant="flat" onPress={wizardModal.onClose}>{t("cancel")}</Button>
                 <Button color="primary" onPress={wizardNext}>Next →</Button>
               </>
-            ) : (
+            ) : wizardStep === "review" ? (
               <>
                 <Button variant="flat" onPress={() => setWizardStep("setup")}>← Back</Button>
                 <Button color="success" startContent={<CheckCircle size={14} />} onPress={handleApprove}>
                   {t("payroll.approve")}
                 </Button>
               </>
+            ) : (
+              <Button color="primary" onPress={wizardModal.onClose}>{t("close")}</Button>
             )}
           </ModalFooter>
         </ModalContent>
