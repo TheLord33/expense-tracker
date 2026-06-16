@@ -619,10 +619,10 @@ export function PayrollTab({
             {wizardStep === "setup" && (
               <>
                 <div className="flex gap-3">
-                  <Input type="date" label={t("payroll.periodFrom")} value={wPeriodFrom} onValueChange={(v) => { setWPeriodFrom(v); setWErr(""); }} size="sm" className="flex-1" />
-                  <Input type="date" label={t("payroll.periodTo")}   value={wPeriodTo}   onValueChange={(v) => { setWPeriodTo(v);   setWErr(""); }} size="sm" className="flex-1" />
+                  <Input type="date" label={t("payroll.periodFrom")} value={wPeriodFrom} onChange={(e) => { setWPeriodFrom(e.target.value); setWErr(""); }} size="sm" className="flex-1" />
+                  <Input type="date" label={t("payroll.periodTo")}   value={wPeriodTo}   onChange={(e) => { setWPeriodTo(e.target.value);   setWErr(""); }} size="sm" className="flex-1" />
                 </div>
-                <Input type="date" label={t("payroll.payDate")} value={wPayDate} onValueChange={(v) => { setWPayDate(v); setWErr(""); }} size="sm" />
+                <Input type="date" label={t("payroll.payDate")} value={wPayDate} onChange={(e) => { setWPayDate(e.target.value); setWErr(""); }} size="sm" />
                 <Select label={t("payroll.frequency")} selectedKeys={[wFreq]}
                   onSelectionChange={(k) => setWFreq([...k][0] as PayFrequency)} size="sm">
                   <SelectItem key="weekly">{t("payroll.freqWeekly")}</SelectItem>
