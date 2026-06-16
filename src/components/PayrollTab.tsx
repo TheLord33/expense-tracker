@@ -254,7 +254,7 @@ export function PayrollTab({
   const [wNotes,       setWNotes]       = useState("");
   const [wErr,         setWErr]         = useState("");
 
-  const activeEmployees = useMemo(() => employees.filter((e) => e.isActive), [employees]);
+  const activeEmployees = useMemo(() => employees.filter((e) => e.isActive !== false), [employees]);
 
   function openWizard() {
     setWizardStep("setup");
@@ -280,7 +280,12 @@ export function PayrollTab({
       ytdMap[emp.id] = priorYTD;
       const hrs = emp.payType === "hourly" ? defaultHours(wFreq) : undefined;
       if (hrs) hoursMap[emp.id] = hrs;
-      lines.push(calculatePayRunLine(emp, priorYTD, hrs));
+      try {
+        lines.push(calculatePayRunLine(emp, priorYTD, hrs));
+      } catch (err) {
+        setWErr(`Calculation error for ${emp.firstName ?? (emp as unknown as {name?: string}).name ?? "employee"}: ${err instanceof Error ? err.message : String(err)}`);
+        return;
+      }
     }
     setWLines(lines);
     setWHours(hoursMap);

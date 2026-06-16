@@ -59,9 +59,9 @@ function federalWithholding(
   filingStatus: FilingStatus,
   additionalWithholding = 0
 ): number {
-  const periods       = PERIODS_PER_YEAR[frequency];
+  const periods       = PERIODS_PER_YEAR[frequency] ?? 26;
   const annualized    = perPeriodTaxableWages * periods;
-  const brackets      = FED_BRACKETS[filingStatus];
+  const brackets      = FED_BRACKETS[filingStatus] ?? FED_BRACKETS.single;
   const bracket       = brackets.findLast((b) => annualized > b.over) ?? brackets[0];
   const annualTax     = bracket.base + (annualized - bracket.over) * bracket.rate;
   const perPeriodTax  = Math.max(0, annualTax / periods);
@@ -114,7 +114,7 @@ export function calculatePayRunLine(
   priorYTDGross: number,
   hoursOverride?: Partial<HoursInput>
 ): PayRunLine {
-  const periods = PERIODS_PER_YEAR[employee.payFrequency];
+  const periods = PERIODS_PER_YEAR[employee.payFrequency] ?? 26;
 
   // ── Gross pay ─────────────────────────────────────────────────────────────
   let regularPay: number;
