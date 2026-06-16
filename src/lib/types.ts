@@ -250,7 +250,11 @@ export interface CompanyProfile {
   maxCheckAmount?: number;
   taxRates?: TaxRate[];
   defaultTaxRateId?: string;
-  standardWeeklyHours?: number; // default work week for payroll (e.g. 40, 37.5, 35)
+  standardWeeklyHours?: number;
+  // Company bank — used as ODFI for payroll ACH files
+  bankRoutingNumber?: string;
+  bankAccountNumber?: string;
+  bankAccountType?: "checking" | "savings";
 }
 
 export interface Company extends CompanyProfile {
@@ -432,7 +436,12 @@ export interface Employee {
   city?: string;
   state?: string;
   zip?: string;
-  standardWeeklyHours?: number; // overrides company default for this employee
+  standardWeeklyHours?: number;
+  // Payment method for payroll
+  paymentMethod?: "check" | "direct_deposit";
+  bankRoutingNumber?: string;
+  bankAccountNumber?: string; // stored locally, displayed masked
+  bankAccountType?: "checking" | "savings";
   startDate: string;
   isActive: boolean;
   // Pay
@@ -490,6 +499,7 @@ export interface PayRunLine {
   otherPostTax: number;
   // Net
   netPay: number;
+  paymentMethod?: "check" | "direct_deposit";
   checkNumber?: string;
   // Employer taxes
   employerSocialSecurity: number;

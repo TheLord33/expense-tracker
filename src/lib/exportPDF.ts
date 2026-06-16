@@ -1280,3 +1280,116 @@ export async function generatePayrollSummaryPDF(
 
   return doc.output("blob");
 }
+
+// ── Payroll Check PDF ──────────────────────────────────────────────────────────
+
+export async function generatePayrollChecksPDF(
+  run: PayRun,
+  checkLines: Array<{ line: PayRunLine; employee: Employee }>,
+  company: CompanyProfile,
+  fmtFn: (n: number) => string
+): Promise<Blob> {
+  const period = `${run.periodFrom} – ${run.periodTo}`;
+  const checks: CheckData[] = checkLines.map(({ line, employee }) => ({
+    checkNumber: line.checkNumber ?? "",
+    date:        run.payDate,
+    payee:       [employee.firstName, employee.middleInitial ? employee.middleInitial + "." : "", employee.lastName].filter(Boolean).join(" "),
+    amount:      line.netPay,
+    memo:        `Payroll ${period}`,
+    lineItems: [
+      { description: "Gross Pay",           originalAmount: line.grossPay,                       discount: 0, netAmount: line.grossPay },
+      { description: "Pre-Tax Deductions",  originalAmount: line.totalPreTax,                    discount: 0, netAmount: -line.totalPreTax },
+      { description: "Federal Income Tax",  originalAmount: line.federalIncomeTax,               discount: 0, netAmount: -line.federalIncomeTax },
+      { description: "Social Security",     originalAmount: line.socialSecurityTax,              discount: 0, netAmount: -line.socialSecurityTax },
+      { description: "Medicare",            originalAmount: line.medicareTax,                    discount: 0, netAmount: -line.medicareTax },
+      { description: "State Income Tax",    originalAmount: line.stateIncomeTax,                 discount: 0, netAmount: -line.stateIncomeTax },
+      { description: "Post-Tax Deductions", originalAmount: line.garnishment + line.otherPostTax, discount: 0, netAmount: -(line.garnishment + line.otherPostTax) },
+    ].filter(item => item.originalAmount !== 0),
+  }));
+  return printChecksPDF(checks, company, fmtFn);
+}
+
+// ── NACHA ACH File ─────────────────────────────────────────────────────────────
+
+export function generateNACHAText(
+  run: PayRun,
+  ddEntries: Array<{ line: PayRunLine; employee: Employee }>,
+  company: CompanyProfile
+): string {
+  const R = (s: string, len: number) => String(s ?? "").slice(0, len).padEnd(len, " ");
+
+  const now    = new Date();
+  const p2     = (n: number) => n.toString().padStart(2, "0");
+  const today  = now.getFullYear().toString().slice(2) + p2(now.getMonth() + 1) + p2(now.getDate());
+  const time   = p2(now.getHours()) + p2(now.getMinutes());
+  const effDate = run.payDate.replace(/-/g, "").slice(2);
+
+  const odfi9 = (company.bankRoutingNumber ?? "000000000").replace(/\D/g, "").slice(0, 9).padStart(9, "0");
+  const odfi8 = odfi9.slice(0, 8);
+  const ein   = (company.taxId ?? "").replace(/\D/g, "").slice(0, 9).padStart(9, "0");
+
+  const rows: string[] = [];
+
+  // File Header
+  rows.push(
+    "1" + "01" +
+    (" " + odfi9) +
+    (" " + ein.slice(0, 9)) +
+    today + time + "A" + "094" + "10" + "1" +
+    R("", 23) + R(company.name, 23) + "        "
+  );
+
+  // Batch Header
+  rows.push(
+    "5" + "220" +
+    R(company.name, 16) + "                    " +
+    ("1" + ein) + "PPD" + R("PAYROLL", 10) +
+    "      " + effDate + "   " + "1" + odfi8 + "0000001"
+  );
+
+  let entryCount = 0;
+  let hashSum    = BigInt(0);
+  let totalCents = 0;
+
+  ddEntries.forEach(({ line, employee }, idx) => {
+    const routing = (employee.bankRoutingNumber ?? "000000000").replace(/\D/g, "").slice(0, 9).padStart(9, "0");
+    const acct    = R((employee.bankAccountNumber ?? "").replace(/\D/g, ""), 17);
+    const txn     = employee.bankAccountType === "savings" ? "32" : "22";
+    const cents   = Math.round(line.netPay * 100);
+    const name    = R([employee.firstName, employee.middleInitial ? employee.middleInitial + "." : "", employee.lastName].filter(Boolean).join(" "), 22);
+    const seq     = (idx + 1).toString().padStart(7, "0");
+    rows.push(
+      "6" + txn + routing.slice(0, 8) + routing[8] +
+      acct + String(cents).padStart(10, "0") +
+      R(employee.id.slice(0, 15), 15) + name + "  " + "0" + odfi8 + seq
+    );
+    entryCount++;
+    hashSum    += BigInt(routing.slice(0, 8));
+    totalCents += cents;
+  });
+
+  const hash10   = (hashSum % BigInt(10_000_000_000)).toString().padStart(10, "0");
+  const credit12 = totalCents.toString().padStart(12, "0");
+
+  // Batch Control
+  rows.push(
+    "8" + "220" +
+    entryCount.toString().padStart(6, "0") + hash10 +
+    "000000000000" + credit12 + ("1" + ein) +
+    "                   " + "      " + odfi8 + "0000001"
+  );
+
+  // File Control
+  const blockCount = Math.ceil((rows.length + 1) / 10);
+  rows.push(
+    "9" + "000001" +
+    blockCount.toString().padStart(6, "0") +
+    entryCount.toString().padStart(8, "0") + hash10 +
+    "000000000000" + credit12 +
+    "                                       "
+  );
+
+  while (rows.length % 10 !== 0) rows.push("9".repeat(94));
+
+  return rows.join("\r\n");
+}
