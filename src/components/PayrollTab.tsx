@@ -162,6 +162,7 @@ export function PayrollTab({
   const [eHsa,           setEHsa]           = useState("");
   const [eGarn,          setEGarn]          = useState("");
   const [eOtherPost,     setEOtherPost]     = useState("");
+  const [eStdHours,      setEStdHours]      = useState("");
   const [eIsActive,      setEIsActive]      = useState(true);
   const [eErr,           setEErr]           = useState("");
 
@@ -174,6 +175,7 @@ export function PayrollTab({
     setESsn(""); setEStreet(""); setECity(""); setEState(""); setEZip("");
     setEHealth(""); setEDental(""); setEVision("");
     setE401k(""); setEHsa(""); setEGarn(""); setEOtherPost("");
+    setEStdHours(String(company.standardWeeklyHours ?? 40));
     setEIsActive(true); setEErr("");
     empModal.onOpen();
   }
@@ -196,7 +198,8 @@ export function PayrollTab({
     setEHsa(e.hsaContrib ? String(e.hsaContrib) : "");
     setEGarn(e.garnishment ? String(e.garnishment) : "");
     setEOtherPost(e.otherPostTax ? String(e.otherPostTax) : "");
-    setEIsActive(e.isActive); setEErr("");
+    setEStdHours(e.standardWeeklyHours ? String(e.standardWeeklyHours) : String(company.standardWeeklyHours ?? 40));
+    setEIsActive(e.isActive !== false); setEErr("");
     empModal.onOpen();
   }
 
@@ -211,6 +214,7 @@ export function PayrollTab({
       lastName:      eLastName.trim(),
       jobTitle:      eTitle.trim()  || undefined,
       department:    eDept.trim()   || undefined,
+      standardWeeklyHours: eStdHours ? parseFloat(eStdHours) : undefined,
       startDate:     eStartDate,
       isActive:      eIsActive,
       payType:       ePayType,
@@ -278,7 +282,8 @@ export function PayrollTab({
       if (!wSelectedIds.has(emp.id)) continue;
       const priorYTD = ytdWages(emp.id, payRuns);
       ytdMap[emp.id] = priorYTD;
-      const hrs = emp.payType === "hourly" ? defaultHours(wFreq) : undefined;
+      const wkHrs = emp.standardWeeklyHours ?? company.standardWeeklyHours ?? 40;
+      const hrs = emp.payType === "hourly" ? defaultHours(wkHrs, wFreq) : undefined;
       if (hrs) hoursMap[emp.id] = hrs;
       try {
         lines.push(calculatePayRunLine(emp, priorYTD, hrs));
@@ -410,10 +415,11 @@ export function PayrollTab({
           ) : (
             <div className="space-y-2">
               {employees.map((emp) => {
-                const periods = PERIODS_PER_YEAR[emp.payFrequency];
+                const periods = PERIODS_PER_YEAR[emp.payFrequency] ?? 26;
+                const wkHrs = emp.standardWeeklyHours ?? company.standardWeeklyHours ?? 40;
                 const periodPay = emp.payType === "salary"
                   ? emp.payRate / periods
-                  : emp.payRate * (emp.payFrequency === "weekly" ? 40 : emp.payFrequency === "biweekly" ? 80 : 173.33);
+                  : emp.payRate * (emp.payFrequency === "weekly" ? wkHrs : emp.payFrequency === "biweekly" ? wkHrs * 2 : Math.round(wkHrs * 52 / 12 * 10) / 10);
                 return (
                   <Card key={emp.id} shadow="sm" className={!emp.isActive ? "opacity-60" : ""}>
                     <CardBody className="px-5 py-3">
@@ -634,6 +640,11 @@ export function PayrollTab({
                   <SelectItem key="monthly">{t("payroll.freqMonthly")}</SelectItem>
                 </Select>
               </div>
+              {ePayType === "hourly" && (
+                <Input label={t("payroll.standardWeeklyHours")} type="number" min="1" max="168" step="0.5"
+                  description={t("payroll.standardWeeklyHoursHint")}
+                  value={eStdHours} onValueChange={setEStdHours} size="sm" className="w-48" />
+              )}
 
               {/* Tax */}
               <Divider />
@@ -776,7 +787,9 @@ export function PayrollTab({
                             .filter((l) => employees.find((e) => e.id === l.employeeId)?.payType === "hourly")
                             .map((line) => {
                               const emp = employees.find((e) => e.id === line.employeeId);
-                              const hrs = wHours[line.employeeId] ?? defaultHours(wFreq);
+                              const emp2 = employees.find((e) => e.id === line.employeeId);
+                              const wkHrs2 = emp2?.standardWeeklyHours ?? company.standardWeeklyHours ?? 40;
+                              const hrs = wHours[line.employeeId] ?? defaultHours(wkHrs2, wFreq);
                               const inp = "w-16 text-right bg-default-50 border border-default-200 rounded px-1 py-0.5 text-xs tabular-nums focus:outline-none focus:border-primary";
                               return (
                                 <tr key={line.employeeId} className="border-b border-default-100">

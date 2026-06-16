@@ -890,7 +890,7 @@ const de: Translations = {
     garnishment: "Lohnpfändung ($/Periode)", otherPostTax: "Sonstige Nachsteuerabzüge ($/Periode)", isActive: "Aktiv",
     periodFrom: "Periodenbeginn", periodTo: "Periodenende", payDate: "Zahlungsdatum", frequency: "Frequenz",
     selectEmployees: "Mitarbeiter Auswählen", allActive: "Alle Aktiven Mitarbeiter", reviewCalc: "Überprüfen und Anpassen",
-    hoursEntry: "Stundenerfassung", regularHours: "Regelstunden", overtimeRate: "ÜZ-Satz", holidayHours: "Feiertag", sickHours: "Krank", vacationHours: "Urlaub", overtimeHours: "Überstunden", grossPay: "Bruttolohn", preTaxDed: "Vorsteuerabzüge",
+    standardWeeklyHours: "Standardwochenstunden", standardWeeklyHoursHint: "Standard-Stunden pro Woche (z.B. 40, 37,5, 35)", hoursEntry: "Stundenerfassung", regularHours: "Regelstunden", overtimeRate: "ÜZ-Satz", holidayHours: "Feiertag", sickHours: "Krank", vacationHours: "Urlaub", overtimeHours: "Überstunden", grossPay: "Bruttolohn", preTaxDed: "Vorsteuerabzüge",
     taxableWages: "Steuerpflichtiger Lohn", federalTax: "Bundessteuer", fica: "FICA", stateTax: "Staatssteuer",
     postTaxDed: "Nachsteuerabzüge", netPay: "Nettolohn", empTax: "Arbeitgebersteuern", totalCost: "Gesamtkosten",
     approve: "Genehmigen und Zahlen", approved: "Genehmigt", draft: "Entwurf", deleteRun: "Löschen",

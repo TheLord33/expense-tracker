@@ -890,7 +890,7 @@ const it: Translations = {
     garnishment: "Pignoramento ($/periodo)", otherPostTax: "Altre Deduzioni Post-tasse ($/periodo)", isActive: "Attivo",
     periodFrom: "Inizio Periodo", periodTo: "Fine Periodo", payDate: "Data di Pagamento", frequency: "Frequenza",
     selectEmployees: "Seleziona Dipendenti", allActive: "Tutti i Dipendenti Attivi", reviewCalc: "Rivedi e Aggiusta",
-    hoursEntry: "Inserimento Ore", regularHours: "Ore Regolari", overtimeRate: "Tariffa Straord.", holidayHours: "Festivo", sickHours: "Malattia", vacationHours: "Ferie", overtimeHours: "Ore Straordinarie", grossPay: "Retribuzione Lorda", preTaxDed: "Ded. Pre-tasse",
+    standardWeeklyHours: "Ore Settimanali Standard", standardWeeklyHoursHint: "Ore predefinite per settimana (es. 40, 37.5, 35)", hoursEntry: "Inserimento Ore", regularHours: "Ore Regolari", overtimeRate: "Tariffa Straord.", holidayHours: "Festivo", sickHours: "Malattia", vacationHours: "Ferie", overtimeHours: "Ore Straordinarie", grossPay: "Retribuzione Lorda", preTaxDed: "Ded. Pre-tasse",
     taxableWages: "Retribuzione Imponibile", federalTax: "Imposta Federale", fica: "FICA", stateTax: "Imposta Statale",
     postTaxDed: "Ded. Post-tasse", netPay: "Retribuzione Netta", empTax: "Contributi Datoriali", totalCost: "Costo Totale",
     approve: "Approva e Paga", approved: "Approvato", draft: "Bozza", deleteRun: "Elimina",

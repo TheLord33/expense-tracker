@@ -890,7 +890,7 @@ const fr: Translations = {
     garnishment: "Saisie sur Salaire ($/période)", otherPostTax: "Autres Déductions Post-impôt ($/période)", isActive: "Actif",
     periodFrom: "Début de Période", periodTo: "Fin de Période", payDate: "Date de Paie", frequency: "Fréquence",
     selectEmployees: "Sélectionner les Employés", allActive: "Tous les Employés Actifs", reviewCalc: "Vérifier et Ajuster",
-    hoursEntry: "Saisie des Heures", regularHours: "Heures Régulières", overtimeRate: "Taux HS", holidayHours: "Férié", sickHours: "Maladie", vacationHours: "Congés", overtimeHours: "Heures Supplémentaires", grossPay: "Salaire Brut", preTaxDed: "Ded. Pré-impôt",
+    standardWeeklyHours: "Heures Hebdomadaires Standard", standardWeeklyHoursHint: "Heures par défaut par semaine (ex. 40, 37,5, 35)", hoursEntry: "Saisie des Heures", regularHours: "Heures Régulières", overtimeRate: "Taux HS", holidayHours: "Férié", sickHours: "Maladie", vacationHours: "Congés", overtimeHours: "Heures Supplémentaires", grossPay: "Salaire Brut", preTaxDed: "Ded. Pré-impôt",
     taxableWages: "Salaire Imposable", federalTax: "Impôt Fédéral", fica: "FICA", stateTax: "Impôt Étatique",
     postTaxDed: "Ded. Post-impôt", netPay: "Salaire Net", empTax: "Charges Patronales", totalCost: "Coût Total",
     approve: "Approuver et Payer", approved: "Approuvé", draft: "Brouillon", deleteRun: "Supprimer",

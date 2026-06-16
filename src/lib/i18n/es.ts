@@ -923,7 +923,7 @@ const es: Translations = {
     selectEmployees: "Seleccionar Empleados",
     allActive: "Todos los Empleados Activos",
     reviewCalc: "Revisar y Ajustar",
-    hoursEntry: "Entrada de Horas",
+    standardWeeklyHours: "Horas Semanales Estándar", standardWeeklyHoursHint: "Horas predeterminadas por semana (ej. 40, 37.5, 35)", hoursEntry: "Entrada de Horas",
     regularHours: "Hrs Regulares",
     overtimeRate: "Tasa HE",
     holidayHours: "Festivo",

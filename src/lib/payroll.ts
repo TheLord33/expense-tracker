@@ -102,8 +102,10 @@ export interface HoursInput {
   vacation: number;
 }
 
-export function defaultHours(freq: PayFrequency): HoursInput {
-  const reg = freq === "weekly" ? 40 : freq === "biweekly" ? 80 : 173;
+export function defaultHours(weeklyHours: number, freq: PayFrequency): HoursInput {
+  const reg = freq === "weekly" ? weeklyHours
+    : freq === "biweekly" ? weeklyHours * 2
+    : Math.round(weeklyHours * 52 / 12 * 10) / 10; // monthly ≈ weeklyHours × 4.333
   return { regular: reg, overtime: 0, overtimeMultiplier: 1.5, holiday: 0, sick: 0, vacation: 0 };
 }
 
@@ -130,7 +132,7 @@ export function calculatePayRunLine(
   let vacationHours: number | undefined;
 
   if (employee.payType === "hourly") {
-    const hrs = defaultHours(employee.payFrequency);
+    const hrs = defaultHours(employee.standardWeeklyHours ?? 40, employee.payFrequency);
     const reg  = hoursOverride?.regular            ?? hrs.regular;
     const ot   = hoursOverride?.overtime           ?? 0;
     const mult = hoursOverride?.overtimeMultiplier ?? 1.5;
