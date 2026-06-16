@@ -17,6 +17,23 @@ import { useLanguage, useCurrency } from "@/app/providers";
 
 const todayISO = () => new Date().toISOString().split("T")[0];
 
+function empFullName(e: Pick<Employee, "firstName" | "middleInitial" | "lastName">): string {
+  return [e.firstName, e.middleInitial ? e.middleInitial + "." : "", e.lastName].filter(Boolean).join(" ");
+}
+
+function maskSSN(ssn: string): string {
+  const digits = ssn.replace(/\D/g, "");
+  if (digits.length !== 9) return ssn; // show as-is if not a full SSN
+  return `***-**-${digits.slice(5)}`;
+}
+
+function formatSSN(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 9);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 5) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`;
+}
+
 function fmtDate(iso: string, locale: string) {
   const [y, m, d] = iso.split("-");
   return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString(locale, {
@@ -54,7 +71,9 @@ export function PayrollTab({
   // ── Employee form ─────────────────────────────────────────────────────────
   const empModal = useDisclosure();
   const [editingEmp,     setEditingEmp]     = useState<Employee | null>(null);
-  const [eName,          setEName]          = useState("");
+  const [eFirstName,     setEFirstName]     = useState("");
+  const [eMiddle,        setEMiddle]        = useState("");
+  const [eLastName,      setELastName]      = useState("");
   const [eTitle,         setETitle]         = useState("");
   const [eDept,          setEDept]          = useState("");
   const [eStartDate,     setEStartDate]     = useState(todayISO());
@@ -65,7 +84,11 @@ export function PayrollTab({
   const [eAddlFed,       setEAddlFed]       = useState("");
   const [eStateRate,     setEStateRate]     = useState("");
   const [eAddlState,     setEAddlState]     = useState("");
-  const [eSsn,           setESsn]           = useState("");
+  const [eSsn,           setESsn]           = useState(""); // stores formatted XXX-XX-XXXX
+  const [eStreet,        setEStreet]        = useState("");
+  const [eCity,          setECity]          = useState("");
+  const [eState,         setEState]         = useState("");
+  const [eZip,           setEZip]           = useState("");
   const [eHealth,        setEHealth]        = useState("");
   const [eDental,        setEDental]        = useState("");
   const [eVision,        setEVision]        = useState("");
@@ -78,10 +101,12 @@ export function PayrollTab({
 
   function openAddEmployee() {
     setEditingEmp(null);
-    setEName(""); setETitle(""); setEDept(""); setEStartDate(todayISO());
+    setEFirstName(""); setEMiddle(""); setELastName("");
+    setETitle(""); setEDept(""); setEStartDate(todayISO());
     setEPayType("salary"); setEPayRate(""); setEFreq("biweekly");
     setEFilingStatus("single"); setEAddlFed(""); setEStateRate(""); setEAddlState("");
-    setESsn(""); setEHealth(""); setEDental(""); setEVision("");
+    setESsn(""); setEStreet(""); setECity(""); setEState(""); setEZip("");
+    setEHealth(""); setEDental(""); setEVision("");
     setE401k(""); setEHsa(""); setEGarn(""); setEOtherPost("");
     setEIsActive(true); setEErr("");
     empModal.onOpen();
@@ -89,13 +114,15 @@ export function PayrollTab({
 
   function openEditEmployee(e: Employee) {
     setEditingEmp(e);
-    setEName(e.name); setETitle(e.jobTitle ?? ""); setEDept(e.department ?? "");
+    setEFirstName(e.firstName); setEMiddle(e.middleInitial ?? ""); setELastName(e.lastName);
+    setETitle(e.jobTitle ?? ""); setEDept(e.department ?? "");
     setEStartDate(e.startDate); setEPayType(e.payType); setEPayRate(String(e.payRate));
     setEFreq(e.payFrequency); setEFilingStatus(e.filingStatus);
     setEAddlFed(e.additionalFedWithholding ? String(e.additionalFedWithholding) : "");
     setEStateRate(e.stateRate ? String(e.stateRate * 100) : "");
     setEAddlState(e.additionalStateWithholding ? String(e.additionalStateWithholding) : "");
-    setESsn(e.ssnLast4 ?? "");
+    setESsn(e.ssn ? formatSSN(e.ssn) : "");
+    setEStreet(e.street ?? ""); setECity(e.city ?? ""); setEState(e.state ?? ""); setEZip(e.zip ?? "");
     setEHealth(e.healthPremium ? String(e.healthPremium) : "");
     setEDental(e.dentalPremium ? String(e.dentalPremium) : "");
     setEVision(e.visionPremium ? String(e.visionPremium) : "");
@@ -109,10 +136,13 @@ export function PayrollTab({
 
   function handleEmpSubmit(ev: FormEvent) {
     ev.preventDefault();
-    if (!eName.trim())          { setEErr("Name is required");         return; }
+    if (!eFirstName.trim())     { setEErr("First name is required");    return; }
+    if (!eLastName.trim())      { setEErr("Last name is required");     return; }
     if (!ePayRate || Number(ePayRate) <= 0) { setEErr("Enter a valid pay rate"); return; }
     const data: Omit<Employee, "id"> = {
-      name:          eName.trim(),
+      firstName:     eFirstName.trim(),
+      middleInitial: eMiddle.trim().slice(0, 1).toUpperCase() || undefined,
+      lastName:      eLastName.trim(),
       jobTitle:      eTitle.trim()  || undefined,
       department:    eDept.trim()   || undefined,
       startDate:     eStartDate,
@@ -124,7 +154,11 @@ export function PayrollTab({
       additionalFedWithholding:   eAddlFed   ? parseFloat(eAddlFed)            : undefined,
       stateRate:                  eStateRate  ? parseFloat(eStateRate) / 100    : undefined,
       additionalStateWithholding: eAddlState ? parseFloat(eAddlState)          : undefined,
-      ssnLast4:      eSsn.trim().slice(-4) || undefined,
+      ssn:    eSsn.replace(/\D/g, "") || undefined,
+      street: eStreet.trim() || undefined,
+      city:   eCity.trim()   || undefined,
+      state:  eState.trim()  || undefined,
+      zip:    eZip.trim()    || undefined,
       healthPremium: eHealth  ? parseFloat(eHealth)  : undefined,
       dentalPremium: eDental  ? parseFloat(eDental)  : undefined,
       visionPremium: eVision  ? parseFloat(eVision)  : undefined,
@@ -209,7 +243,7 @@ export function PayrollTab({
       return {
         date:        wPayDate,
         checkNumber: l.checkNumber ?? "",
-        payee:       emp?.name ?? "—",
+        payee:       emp ? empFullName(emp) : "—",
         amount:      l.netPay,
         memo:        `Payroll ${wPeriodFrom} – ${wPeriodTo}`,
         status:      "outstanding" as const,
@@ -226,7 +260,7 @@ export function PayrollTab({
     const emp = employees.find((e) => e.id === line.employeeId);
     if (!emp) return;
     const blob = await generatePayStubPDF(run, line, emp, company, fmt);
-    downloadBlob(blob, `paystub-${emp.name.replace(/\s+/g, "-")}-${run.payDate}.pdf`);
+    downloadBlob(blob, `paystub-${empFullName(emp).replace(/\s+/g, "-")}-${run.payDate}.pdf`);
   }
 
   async function handleSummaryPDF(run: PayRun) {
@@ -295,13 +329,21 @@ export function PayrollTab({
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className="font-semibold text-sm text-default-900">{emp.name}</p>
+                            <p className="font-semibold text-sm text-default-900">{empFullName(emp)}</p>
                             {!emp.isActive && <Chip size="sm" variant="flat" color="default">Inactive</Chip>}
                           </div>
                           {(emp.jobTitle || emp.department) && (
                             <p className="text-xs text-default-400 mt-0.5">
                               {[emp.jobTitle, emp.department].filter(Boolean).join(" · ")}
                             </p>
+                          )}
+                          {(emp.street || emp.city) && (
+                            <p className="text-xs text-default-400 mt-0.5">
+                              {[emp.street, [emp.city, emp.state, emp.zip].filter(Boolean).join(", ")].filter(Boolean).join(" · ")}
+                            </p>
+                          )}
+                          {emp.ssn && (
+                            <p className="text-xs text-default-400 mt-0.5 font-mono">{maskSSN(emp.ssn)}</p>
                           )}
                           <p className="text-xs text-default-400 mt-0.5">
                             {emp.payType === "salary" ? "Salary" : "Hourly"} ·{" "}
@@ -388,7 +430,7 @@ export function PayrollTab({
                           <div key={line.employeeId}
                             className="grid grid-cols-[1fr_72px_72px_72px_72px_80px] gap-2 px-5 py-2.5 border-b border-default-100 text-sm items-center">
                             <div>
-                              <p className="text-sm font-medium text-default-800">{emp?.name ?? "—"}</p>
+                              <p className="text-sm font-medium text-default-800">{emp ? empFullName(emp) : "—"}</p>
                               {emp?.jobTitle && <p className="text-xs text-default-400">{emp.jobTitle}</p>}
                             </div>
                             <span className="text-right tabular-nums text-xs text-default-700">{fmt(line.grossPay)}</span>
@@ -446,16 +488,39 @@ export function PayrollTab({
           <form onSubmit={handleEmpSubmit}>
             <ModalHeader>{editingEmp ? t("payroll.editEmployee") : t("payroll.addEmployee")}</ModalHeader>
             <ModalBody className="gap-3">
-              {/* Basic info */}
+              {/* Name */}
               <div className="flex gap-3">
-                <Input label={t("payroll.employeeName")} value={eName} onValueChange={(v) => { setEName(v); setEErr(""); }}
-                  isInvalid={!!eErr && !eName.trim()} errorMessage={!eName.trim() ? eErr : ""} size="sm" className="flex-1" />
-                <Input label={t("payroll.jobTitle")} value={eTitle} onValueChange={setETitle} size="sm" className="flex-1" />
+                <Input label={t("payroll.firstName")} value={eFirstName}
+                  onValueChange={(v) => { setEFirstName(v); setEErr(""); }}
+                  isInvalid={!!eErr && !eFirstName.trim()} size="sm" className="flex-1" />
+                <Input label={t("payroll.middleInitial")} maxLength={1} placeholder="M"
+                  value={eMiddle} onValueChange={(v) => setEMiddle(v.toUpperCase())}
+                  size="sm" className="w-20" />
+                <Input label={t("payroll.lastName")} value={eLastName}
+                  onValueChange={(v) => { setELastName(v); setEErr(""); }}
+                  isInvalid={!!eErr && !eLastName.trim()} size="sm" className="flex-1" />
               </div>
+              {/* Job + SSN */}
               <div className="flex gap-3">
+                <Input label={t("payroll.jobTitle")} value={eTitle} onValueChange={setETitle} size="sm" className="flex-1" />
                 <Input label={t("payroll.department")} value={eDept} onValueChange={setEDept} size="sm" className="flex-1" />
+              </div>
+              {/* Address */}
+              <Input label={t("payroll.street")} placeholder="123 Main St"
+                value={eStreet} onValueChange={setEStreet} size="sm" />
+              <div className="flex gap-3">
+                <Input label={t("payroll.city")} value={eCity} onValueChange={setECity} size="sm" className="flex-1" />
+                <Input label={t("payroll.state")} placeholder="CA" maxLength={2}
+                  value={eState} onValueChange={(v) => setEState(v.toUpperCase())} size="sm" className="w-20" />
+                <Input label={t("payroll.zip")} value={eZip} onValueChange={setEZip} size="sm" className="w-32" />
+              </div>
+              {/* Start date + SSN */}
+              <div className="flex gap-3">
                 <Input type="date" label={t("payroll.startDate")} value={eStartDate} onValueChange={setEStartDate} size="sm" className="flex-1" />
-                <Input label={t("payroll.ssnLast4")} maxLength={4} placeholder="4 digits" value={eSsn} onValueChange={setESsn} size="sm" className="w-28" />
+                <Input label={t("payroll.ssn")} placeholder="XXX-XX-XXXX"
+                  value={eSsn} onValueChange={(v) => setESsn(formatSSN(v))}
+                  size="sm" className="flex-1"
+                  description="Stored locally, displayed masked" />
               </div>
 
               {/* Pay */}
@@ -579,7 +644,7 @@ export function PayrollTab({
                         }}
                         className="rounded"
                       />
-                      <span className="text-sm text-default-800">{emp.name}</span>
+                      <span className="text-sm text-default-800">{empFullName(emp)}</span>
                       {emp.jobTitle && <span className="text-xs text-default-400">{emp.jobTitle}</span>}
                     </label>
                   ))}
@@ -614,7 +679,7 @@ export function PayrollTab({
                         const emp = employees.find((e) => e.id === line.employeeId);
                         return (
                           <tr key={line.employeeId} className="border-b border-default-100">
-                            <td className="px-3 py-2 font-medium text-default-800">{emp?.name ?? "—"}</td>
+                            <td className="px-3 py-2 font-medium text-default-800">{emp ? empFullName(emp) : "—"}</td>
                             <td className="px-2 py-1.5">
                               <input className="w-24 text-right bg-default-50 border border-default-200 rounded px-1 py-0.5 text-xs tabular-nums focus:outline-none focus:border-primary"
                                 type="number" step="0.01" defaultValue={line.grossPay}

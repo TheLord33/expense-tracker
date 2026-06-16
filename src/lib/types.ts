@@ -420,10 +420,17 @@ export type FilingStatus = "single" | "married" | "head";
 
 export interface Employee {
   id: string;
-  name: string;
-  ssnLast4?: string;
+  firstName: string;
+  middleInitial?: string;
+  lastName: string;
+  ssn?: string;           // full SSN — stored locally, displayed masked
   jobTitle?: string;
   department?: string;
+  // Address
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
   startDate: string;
   isActive: boolean;
   // Pay
